@@ -5,37 +5,59 @@
     <title>AppLegal Cloud | Gestión Jurídica</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     <style>
         .sidebar-item:hover { background-color: #2C3E50; border-left: 4px solid #C0A062; }
         .active-item { background-color: #2C3E50; border-left: 4px solid #C0A062; }
     </style>
 </head>
 <body class="bg-gray-50 flex h-screen overflow-hidden font-sans">
+    
     <aside class="w-64 bg-[#1A2238] text-white flex-shrink-0 shadow-xl">
         <div class="p-6 text-center">
             <i class="fas fa-balance-scale text-[#C0A062] text-4xl mb-2"></i>
             <div class="text-2xl font-bold tracking-widest text-[#C0A062]">AppLegal</div>
         </div>
+
         <nav class="mt-6 px-4 space-y-2">
-            <a href="{% url 'dashboard' %}" class="sidebar-item flex items-center p-3 rounded-lg transition-all">
-                <i class="fas fa-th-large mr-3 text-[#C0A062]"></i> Dashboard
+            <a href="{% url 'dashboard' %}" class="sidebar-item flex items-center p-3 rounded-lg transition-all {% if request.resolver_match.url_name == 'dashboard' %}active-item{% endif %}">
+                <i class="fas fa-th-large w-8 text-[#C0A062]"></i> <span>Dashboard</span>
             </a>
-            <a href="{% url 'nuevo_cliente' %}" class="sidebar-item flex items-center p-3 rounded-lg transition-all">
-                <i class="fas fa-user-plus mr-3 text-[#C0A062]"></i> Nuevo Cliente
+
+            {% if user.rol == 'admin' %}
+            <a href="{% url 'gestion_usuarios' %}" class="sidebar-item flex items-center justify-between p-3 rounded-lg transition-all {% if request.resolver_match.url_name == 'gestion_usuarios' %}active-item{% endif %}">
+                <div class="flex items-center">
+                    <i class="fas fa-users w-8 text-[#C0A062]"></i>
+                    <span class="{% if usuarios_pendientes_conteo > 0 %}text-red-400 font-bold animate-pulse{% endif %}">Usuarios</span>
+                </div>
+                {% if usuarios_pendientes_conteo > 0 %}
+                    <span class="bg-red-600 text-white text-[10px] px-2 py-0.5 rounded-full font-black shadow-lg">
+                        {{ usuarios_pendientes_conteo }}
+                    </span>
+                {% endif %}
+            </a>
+            {% endif %}
+
+            <a href="#" class="sidebar-item flex items-center p-3 rounded-lg transition-all opacity-50">
+                <i class="fas fa-folder-open w-8 text-[#C0A062]"></i> <span>Expedientes</span>
+            </a>
+            
+            <a href="#" class="sidebar-item flex items-center p-3 rounded-lg transition-all opacity-50">
+                <i class="fas fa-history w-8 text-[#C0A062]"></i> <span>Bitácora</span>
             </a>
         </nav>
     </aside>
 
-    <main class="flex-1 flex flex-col overflow-hidden">
+    <main class="flex-1 flex flex-col min-w-0 overflow-hidden">
         <header class="bg-white shadow-md p-4 flex justify-between items-center z-10">
-            <h1 class="text-xl font-bold text-gray-700">Operaciones Tultitlán</h1>
+            <h1 class="text-xl font-bold text-gray-700">Panel de Control Jurídico</h1>
             <div class="flex items-center space-x-6">
                 <div class="text-right">
                     <p class="text-sm font-bold text-[#1A2238]">{{ user.username }}</p>
                     <p class="text-xs text-gray-500 uppercase">{{ user.get_rol_display }}</p>
                 </div>
                 <a href="{% url 'logout' %}" class="bg-red-50 text-red-600 px-4 py-2 rounded-lg text-sm font-bold hover:bg-red-600 hover:text-white transition-all">
-                    <i class="fas fa-sign-out-alt mr-2"></i> CERRAR SESIÓN
+                    CERRAR SESIÓN
                 </a>
             </div>
         </header>
@@ -43,8 +65,7 @@
         <div class="p-8 overflow-y-auto">
             {% if messages %}
                 {% for message in messages %}
-                    <div class="mb-6 p-4 rounded-xl shadow-sm animate__animated animate__fadeIn {% if message.tags == 'error' %}bg-red-100 text-red-700 border-l-4 border-red-500{% else %}bg-green-100 text-green-700 border-l-4 border-green-500{% endif %}">
-                        <i class="fas {% if message.tags == 'error' %}fa-exclamation-circle{% else %}fa-check-circle{% endif %} mr-2"></i>
+                    <div class="mb-6 p-4 rounded-xl shadow-sm animate__animated animate__fadeInDown {% if message.tags == 'error' %}bg-red-100 text-red-700 border-l-4 border-red-500{% else %}bg-green-100 text-green-700 border-l-4 border-green-500{% endif %}">
                         {{ message }}
                     </div>
                 {% endfor %}
