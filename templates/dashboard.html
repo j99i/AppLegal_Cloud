@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+    <div class="bg-white p-6 rounded-xl border-l-4 border-[#C0A062] shadow-sm">
+        <p class="text-sm text-gray-500 uppercase font-bold">Clientes Activos</p>
+        <p class="text-3xl font-black text-gray-800">{{ stats.total_clientes }}</p>
+    </div>
+    <div class="bg-white p-6 rounded-xl border-l-4 border-blue-500 shadow-sm">
+        <p class="text-sm text-gray-500 uppercase font-bold">Abiertos</p>
+        <p class="text-3xl font-black text-gray-800">{{ stats.expedientes_abiertos }}</p>
+    </div>
+    <div class="bg-white p-6 rounded-xl border-l-4 border-red-500 shadow-sm">
+        <p class="text-sm text-gray-500 uppercase font-bold">Prioridad Crítica</p>
+        <p class="text-3xl font-black text-gray-800">{{ stats.prioridad_critica }}</p>
+    </div>
+</div>
+
+<div class="flex justify-between items-center mb-6">
+    <h2 class="text-2xl font-bold text-[#1A2238]">Directorio Corporativo</h2>
+    {% if user.can_create_client %}
+    <a href="{% url 'nuevo_cliente' %}" class="bg-[#1A2238] text-white px-6 py-2 rounded-lg text-sm font-bold hover:bg-slate-800 transition-all">
+        + REGISTRAR CLIENTE
+    </a>
+    {% endif %}
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+    {% for cliente in clientes %}
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:scale-[1.02] transition-transform">
+        <div class="p-6">
+            <div class="flex items-center mb-6">
+                <div class="w-14 h-14 bg-slate-100 rounded-xl flex items-center justify-center mr-4 border border-gray-200">
+                    {% if cliente.logo %}
+                        <img src="{{ cliente.logo.url }}" class="w-full h-full object-contain p-1">
+                    {% else %}
+                        <i class="fas fa-landmark text-[#C0A062] text-xl"></i>
+                    {% endif %}
+                </div>
+                <div>
+                    <h3 class="font-bold text-gray-900 leading-tight">{{ cliente.nombre_empresa }}</h3>
+                    <p class="text-xs text-gray-400">Registrado en Tultitlán</p>
+                </div>
+            </div>
+            <div class="space-y-3 mb-6">
+                <div class="flex items-center text-sm text-gray-600">
+                    <i class="fas fa-user-tie w-6 text-[#C0A062]"></i> {{ cliente.nombre_contacto }}
+                </div>
+                <div class="flex items-center text-sm text-gray-600">
+                    <i class="fas fa-envelope w-6 text-[#C0A062]"></i> {{ cliente.email }}
+                </div>
+            </div>
+            <a href="{% url 'detalle_cliente' cliente.id %}" class="block text-center py-3 bg-[#f8f9fa] text-[#1A2238] font-bold rounded-xl border border-gray-100 hover:bg-gray-100 transition-colors">
+                GESTIONAR EXPEDIENTES
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
