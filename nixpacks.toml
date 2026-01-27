@@ -1,7 +1,5 @@
 [phases.setup]
 nixPkgs = [
-    "python3",
-    "postgresql",
     "gcc",
     "zlib",
     "glib",
