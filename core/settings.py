@@ -3,14 +3,33 @@ from pathlib import Path
 import environ
 import dj_database_url
 
+# ==========================================
+# 1. CONFIGURACIÓN DEL ENTORNO
+# ==========================================
 BASE_DIR = Path(__file__).resolve().parent.parent
+
 env = environ.Env()
+# Lee el archivo .env si existe (para desarrollo local)
 environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
-SECRET_KEY = env('SECRET_KEY', default='django-insecure-ds2p0pbugn#90o2e=le8inta&wrkn0xw#80*lp-eilk5yl^3h0')
-DEBUG = True
+# SEGURIDAD CRÍTICA
+# En producción, usa la variable de entorno. En local, usa la clave por defecto.
+SECRET_KEY = env('SECRET_KEY', default='django-insecure-tu-clave-secreta-local-super-segura')
+
+# DEBUG debe ser False en producción. 
+# Si la variable no existe en el entorno, asume True (modo desarrollo).
+DEBUG = env.bool('DEBUG', default=True)
+
+# Hosts permitidos (El '*' es útil para Railway/Render al inicio)
 ALLOWED_HOSTS = ['*']
 
+# Si usas Railway, es bueno agregar esto para evitar errores de CSRF en formularios
+CSRF_TRUSTED_ORIGINS = ['https://*.railway.app', 'https://*.up.railway.app']
+
+
+# ==========================================
+# 2. APLICACIONES INSTALADAS
+# ==========================================
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -18,11 +37,21 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    
+    # Librerías de Terceros
+    'whitenoise.runserver_nostatic', # Ayuda en desarrollo local
+    
+    # Mis Aplicaciones
     'expedientes',
 ]
 
+
+# ==========================================
+# 3. MIDDLEWARE (Intermediarios)
+# ==========================================
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    "whitenoise.middleware.WhiteNoiseMiddleware", # <--- VITAL PARA LA NUBE
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -33,6 +62,10 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'core.urls'
 
+
+# ==========================================
+# 4. TEMPLATES (Plantillas HTML)
+# ==========================================
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -44,32 +77,83 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                # Tu procesador de notificaciones
+                'expedientes.context_processors.notificaciones_globales',
             ],
         },
     },
 ]
 
+WSGI_APPLICATION = 'core.wsgi.application'
+
+
+# ==========================================
+# 5. BASE DE DATOS (Configuración Híbrida)
+# ==========================================
+# Por defecto usa SQLite (Local)
 DATABASES = {
-    'default': dj_database_url.config(default=env('DATABASE_URL'))
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
 }
 
+# Si existe DATABASE_URL (Railway/Nube), sobrescribe la configuración para usar PostgreSQL
+db_from_env = dj_database_url.config(conn_max_age=600)
+DATABASES['default'].update(db_from_env)
+
+
+# ==========================================
+# 6. AUTENTICACIÓN Y PASSWORD
+# ==========================================
 AUTH_USER_MODEL = 'expedientes.Usuario'
+
+AUTH_PASSWORD_VALIDATORS = [
+    { 'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator', },
+    { 'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator', },
+    { 'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator', },
+    { 'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator', },
+]
+
+# Redirecciones
+LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'login'
 
+
+# ==========================================
+# 7. INTERNACIONALIZACIÓN
+# ==========================================
 LANGUAGE_CODE = 'es-mx'
 TIME_ZONE = 'America/Mexico_City'
 USE_I18N = True
 USE_TZ = True
 
+
+# ==========================================
+# 8. ARCHIVOS ESTÁTICOS Y MEDIA (Whitenoise)
+# ==========================================
 STATIC_URL = 'static/'
+
+# Dónde buscar estáticos en desarrollo
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+
+# Dónde recolectar estáticos para producción (Railway usará esto)
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+# Motor de almacenamiento para producción (Comprime y optimiza)
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# Archivos subidos por el usuario (Media)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-# Indica a Django la ruta exacta de tu pantalla de inicio de sesión
-LOGIN_URL = 'login'
 
-# Define a dónde enviar al usuario después de un inicio de sesión exitoso
-LOGIN_REDIRECT_URL = 'dashboard'
+# ==========================================
+# 9. SISTEMA DE CORREO
+# ==========================================
+# En desarrollo: imprime en consola. 
+# En producción: deberás configurar SMTP (Gmail/Outlook/Sendgrid) más adelante.
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

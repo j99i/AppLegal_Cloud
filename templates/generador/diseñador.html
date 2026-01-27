@@ -1,0 +1,226 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-7xl mx-auto h-[calc(100vh-100px)] flex flex-col animate__animated animate__fadeIn">
+    
+    <div class="flex justify-between items-center mb-4">
+        <div>
+            <h2 class="text-2xl font-black text-[#1A2238]">Diseñador de Plantillas</h2>
+            <p class="text-sm text-gray-500">Selecciona texto y asígnalo a una variable del glosario o crea una nueva.</p>
+        </div>
+        <div class="flex gap-3">
+            <input type="text" id="nombre-plantilla" placeholder="Nombre de la Plantilla Final" class="border-2 border-gray-300 p-2 rounded-xl text-sm font-bold w-64 focus:border-[#C0A062] outline-none text-[#1A2238]">
+            <button onclick="guardarPlantilla()" class="bg-[#1A2238] text-white px-6 py-2 rounded-xl font-bold text-xs shadow-lg hover:bg-[#2C3E50]">
+                <i class="fas fa-save mr-2"></i> GUARDAR MAESTRA
+            </button>
+        </div>
+    </div>
+
+    <div class="flex-1 flex gap-6 overflow-hidden">
+        <div class="flex-1 bg-white rounded-[2rem] shadow-xl border border-gray-200 flex flex-col relative overflow-hidden">
+            <div id="drop-zone" class="absolute inset-0 bg-gray-50 z-20 flex flex-col items-center justify-center border-4 border-dashed border-gray-300 m-4 rounded-3xl hover:bg-blue-50 hover:border-blue-300 transition-colors cursor-pointer" onclick="document.getElementById('input-word-upload').click()">
+                <i class="fas fa-file-word text-6xl text-gray-300 mb-4"></i>
+                <h3 class="text-xl font-bold text-gray-500">Sube tu documento "Ejemplo" aquí</h3>
+                <p class="text-sm text-gray-400">Puede tener datos reales (Ej. Juan Pérez).</p>
+                <input type="file" id="input-word-upload" accept=".docx" class="hidden" onchange="cargarDocumento(this)">
+            </div>
+            <div id="editor-canvas" class="flex-1 overflow-y-auto p-12 custom-scrollbar text-justify prose max-w-none hidden" onmouseup="detectarSeleccion()"></div>
+        </div>
+
+        <div class="w-80 bg-white rounded-[2rem] shadow-lg border border-gray-100 flex flex-col">
+            <div class="p-5 bg-[#1A2238] text-white rounded-t-[2rem]">
+                <h3 class="font-bold text-sm"><i class="fas fa-list-ul mr-2 text-[#C0A062]"></i> Reemplazos Activos</h3>
+            </div>
+            <div id="lista-reemplazos" class="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
+                <p class="text-xs text-center text-gray-400 mt-10">Selecciona texto para comenzar.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="popup-variable" class="fixed hidden bg-white shadow-2xl rounded-2xl border border-gray-200 z-50 w-80 animate__animated animate__zoomIn overflow-hidden font-sans">
+    
+    <div class="bg-gray-50 p-4 border-b border-gray-100">
+        <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Texto Seleccionado</h4>
+        <p id="texto-seleccionado" class="text-sm font-bold text-[#1A2238] truncate bg-white p-2 rounded border border-gray-200">...</p>
+    </div>
+
+    <div class="flex border-b border-gray-200">
+        <button onclick="cambiarTab('existente')" id="tab-existente" class="flex-1 py-3 text-xs font-bold text-[#1A2238] border-b-2 border-[#1A2238] bg-white">Existente</button>
+        <button onclick="cambiarTab('nueva')" id="tab-nueva" class="flex-1 py-3 text-xs font-bold text-gray-400 bg-gray-50 hover:bg-gray-100">Crear Nueva</button>
+    </div>
+
+    <div class="p-4">
+        
+        <div id="panel-existente">
+            <label class="text-[10px] font-bold text-gray-500 mb-1 block">BUSCAR EN GLOSARIO:</label>
+            <select id="select-glosario" class="w-full p-2 bg-gray-50 rounded-lg border border-gray-200 text-sm mb-4 text-[#1A2238] focus:border-[#C0A062] outline-none">
+                <option value="">-- Seleccionar --</option>
+                {% for v in glosario %}
+                <option value="{{ v.clave }}">{{ v.descripcion }} ({{ v.clave }})</option>
+                {% endfor %}
+            </select>
+            <button onclick="confirmarReemplazo('existente')" class="w-full py-3 bg-[#1A2238] rounded-xl text-xs font-bold text-white hover:bg-opacity-90 shadow-lg">APLICAR VARIABLE</button>
+        </div>
+
+        <div id="panel-nueva" class="hidden space-y-3">
+            <div>
+                <label class="text-[10px] font-bold text-gray-500 block mb-1">NOMBRE CLAVE (Sin espacios)</label>
+                <input type="text" id="nueva-clave" placeholder="Ej. nombre_aval" class="w-full p-2 bg-white border-2 border-gray-200 rounded-lg text-sm font-bold text-[#1A2238] focus:border-[#C0A062] outline-none">
+            </div>
+            <div>
+                <label class="text-[10px] font-bold text-gray-500 block mb-1">DESCRIPCIÓN (Para el usuario)</label>
+                <input type="text" id="nueva-desc" placeholder="Ej. Nombre Completo del Aval" class="w-full p-2 bg-white border-2 border-gray-200 rounded-lg text-sm text-gray-600 focus:border-[#C0A062] outline-none">
+            </div>
+            <button onclick="crearYAsignar()" id="btn-crear" class="w-full py-3 bg-[#C0A062] rounded-xl text-xs font-bold text-white hover:bg-[#a3864d] shadow-lg flex justify-center items-center">
+                <span>GUARDAR Y APLICAR</span>
+            </button>
+        </div>
+
+        <button onclick="cancelarSeleccion()" class="w-full mt-3 py-2 text-xs font-bold text-gray-400 hover:text-red-400">Cancelar</button>
+    </div>
+</div>
+
+<form id="form-final" method="POST" enctype="multipart/form-data" class="hidden">{% csrf_token %}<input type="text" name="nombre" id="input-nombre-final"><input type="file" name="archivo_base" id="input-archivo-final"><input type="hidden" name="reemplazos" id="input-reemplazos-final"></form>
+
+<script>
+    let archivoActual=null, listaReemplazos=[], seleccionActual=null;
+    const LLAVE_ABRE='\u007B\u007B', LLAVE_CIERRA='\u007D\u007D';
+
+    // Tabs Logic
+    function cambiarTab(modo) {
+        document.getElementById('panel-existente').classList.toggle('hidden', modo !== 'existente');
+        document.getElementById('panel-nueva').classList.toggle('hidden', modo !== 'nueva');
+        
+        // Estilos tabs
+        const tabEx = document.getElementById('tab-existente');
+        const tabNu = document.getElementById('tab-nueva');
+        if(modo === 'existente'){
+            tabEx.className = "flex-1 py-3 text-xs font-bold text-[#1A2238] border-b-2 border-[#1A2238] bg-white";
+            tabNu.className = "flex-1 py-3 text-xs font-bold text-gray-400 bg-gray-50 hover:bg-gray-100";
+        } else {
+            tabNu.className = "flex-1 py-3 text-xs font-bold text-[#C0A062] border-b-2 border-[#C0A062] bg-white";
+            tabEx.className = "flex-1 py-3 text-xs font-bold text-gray-400 bg-gray-50 hover:bg-gray-100";
+        }
+    }
+
+    async function cargarDocumento(input) {
+        if (input.files && input.files[0]) {
+            archivoActual = input.files[0];
+            document.getElementById('drop-zone').innerHTML = '<i class="fas fa-spinner fa-spin text-4xl text-[#C0A062]"></i>';
+            const formData = new FormData(); formData.append('archivo', archivoActual);
+            try {
+                const res = await fetch("{% url 'api_convertir_html' %}",{method:'POST',body:formData});
+                const data = await res.json();
+                if(data.html){
+                    document.getElementById('editor-canvas').innerHTML=data.html;
+                    document.getElementById('editor-canvas').classList.remove('hidden');
+                    document.getElementById('drop-zone').classList.add('hidden');
+                }
+            } catch(e){ alert("Error al cargar"); }
+        }
+    }
+
+    function detectarSeleccion() {
+        const sel = window.getSelection(); const text = sel.toString().trim();
+        if (text.length > 0) {
+            seleccionActual = text;
+            const range = sel.getRangeAt(0); const rect = range.getBoundingClientRect();
+            const popup = document.getElementById('popup-variable');
+            document.getElementById('texto-seleccionado').innerText = text;
+            // Calcular posición para que no se salga de pantalla
+            let top = rect.bottom + window.scrollY + 10;
+            let left = rect.left + window.scrollX;
+            if(left + 320 > window.innerWidth) left = window.innerWidth - 340; // Ajuste borde derecho
+            
+            popup.style.top = top + 'px'; popup.style.left = left + 'px';
+            popup.classList.remove('hidden');
+            cambiarTab('existente'); // Reset a tab 1
+        }
+    }
+
+    function cancelarSeleccion() {
+        document.getElementById('popup-variable').classList.add('hidden');
+        window.getSelection().removeAllRanges();
+    }
+
+    function aplicarCambioVisual(variable) {
+        listaReemplazos.push({ texto_original: seleccionActual, variable: variable });
+        actualizarListaVisual();
+        const editor = document.getElementById('editor-canvas');
+        const etiqueta = `<span class="bg-yellow-200 border-b-2 border-[#C0A062] px-1 font-mono text-xs text-black">${LLAVE_ABRE} ${variable} ${LLAVE_CIERRA}</span>`;
+        editor.innerHTML = editor.innerHTML.replace(seleccionActual, etiqueta);
+        cancelarSeleccion();
+    }
+
+    function confirmarReemplazo() {
+        const variable = document.getElementById('select-glosario').value;
+        if (!variable) return alert("Selecciona una variable");
+        aplicarCambioVisual(variable);
+    }
+
+    // --- MAGIA: CREAR VARIABLE AL VUELO ---
+    async function crearYAsignar() {
+        const clave = document.getElementById('nueva-clave').value;
+        const desc = document.getElementById('nueva-desc').value;
+        const btn = document.getElementById('btn-crear');
+        
+        if(!clave || !desc) return alert("Llena ambos campos");
+        
+        // Efecto carga
+        const textoOriginal = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+        btn.disabled = true;
+
+        try {
+            const response = await fetch("{% url 'api_crear_variable' %}", {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ clave: clave, descripcion: desc })
+            });
+            const data = await response.json();
+            
+            if(data.status === 'ok') {
+                // 1. Agregar al select por si se usa de nuevo
+                const select = document.getElementById('select-glosario');
+                const option = document.createElement('option');
+                option.value = data.clave;
+                option.text = `${data.descripcion} (${data.clave})`;
+                select.add(option);
+                
+                // 2. Aplicar directamente
+                aplicarCambioVisual(data.clave);
+                
+                // 3. Limpiar inputs
+                document.getElementById('nueva-clave').value = '';
+                document.getElementById('nueva-desc').value = '';
+            } else {
+                alert("Error: " + data.msg);
+            }
+        } catch(e) {
+            alert("Error de conexión");
+        } finally {
+            btn.innerHTML = textoOriginal;
+            btn.disabled = false;
+        }
+    }
+
+    function actualizarListaVisual() {
+        const cont = document.getElementById('lista-reemplazos'); cont.innerHTML = '';
+        listaReemplazos.forEach((item, i) => {
+            cont.innerHTML += `<div class="bg-white p-3 rounded-xl border border-gray-200 shadow-sm flex justify-between items-center group animate__animated animate__fadeIn"><div class="truncate mr-2"><p class="text-[10px] text-gray-400 line-through truncate">${item.texto_original}</p><p class="text-xs font-black text-[#1A2238]">${LLAVE_ABRE} ${item.variable} ${LLAVE_CIERRA}</p></div><button onclick="eliminarReemplazo(${i})" class="text-red-400 hover:text-red-600"><i class="fas fa-times"></i></button></div>`;
+        });
+    }
+    
+    function eliminarReemplazo(i){ listaReemplazos.splice(i, 1); actualizarListaVisual(); }
+    
+    function guardarPlantilla() {
+        const nombre = document.getElementById('nombre-plantilla').value;
+        if (!nombre || !archivoActual || listaReemplazos.length === 0) return alert("Faltan datos");
+        document.getElementById('input-nombre-final').value = nombre;
+        const dt = new DataTransfer(); dt.items.add(archivoActual);
+        document.getElementById('input-archivo-final').files = dt.files;
+        document.getElementById('input-reemplazos-final').value = JSON.stringify(listaReemplazos);
+        document.getElementById('form-final').submit();
+    }
+</script>
+{% endblock %}

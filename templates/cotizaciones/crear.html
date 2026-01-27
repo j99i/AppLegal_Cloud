@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-6xl mx-auto animate__animated animate__fadeIn">
+    
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-3xl font-black text-[#1A2238]">Nueva Cotización</h2>
+        <a href="{% url 'lista_cotizaciones' %}" class="text-gray-500 font-bold hover:text-[#1A2238]">Cancelar</a>
+    </div>
+
+    <form method="POST" class="space-y-8">
+        {% csrf_token %}
+        
+        <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
+            <h3 class="text-lg font-bold text-[#C0A062] mb-4 border-b pb-2">1. Datos del Prospecto</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Nombre Completo</label>
+                    <input type="text" name="nombre" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-[#1A2238]" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Empresa (Opcional)</label>
+                    <input type="text" name="empresa" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-[#1A2238]">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Email</label>
+                    <input type="email" name="email" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-[#1A2238]" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Teléfono (WhatsApp)</label>
+                    <input type="text" name="telefono" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-[#1A2238]" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Validez Hasta</label>
+                    <input type="date" name="validez" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-[#1A2238]">
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
+            <div class="flex justify-between items-center mb-4 border-b pb-2">
+                <h3 class="text-lg font-bold text-[#C0A062]">2. Servicios a Cotizar</h3>
+                <button type="button" onclick="agregarFila()" class="bg-[#1A2238] text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-[#2C3E50]">+ Agregar Item</button>
+            </div>
+            
+            <div id="items-container" class="space-y-4">
+                </div>
+            
+            <div id="row-template" class="hidden flex flex-col md:flex-row gap-3 items-start p-4 bg-gray-50 rounded-xl relative group">
+                <div class="flex-1">
+                    <label class="text-[10px] font-bold text-gray-400">Servicio</label>
+                    <select name="servicio_id" class="w-full p-2 rounded-lg border text-sm font-bold" onchange="cargarPrecio(this)">
+                        <option value="">-- Seleccionar --</option>
+                        {% for s in servicios %}
+                        <option value="{{ s.id }}" data-precio="{{ s.precio_base }}" data-desc="{{ s.descripcion }}">{{ s.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="flex-[2]">
+                    <label class="text-[10px] font-bold text-gray-400">Descripción / Detalles</label>
+                    <input type="text" name="descripcion" class="w-full p-2 rounded-lg border text-sm">
+                </div>
+                <div class="w-24">
+                    <label class="text-[10px] font-bold text-gray-400">Cant.</label>
+                    <input type="number" name="cantidad" value="1" min="1" class="w-full p-2 rounded-lg border text-sm font-bold text-center">
+                </div>
+                <div class="w-32">
+                    <label class="text-[10px] font-bold text-gray-400">Precio Unit.</label>
+                    <input type="number" name="precio" step="0.01" class="w-full p-2 rounded-lg border text-sm font-bold text-right text-green-700">
+                </div>
+                <button type="button" onclick="this.parentElement.remove()" class="text-red-400 hover:text-red-600 mt-6"><i class="fas fa-trash"></i></button>
+            </div>
+        </div>
+
+        <div class="flex justify-end">
+            <button type="submit" class="bg-[#C0A062] text-white px-10 py-4 rounded-2xl font-black text-lg shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all">
+                CREAR COTIZACIÓN
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    function agregarFila() {
+        const container = document.getElementById('items-container');
+        const template = document.getElementById('row-template');
+        const clone = template.cloneNode(true);
+        clone.classList.remove('hidden');
+        clone.removeAttribute('id');
+        container.appendChild(clone);
+    }
+
+    function cargarPrecio(select) {
+        const opcion = select.options[select.selectedIndex];
+        const precio = opcion.getAttribute('data-precio');
+        const desc = opcion.getAttribute('data-desc');
+        
+        const fila = select.parentElement.parentElement;
+        fila.querySelector('input[name="precio"]').value = precio;
+        fila.querySelector('input[name="descripcion"]').value = desc;
+    }
+
+    // Agregar una fila al inicio
+    document.addEventListener('DOMContentLoaded', agregarFila);
+</script>
+{% endblock %}

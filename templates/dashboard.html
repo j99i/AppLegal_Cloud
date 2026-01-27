@@ -1,163 +1,89 @@
 {% extends 'base.html' %}
+{% block titulo_pagina %}Resumen Ejecutivo{% endblock %}
+
 {% block content %}
+<div class="max-w-7xl mx-auto animate__animated animate__fadeIn">
 
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-    <div class="bg-white p-6 rounded-xl border-l-4 border-[#C0A062] shadow-sm">
-        <p class="text-sm text-gray-500 uppercase font-bold">Clientes Activos</p>
-        <p class="text-3xl font-black text-gray-800">{{ stats.total_clientes }}</p>
-    </div>
-    <div class="bg-white p-6 rounded-xl border-l-4 border-blue-500 shadow-sm">
-        <p class="text-sm text-gray-500 uppercase font-bold">Abiertos</p>
-        <p class="text-3xl font-black text-gray-800">{{ stats.expedientes_abiertos }}</p>
-    </div>
-    <div class="bg-white p-6 rounded-xl border-l-4 border-red-500 shadow-sm">
-        <p class="text-sm text-gray-500 uppercase font-bold">Prioridad Crítica</p>
-        <p class="text-3xl font-black text-gray-800">{{ stats.prioridad_critica }}</p>
-    </div>
-</div>
-
-<div class="flex justify-between items-center mb-6">
-    <h2 class="text-2xl font-bold text-[#1A2238]">Directorio Corporativo</h2>
-    {% if user.rol == 'admin' or user.can_create_client %}
-    <a href="{% url 'nuevo_cliente' %}" class="bg-[#1A2238] text-white px-6 py-2 rounded-xl font-bold text-sm shadow-lg hover:bg-opacity-90 transition-all">
-        <i class="fas fa-plus mr-2"></i> NUEVO CLIENTE
-    </a>
-    {% endif %}
-</div>
-
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-    {% for cliente in clientes %}
-    <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all">
-        <div class="flex items-center mb-6">
-            <div class="w-14 h-14 bg-slate-100 rounded-xl flex items-center justify-center mr-4 border border-gray-200">
-                {% if cliente.logo %}
-                    <img src="{{ cliente.logo.url }}" class="w-full h-full object-contain p-1">
-                {% else %}
-                    <i class="fas fa-landmark text-[#C0A062] text-xl"></i>
-                {% endif %}
-            </div>
-            <div>
-                <h3 class="font-bold text-gray-900 leading-tight">{{ cliente.nombre_empresa }}</h3>
-                <p class="text-xs text-gray-400">Tultitlán, EdoMex</p>
-            </div>
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-black text-[#1A2238] mb-1">Hola, {{ user.first_name|default:user.username }} 👋</h1>
+            <p class="text-gray-500 font-medium">Estado general de la firma.</p>
         </div>
-        <div class="space-y-3 mb-6">
-            <div class="flex items-center text-sm text-gray-600">
-                <i class="fas fa-user-tie w-6 text-[#C0A062]"></i> {{ cliente.nombre_contacto }}
-            </div>
-            <div class="flex items-center text-sm text-gray-600">
-                <i class="fas fa-envelope w-6 text-[#C0A062]"></i> {{ cliente.email }}
-            </div>
+        <div class="bg-white px-6 py-2 rounded-xl shadow-sm border border-gray-100 text-center hidden md:block">
+            <p class="text-xs font-bold text-gray-400 uppercase">HOY ES</p>
+            <p class="text-lg font-black text-[#1A2238]">{{ now|date:"d M Y" }}</p>
         </div>
-        <a href="{% url 'detalle_cliente' cliente.id %}" class="block text-center py-3 bg-[#f8f9fa] text-[#1A2238] font-bold rounded-xl hover:bg-[#1A2238] hover:text-white transition-all">
-            VER EXPEDIENTES
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+        <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex items-center justify-between group hover:-translate-y-1 transition-transform">
+            <div><p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Mis Clientes</p><p class="text-3xl font-black text-[#1A2238]">{{ stats.total_clientes }}</p></div>
+            <div class="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors"><i class="fas fa-briefcase text-lg"></i></div>
+        </div>
+        <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex items-center justify-between group hover:-translate-y-1 transition-transform">
+            <div><p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Expedientes</p><p class="text-3xl font-black text-[#1A2238]">{{ stats.expedientes_activos }}</p></div>
+            <div class="w-12 h-12 rounded-full bg-purple-50 flex items-center justify-center text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-colors"><i class="fas fa-folder-open text-lg"></i></div>
+        </div>
+        <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex items-center justify-between group hover:-translate-y-1 transition-transform">
+            <div><p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Pendientes</p><p class="text-3xl font-black text-[#1A2238]">{{ stats.tareas_pendientes }}</p></div>
+            <div class="w-12 h-12 rounded-full bg-orange-50 flex items-center justify-center text-orange-600 group-hover:bg-orange-600 group-hover:text-white transition-colors"><i class="fas fa-tasks text-lg"></i></div>
+        </div>
+        <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex items-center justify-between group hover:-translate-y-1 transition-transform">
+            <div><p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Documentos</p><p class="text-3xl font-black text-[#1A2238]">{{ stats.docs_subidos }}</p></div>
+            <div class="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center text-green-600 group-hover:bg-green-600 group-hover:text-white transition-colors"><i class="fas fa-cloud text-lg"></i></div>
+        </div>
+    </div>
+
+    {% if user.rol == 'admin' %}
+    <div class="mb-8 flex gap-4 overflow-x-auto pb-4">
+        {% if usuarios_pendientes_conteo > 0 %}
+        <a href="{% url 'gestion_usuarios' %}" class="bg-red-500 text-white px-6 py-3 rounded-xl font-bold text-xs shadow-lg hover:bg-red-600 transition-all flex items-center gap-2 whitespace-nowrap animate-pulse">
+            <i class="fas fa-user-shield"></i> {{ usuarios_pendientes_conteo }} USUARIOS PENDIENTES
         </a>
-    <a href="{% url 'eliminar_cliente' cliente.id %}" 
-   onclick="return confirm('¿ESTÁS SEGURO? Se borrarán todos los expedientes, archivos y carpetas de este cliente. Esta acción no se puede deshacer.')"
-   class="bg-red-50 text-red-600 p-3 rounded-xl hover:bg-red-600 hover:text-white transition-all">
-    <i class="fas fa-trash"></i>
-</a>
+        {% endif %}
+        <a href="{% url 'nuevo_cliente' %}" class="bg-[#1A2238] text-white px-6 py-3 rounded-xl font-bold text-xs shadow-lg hover:bg-[#2C3E50] transition-all flex items-center gap-2 whitespace-nowrap">
+            <i class="fas fa-plus"></i> NUEVO CLIENTE
+        </a>
     </div>
-    {% endfor %}
-</div>
+    {% endif %}
 
-{% if user.rol == 'admin' and usuarios_pendientes %}
-    <div class="mt-12 bg-white p-8 rounded-3xl shadow-sm border border-orange-100 animate__animated animate__pulse">
-        <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
-            <i class="fas fa-user-clock text-orange-600 mr-3"></i> Solicitudes de Acceso Pendientes
-        </h3>
-        <div class="grid grid-cols-1 gap-4">
-            {% for usuario in usuarios_pendientes %}
-            <div class="flex justify-between items-center p-4 bg-orange-50 rounded-2xl border border-orange-100">
-                <div class="flex items-center">
-                    <div class="w-10 h-10 bg-orange-200 rounded-full flex items-center justify-center text-orange-700 font-bold mr-4">
-                        {{ usuario.username|first|upper }}
-                    </div>
-                    <div>
-                        <p class="font-bold text-gray-800">{{ usuario.username }}</p>
-                        <p class="text-xs text-orange-600">{{ usuario.email }}</p>
-                    </div>
+    <h3 class="text-xl font-black text-[#1A2238] mb-6 font-serif">Portafolio de Clientes</h3>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for cliente in clientes %}
+        <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 hover:shadow-md transition-all group relative overflow-hidden">
+            {% if cliente.urgencias > 0 %}
+            <div class="absolute top-4 right-4 bg-red-100 text-red-600 px-3 py-1 rounded-full text-[10px] font-black uppercase animate-pulse">
+                {{ cliente.urgencias }} Pendientes
+            </div>
+            {% endif %}
+
+            <div class="flex items-center gap-4 mb-6">
+                <div class="w-16 h-16 rounded-xl bg-gray-50 flex items-center justify-center overflow-hidden border border-gray-100">
+                    {% if cliente.logo %}
+                    <img src="{{ cliente.logo.url }}" class="w-full h-full object-cover">
+                    {% else %}
+                    <span class="text-2xl font-black text-gray-300">{{ cliente.nombre_empresa|slice:":1" }}</span>
+                    {% endif %}
                 </div>
-                <a href="{% url 'autorizar_usuario' usuario.id %}" class="bg-orange-600 text-white px-6 py-2 rounded-xl text-sm font-bold hover:bg-orange-700 transition-all shadow-md">
-                    AUTORIZAR
+                <div>
+                    <h4 class="text-lg font-black text-[#1A2238] leading-tight">{{ cliente.nombre_empresa }}</h4>
+                    <p class="text-xs text-gray-400 mt-1">{{ cliente.nombre_contacto }}</p>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center border-t border-gray-50 pt-4">
+                <span class="text-[10px] font-bold text-gray-400 uppercase">{{ cliente.num_expedientes }} Expedientes</span>
+                <a href="{% url 'detalle_cliente' cliente.id %}" class="text-[#C0A062] font-bold text-xs hover:underline flex items-center gap-1">
+                    VER DETALLES <i class="fas fa-arrow-right"></i>
                 </a>
             </div>
-            {% endfor %}
         </div>
-    </div>
-{% endif %}
-
-{% if user.rol == 'admin' %}
-<div class="mt-12 bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
-    <div class="flex items-center justify-between mb-8">
-        <div>
-            <h3 class="text-2xl font-bold text-[#1A2238]">Panel de Control de Usuarios</h3>
-            <p class="text-sm text-gray-500">Gestión de analistas y niveles de acceso</p>
+        {% empty %}
+        <div class="col-span-full py-12 text-center bg-white rounded-[2rem] border border-dashed border-gray-300">
+            <h3 class="text-lg font-bold text-gray-400">No hay clientes asignados</h3>
         </div>
-        <div class="flex gap-4">
-            <span class="bg-blue-50 text-blue-700 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider">
-                {{ todos_los_usuarios.count }} Registrados
-            </span>
-        </div>
-    </div>
-
-    <div class="overflow-x-auto">
-        <table class="w-full text-left">
-            <thead>
-                <tr class="text-gray-400 text-xs uppercase tracking-widest border-b border-gray-50">
-                    <th class="pb-4 font-black">Analista</th>
-                    <th class="pb-4 font-black">Rol / Nivel</th>
-                    <th class="pb-4 font-black">Estado</th>
-                    <th class="pb-4 font-black text-right">Acción</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-50">
-                {% for u in todos_los_usuarios %}
-                <tr class="group hover:bg-gray-50 transition-all">
-                    <td class="py-4">
-                        <div class="flex items-center">
-                            <div class="w-10 h-10 rounded-full bg-slate-100 border border-gray-200 flex items-center justify-center font-bold text-slate-500 mr-3">
-                                {{ u.username|first|upper }}
-                            </div>
-                            <div>
-                                <p class="font-bold text-gray-800 text-sm">{{ u.username }}</p>
-                                <p class="text-xs text-gray-400">{{ u.email }}</p>
-                            </div>
-                        </div>
-                    </td>
-                    <td class="py-4">
-                        <span class="text-sm font-medium text-gray-600 bg-gray-100 px-2 py-1 rounded-md">
-                            {{ u.get_rol_display }}
-                        </span>
-                    </td>
-                    <td class="py-4">
-                        {% if u.is_active %}
-                        <span class="inline-flex items-center text-green-700 text-[10px] font-black uppercase">
-                            <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span> Activo
-                        </span>
-                        {% else %}
-                        <span class="inline-flex items-center text-orange-700 text-[10px] font-black uppercase">
-                            <span class="w-2 h-2 bg-orange-500 rounded-full mr-2 animate-ping"></span> Pendiente
-                        </span>
-                        {% endif %}
-                    </td>
-                    <td class="py-4 text-right">
-                        {% if not u.is_active %}
-                        <a href="{% url 'autorizar_usuario' u.id %}" class="bg-[#C0A062] text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-[#1A2238] transition-all">
-                            AUTORIZAR
-                        </a>
-                        {% else %}
-                        <button disabled class="text-gray-300 text-xs font-bold cursor-not-allowed">
-                            AUTORIZADO
-                        </button>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        {% endfor %}
     </div>
 </div>
-{% endif %}
-
 {% endblock %}

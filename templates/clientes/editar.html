@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+{% load custom_filters %} {% block content %}
+<div class="max-w-5xl mx-auto animate__animated animate__fadeIn">
+    
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-3xl font-black text-[#1A2238]">Editar Cliente: <span class="text-[#C0A062]">{{ c.nombre_empresa }}</span></h2>
+        <a href="{% url 'detalle_cliente' c.id %}" class="text-gray-500 font-bold hover:text-[#1A2238]">Cancelar</a>
+    </div>
+
+    <form method="POST" enctype="multipart/form-data" class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
+        {% csrf_token %}
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            
+            <div class="space-y-6">
+                <h3 class="text-lg font-bold text-[#1A2238] border-b pb-2">Datos Generales</h3>
+                
+                <div class="flex items-center gap-4">
+                    <div class="w-20 h-20 rounded-xl bg-gray-100 overflow-hidden border flex items-center justify-center">
+                        {% if c.logo %}
+                        <img src="{{ c.logo.url }}" class="w-full h-full object-cover">
+                        {% else %}
+                        <i class="fas fa-building text-3xl text-gray-300"></i>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 mb-1">Cambiar Logo</label>
+                        <input type="file" name="logo" class="text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#1A2238] file:text-white hover:file:bg-[#2C3E50]">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="label-form">Nombre / Razón Social</label>
+                    <input type="text" name="nombre_empresa" value="{{ c.nombre_empresa }}" class="input-form">
+                </div>
+                <div>
+                    <label class="label-form">Contacto Principal</label>
+                    <input type="text" name="nombre_contacto" value="{{ c.nombre_contacto }}" class="input-form">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="label-form">Email</label>
+                        <input type="email" name="email" value="{{ c.email }}" class="input-form">
+                    </div>
+                    <div>
+                        <label class="label-form">Teléfono</label>
+                        <input type="text" name="telefono" value="{{ c.telefono }}" class="input-form">
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-6">
+                <div class="flex justify-between items-center border-b pb-2">
+                    <h3 class="text-lg font-bold text-[#C0A062]">Información Adicional</h3>
+                    {% if user.rol == 'admin' %}
+                    <a href="{% url 'configurar_campos' %}" class="text-[10px] bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded text-gray-500 font-bold">
+                        <i class="fas fa-cog"></i> Configurar Campos
+                    </a>
+                    {% endif %}
+                </div>
+
+                {% if campos_dinamicos %}
+                    {% for campo in campos_dinamicos %}
+                    <div>
+                        <label class="label-form">{{ campo.nombre }}</label>
+                        
+                        {% if campo.tipo == 'textarea' %}
+                            <textarea name="custom_{{ campo.id }}" rows="3" class="input-form">{{ datos_existentes|get_item:campo.nombre }}</textarea>
+                        {% else %}
+                            <input type="{{ campo.tipo }}" name="custom_{{ campo.id }}" value="{{ datos_existentes|get_item:campo.nombre }}" class="input-form">
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-10 bg-gray-50 rounded-xl">
+                        <p class="text-gray-400 text-sm">No hay campos extra configurados.</p>
+                        {% if user.rol == 'admin' %}
+                        <a href="{% url 'configurar_campos' %}" class="text-[#C0A062] font-bold text-xs hover:underline">Agregar RFC, CURP, etc.</a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+
+        </div>
+
+        <div class="flex justify-end pt-8 mt-6 border-t border-gray-100 gap-4">
+            {% if user.can_delete_client or user.rol == 'admin' %}
+            <a href="{% url 'eliminar_cliente' c.id %}" onclick="return confirm('¿Seguro? Se borrará TODO el expediente.')" class="text-red-500 font-bold text-sm flex items-center px-4 hover:bg-red-50 rounded-xl transition-colors">
+                <i class="fas fa-trash mr-2"></i> Eliminar Cliente
+            </a>
+            {% endif %}
+            
+            <button type="submit" class="bg-[#1A2238] text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:bg-[#2C3E50]">
+                GUARDAR CAMBIOS
+            </button>
+        </div>
+    </form>
+</div>
+
+<style>
+    .label-form { display: block; font-size: 0.75rem; font-weight: 700; color: #9CA3AF; text-transform: uppercase; margin-bottom: 0.5rem; }
+    .input-form { width: 100%; padding: 0.75rem; background-color: #F9FAFB; border-radius: 0.75rem; font-weight: 700; color: #1F2937; border: 1px solid transparent; outline: none; transition: all 0.2s; }
+    .input-form:focus { border-color: #C0A062; background-color: #fff; box-shadow: 0 0 0 4px rgba(192, 160, 98, 0.1); }
+</style>
+{% endblock %}

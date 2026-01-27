@@ -1,31 +1,37 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <meta charset="UTF-8">
+    <title>Solicitar Acceso</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Lato:wght@400;700&display=swap" rel="stylesheet">
 </head>
-<body class="bg-[#1A2238] flex items-center justify-center h-screen">
-    <div class="bg-white p-10 rounded-2xl shadow-2xl w-full max-w-md">
-        <h2 class="text-3xl font-bold text-[#1A2238] mb-2">Solicitar Acceso</h2>
-        <p class="text-gray-500 mb-8 text-sm">Crea tu cuenta. Un administrador deberá autorizarte.</p>
-        
+<body class="h-screen flex items-center justify-center bg-gray-100">
+    <div class="bg-white p-8 rounded-[2rem] shadow-xl w-full max-w-md m-4">
+        <div class="text-center mb-6">
+            <h2 class="text-2xl font-black text-[#1A2238] font-serif">Crear Cuenta</h2>
+            <p class="text-gray-400 text-xs mt-1">Tu solicitud será revisada por un administrador.</p>
+        </div>
+        {% if messages %}
+            {% for message in messages %}
+            <div class="mb-4 p-3 rounded-lg text-xs font-bold text-center {% if message.tags == 'error' %}bg-red-100 text-red-600{% else %}bg-green-100 text-green-600{% endif %}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
         <form method="POST" class="space-y-4">
             {% csrf_token %}
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Usuario</label>
-                <input type="text" name="username" required class="w-full p-3 bg-gray-50 border rounded-lg focus:ring-2 focus:ring-[#C0A062]">
+            <div class="grid grid-cols-2 gap-4">
+                <input type="text" name="first_name" placeholder="Nombre" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-[#1A2238] border border-transparent focus:border-[#C0A062] outline-none" required>
+                <input type="text" name="last_name" placeholder="Apellidos" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-[#1A2238] border border-transparent focus:border-[#C0A062] outline-none" required>
             </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Correo</label>
-                <input type="email" name="email" required class="w-full p-3 bg-gray-50 border rounded-lg">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Contraseña</label>
-                <input type="password" name="pass1" required class="w-full p-3 bg-gray-50 border rounded-lg">
-            </div>
-            <button type="submit" class="w-full bg-[#1A2238] text-white py-3 rounded-xl font-bold hover:bg-opacity-90 transition-all">
-                ENVIAR SOLICITUD
-            </button>
+            <input type="text" name="username" placeholder="Nombre de Usuario" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-[#1A2238] border border-transparent focus:border-[#C0A062] outline-none" required>
+            <input type="email" name="email" placeholder="Correo Corporativo" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-[#1A2238] border border-transparent focus:border-[#C0A062] outline-none" required>
+            <input type="password" name="pass1" placeholder="Contraseña" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-[#1A2238] border border-transparent focus:border-[#C0A062] outline-none" required>
+            <input type="password" name="pass2" placeholder="Confirmar Contraseña" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-[#1A2238] border border-transparent focus:border-[#C0A062] outline-none" required>
+            <button type="submit" class="w-full bg-[#C0A062] text-white py-3 rounded-xl font-bold hover:bg-[#a3864d] shadow-md transition-all mt-4">ENVIAR SOLICITUD</button>
         </form>
+        <a href="{% url 'login' %}" class="block mt-6 text-center text-xs font-bold text-gray-400 hover:text-[#1A2238]">¿Ya tienes cuenta? Inicia Sesión</a>
     </div>
 </body>
 </html>

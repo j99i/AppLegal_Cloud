@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-4xl mx-auto animate__animated animate__fadeIn">
+    
+    <h2 class="text-3xl font-black text-[#1A2238] mb-6">Configuración de Perfil</h2>
+
+    <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
+        <form method="POST" enctype="multipart/form-data" class="space-y-8">
+            {% csrf_token %}
+            
+            <div class="flex flex-col md:flex-row items-center gap-8 border-b border-gray-100 pb-8">
+                <div class="relative group">
+                    <div class="w-32 h-32 rounded-full bg-gray-100 border-4 border-white shadow-lg overflow-hidden flex items-center justify-center">
+                        {% if user.avatar %}
+                        <img src="{{ user.avatar.url }}" class="w-full h-full object-cover" id="avatar-preview">
+                        {% else %}
+                        <i class="fas fa-user text-4xl text-gray-300" id="avatar-icon"></i>
+                        <img src="" class="w-full h-full object-cover hidden" id="avatar-preview">
+                        {% endif %}
+                    </div>
+                    <label for="avatar-input" class="absolute bottom-0 right-0 bg-[#C0A062] text-white p-2 rounded-full cursor-pointer hover:bg-[#a3864d] shadow-md transition-all">
+                        <i class="fas fa-camera text-sm"></i>
+                    </label>
+                    <input type="file" name="avatar" id="avatar-input" class="hidden" accept="image/*" onchange="previewImage(this)">
+                </div>
+                
+                <div class="text-center md:text-left">
+                    <h3 class="text-xl font-bold text-[#1A2238]">{{ user.username }}</h3>
+                    <p class="text-sm text-gray-500">{{ user.get_rol_display }}</p>
+                    <p class="text-xs text-gray-400 mt-2">Sube una foto profesional (JPG, PNG).</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Nombre(s)</label>
+                    <input type="text" name="first_name" value="{{ user.first_name }}" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-[#1A2238] border border-transparent focus:border-[#C0A062] outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Apellidos</label>
+                    <input type="text" name="last_name" value="{{ user.last_name }}" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-[#1A2238] border border-transparent focus:border-[#C0A062] outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Correo Electrónico</label>
+                    <input type="email" name="email" value="{{ user.email }}" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-[#1A2238] border border-transparent focus:border-[#C0A062] outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Teléfono</label>
+                    <input type="text" name="telefono" value="{{ user.telefono|default:'' }}" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-[#1A2238] border border-transparent focus:border-[#C0A062] outline-none">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Puesto / Cargo</label>
+                    <input type="text" name="puesto" value="{{ user.puesto|default:'' }}" placeholder="Ej. Abogado Sr." class="w-full p-3 bg-gray-50 rounded-xl font-bold text-[#1A2238] border border-transparent focus:border-[#C0A062] outline-none">
+                </div>
+            </div>
+
+            <div class="flex justify-end pt-4">
+                <button type="submit" class="bg-[#1A2238] text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:bg-[#2C3E50] transition-all">
+                    GUARDAR CAMBIOS
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function previewImage(input) {
+        if (input.files && input.files[0]) {
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('avatar-preview').src = e.target.result;
+                document.getElementById('avatar-preview').classList.remove('hidden');
+                const icon = document.getElementById('avatar-icon');
+                if(icon) icon.classList.add('hidden');
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+</script>
+{% endblock %}

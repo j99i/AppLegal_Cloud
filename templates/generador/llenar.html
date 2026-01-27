@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-5xl mx-auto animate__animated animate__fadeInUp">
+    <div class="bg-white rounded-[2.5rem] shadow-xl overflow-hidden border border-gray-100">
+        
+        <div class="bg-[#1A2238] p-8 text-white flex justify-between items-center">
+            <div>
+                <h2 class="text-2xl font-black">Homologación de Datos</h2>
+                <p class="text-white/60 text-sm">Plantilla: <b>{{ plantilla.nombre }}</b></p>
+            </div>
+            <button onclick="document.getElementById('modal-guia').classList.remove('hidden')" class="text-[#C0A062] border border-[#C0A062] px-4 py-2 rounded-xl text-xs font-bold hover:bg-[#C0A062] hover:text-[#1A2238] transition-colors">
+                <i class="fas fa-book mr-2"></i> VER GLOSARIO
+            </button>
+        </div>
+
+        <form method="POST" class="p-8">
+            {% csrf_token %}
+            <input type="hidden" name="plantilla_id" value="{{ plantilla.id }}">
+
+            <div class="mb-8 bg-gray-50 p-6 rounded-2xl border border-gray-200">
+                <label class="block text-xs font-black text-[#1A2238] uppercase mb-2 ml-1">Nombre Final</label>
+                <div class="flex items-center">
+                    <input type="text" name="nombre_archivo_salida" value="{{ nombre_sugerido }}" class="w-full p-3 bg-white border-2 border-gray-200 rounded-l-xl font-bold text-gray-700 outline-none focus:border-[#C0A062]" required>
+                    <span class="bg-gray-200 text-gray-500 font-bold p-3 rounded-r-xl border-y-2 border-r-2 border-gray-200">.docx</span>
+                </div>
+            </div>
+
+            <div class="space-y-6">
+                <h3 class="font-black text-[#1A2238] text-lg border-b pb-2">Variables Detectadas</h3>
+                
+                <div class="grid grid-cols-1 gap-4">
+                    {% for var in variables %}
+                    <div class="flex flex-col md:flex-row items-center gap-4 p-4 rounded-2xl border 
+                        {% if var.es_automatico %}bg-blue-50 border-blue-100{% elif var.en_glosario %}bg-green-50 border-green-100{% else %}bg-orange-50 border-orange-100{% endif %}">
+                        
+                        <div class="md:w-1/3">
+                            <span class="font-mono text-xs font-bold text-gray-500 bg-white px-2 py-1 rounded border">
+                                &#123;&#123; {{ var.clave }} &#125;&#125;
+                            </span>
+                            
+                            <p class="text-xs font-bold mt-1 
+                                {% if var.es_automatico %}text-blue-700{% elif var.en_glosario %}text-green-700{% else %}text-orange-700{% endif %}">
+                                {{ var.descripcion }}
+                            </p>
+                            {% if not var.en_glosario %}
+                            <p class="text-[9px] text-red-500 mt-1"><i class="fas fa-exclamation-triangle"></i> No estándar</p>
+                            {% endif %}
+                        </div>
+
+                        <div class="md:w-2/3 w-full">
+                            {% if var.es_automatico %}
+                                <div class="flex items-center gap-2">
+                                    <input type="text" value="{{ var.valor }}" class="w-full p-3 bg-blue-100/50 border-0 rounded-xl font-bold text-blue-800 cursor-not-allowed" readonly>
+                                    <i class="fas fa-magic text-blue-400 text-xl" title="Automático del Sistema"></i>
+                                </div>
+                            {% else %}
+                                <div class="relative">
+                                    <input type="{{ var.tipo }}" name="{{ var.clave }}" value="{{ var.valor }}" 
+                                           class="w-full p-3 bg-white border-2 border-transparent focus:border-[#C0A062] rounded-xl outline-none font-bold text-[#1A2238] shadow-sm" required>
+                                    {% if var.valor %}
+                                    <i class="fas fa-history text-green-500 absolute right-3 top-3.5" title="Recuperado de memoria"></i>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="mt-10 flex justify-end pt-6 border-t border-gray-100">
+                <button type="submit" class="bg-[#1A2238] hover:bg-[#2C3E50] text-white px-8 py-4 rounded-2xl font-black shadow-lg transition-all flex items-center gap-3">
+                    <span>GENERAR DOCUMENTO</span> <i class="fas fa-file-export text-[#C0A062]"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="modal-guia" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl p-8 max-w-lg w-full animate__animated animate__zoomIn">
+        <h3 class="font-bold text-xl mb-4 text-[#1A2238]">Glosario de Variables</h3>
+        <p class="text-sm text-gray-500 mb-4">Usa estas llaves en tus Word para que el sistema funcione automático:</p>
+        <div class="h-64 overflow-y-auto bg-gray-50 p-4 rounded-xl border space-y-2 custom-scrollbar">
+            <div class="flex justify-between text-xs border-b pb-1">
+                <span class="font-mono font-bold text-[#1A2238]">&#123;&#123; nombre_empresa &#125;&#125;</span>
+                <span class="text-gray-500">Nombre del Cliente</span>
+            </div>
+            <div class="flex justify-between text-xs border-b pb-1">
+                <span class="font-mono font-bold text-[#1A2238]">&#123;&#123; fecha_actual &#125;&#125;</span>
+                <span class="text-gray-500">Fecha de Hoy</span>
+            </div>
+             <div class="flex justify-between text-xs border-b pb-1">
+                <span class="font-mono font-bold text-[#1A2238]">&#123;&#123; telefono &#125;&#125;</span>
+                <span class="text-gray-500">Teléfono Contacto</span>
+            </div>
+        </div>
+        <button onclick="document.getElementById('modal-guia').classList.add('hidden')" class="mt-4 w-full bg-gray-200 font-bold py-3 rounded-xl hover:bg-gray-300 transition-colors text-gray-600">Cerrar</button>
+    </div>
+</div>
+{% endblock %}
