@@ -9,7 +9,8 @@ nixPkgs = [
     "cairo",
     "gdk-pixbuf",
     "gobject-introspection",
-    "libffi"
+    "libffi",
+    "shared-mime-info"
 ]
 
 [phases.install]
