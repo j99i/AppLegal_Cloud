@@ -16,6 +16,7 @@
     </div>
 
     <div class="flex-1 flex gap-6 overflow-hidden">
+        
         <div class="flex-1 bg-white rounded-[2rem] shadow-xl border border-gray-200 flex flex-col relative overflow-hidden">
             <div id="drop-zone" class="absolute inset-0 bg-gray-50 z-20 flex flex-col items-center justify-center border-4 border-dashed border-gray-300 m-4 rounded-3xl hover:bg-blue-50 hover:border-blue-300 transition-colors cursor-pointer" onclick="document.getElementById('input-word-upload').click()">
                 <i class="fas fa-file-word text-6xl text-gray-300 mb-4"></i>
@@ -23,6 +24,7 @@
                 <p class="text-sm text-gray-400">Puede tener datos reales (Ej. Juan Pérez).</p>
                 <input type="file" id="input-word-upload" accept=".docx" class="hidden" onchange="cargarDocumento(this)">
             </div>
+            
             <div id="editor-canvas" class="flex-1 overflow-y-auto p-12 custom-scrollbar text-justify prose max-w-none hidden" onmouseup="detectarSeleccion()"></div>
         </div>
 
@@ -50,7 +52,6 @@
     </div>
 
     <div class="p-4">
-        
         <div id="panel-existente">
             <label class="text-[10px] font-bold text-gray-500 mb-1 block">BUSCAR EN GLOSARIO:</label>
             <select id="select-glosario" class="w-full p-2 bg-gray-50 rounded-lg border border-gray-200 text-sm mb-4 text-[#1A2238] focus:border-[#C0A062] outline-none">
@@ -80,18 +81,22 @@
     </div>
 </div>
 
-<form id="form-final" method="POST" enctype="multipart/form-data" class="hidden">{% csrf_token %}<input type="text" name="nombre" id="input-nombre-final"><input type="file" name="archivo_base" id="input-archivo-final"><input type="hidden" name="reemplazos" id="input-reemplazos-final"></form>
+<form id="form-final" method="POST" enctype="multipart/form-data" class="hidden">
+    {% csrf_token %}
+    <input type="text" name="nombre" id="input-nombre-final">
+    <input type="file" name="archivo_base" id="input-archivo-final">
+    <input type="hidden" name="reemplazos" id="input-reemplazos-final">
+</form>
 
 <script>
     let archivoActual=null, listaReemplazos=[], seleccionActual=null;
     const LLAVE_ABRE='\u007B\u007B', LLAVE_CIERRA='\u007D\u007D';
 
-    // Tabs Logic
+    // Lógica de Pestañas
     function cambiarTab(modo) {
         document.getElementById('panel-existente').classList.toggle('hidden', modo !== 'existente');
         document.getElementById('panel-nueva').classList.toggle('hidden', modo !== 'nueva');
         
-        // Estilos tabs
         const tabEx = document.getElementById('tab-existente');
         const tabNu = document.getElementById('tab-nueva');
         if(modo === 'existente'){
@@ -103,20 +108,40 @@
         }
     }
 
+    // --- FUNCIÓN CORREGIDA: CARGAR DOCUMENTO ---
     async function cargarDocumento(input) {
         if (input.files && input.files[0]) {
             archivoActual = input.files[0];
-            document.getElementById('drop-zone').innerHTML = '<i class="fas fa-spinner fa-spin text-4xl text-[#C0A062]"></i>';
-            const formData = new FormData(); formData.append('archivo', archivoActual);
+            
+            // Mostrar Spinner de carga
+            document.getElementById('drop-zone').innerHTML = '<i class="fas fa-spinner fa-spin text-4xl text-[#C0A062]"></i><p class="mt-4 text-gray-500 font-bold">Procesando Word...</p>';
+            
+            const formData = new FormData(); 
+            formData.append('archivo', archivoActual);
+            
             try {
-                const res = await fetch("{% url 'api_convertir_html' %}",{method:'POST',body:formData});
+                // 👇 AQUÍ ESTABA EL ERROR: Cambiamos a la URL correcta 'previsualizar_word_raw'
+                const res = await fetch("{% url 'previsualizar_word_raw' %}", {
+                    method: 'POST',
+                    body: formData
+                });
+                
                 const data = await res.json();
+                
                 if(data.html){
-                    document.getElementById('editor-canvas').innerHTML=data.html;
+                    document.getElementById('editor-canvas').innerHTML = data.html;
                     document.getElementById('editor-canvas').classList.remove('hidden');
                     document.getElementById('drop-zone').classList.add('hidden');
+                } else {
+                    alert("Error: No se pudo leer el contenido del Word.");
+                    // Restaurar zona de carga si falla
+                    location.reload(); 
                 }
-            } catch(e){ alert("Error al cargar"); }
+            } catch(e) { 
+                console.error(e);
+                alert("Error al cargar el documento. Verifica tu conexión.");
+                location.reload();
+            }
         }
     }
 
@@ -127,14 +152,14 @@
             const range = sel.getRangeAt(0); const rect = range.getBoundingClientRect();
             const popup = document.getElementById('popup-variable');
             document.getElementById('texto-seleccionado').innerText = text;
-            // Calcular posición para que no se salga de pantalla
+            
             let top = rect.bottom + window.scrollY + 10;
             let left = rect.left + window.scrollX;
-            if(left + 320 > window.innerWidth) left = window.innerWidth - 340; // Ajuste borde derecho
+            if(left + 320 > window.innerWidth) left = window.innerWidth - 340; 
             
             popup.style.top = top + 'px'; popup.style.left = left + 'px';
             popup.classList.remove('hidden');
-            cambiarTab('existente'); // Reset a tab 1
+            cambiarTab('existente'); 
         }
     }
 
@@ -158,7 +183,7 @@
         aplicarCambioVisual(variable);
     }
 
-    // --- MAGIA: CREAR VARIABLE AL VUELO ---
+    // --- CREAR VARIABLE AL VUELO ---
     async function crearYAsignar() {
         const clave = document.getElementById('nueva-clave').value;
         const desc = document.getElementById('nueva-desc').value;
@@ -166,12 +191,12 @@
         
         if(!clave || !desc) return alert("Llena ambos campos");
         
-        // Efecto carga
         const textoOriginal = btn.innerHTML;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
         btn.disabled = true;
 
         try {
+            // Asegúrate que esta URL coincida con tu urls.py (api_crear_variable)
             const response = await fetch("{% url 'api_crear_variable' %}", {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -180,21 +205,18 @@
             const data = await response.json();
             
             if(data.status === 'ok') {
-                // 1. Agregar al select por si se usa de nuevo
                 const select = document.getElementById('select-glosario');
                 const option = document.createElement('option');
-                option.value = data.clave;
-                option.text = `${data.descripcion} (${data.clave})`;
+                option.value = data.clave || clave; 
+                option.text = `${desc} (${data.clave || clave})`;
                 select.add(option);
                 
-                // 2. Aplicar directamente
-                aplicarCambioVisual(data.clave);
+                aplicarCambioVisual(data.clave || clave);
                 
-                // 3. Limpiar inputs
                 document.getElementById('nueva-clave').value = '';
                 document.getElementById('nueva-desc').value = '';
             } else {
-                alert("Error: " + data.msg);
+                alert("Error: " + (data.msg || "No se pudo crear"));
             }
         } catch(e) {
             alert("Error de conexión");
@@ -215,11 +237,18 @@
     
     function guardarPlantilla() {
         const nombre = document.getElementById('nombre-plantilla').value;
-        if (!nombre || !archivoActual || listaReemplazos.length === 0) return alert("Faltan datos");
+        if (!nombre || !archivoActual || listaReemplazos.length === 0) return alert("Faltan datos: Asegúrate de subir un archivo, hacer reemplazos y poner un nombre.");
+        
         document.getElementById('input-nombre-final').value = nombre;
-        const dt = new DataTransfer(); dt.items.add(archivoActual);
+        
+        // Transferir archivo al input del form
+        const dt = new DataTransfer(); 
+        dt.items.add(archivoActual);
         document.getElementById('input-archivo-final').files = dt.files;
+        
         document.getElementById('input-reemplazos-final').value = JSON.stringify(listaReemplazos);
+        
+        // Enviar formulario (Asegúrate que la vista 'diseñador_plantillas' maneje POST o cambia la action)
         document.getElementById('form-final').submit();
     }
 </script>
