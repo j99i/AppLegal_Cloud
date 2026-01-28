@@ -570,29 +570,65 @@ def subir_plantilla(request):
 # ==========================================
 # 7. DISEÑADOR
 # ==========================================
+# --- BUSCA ESTA FUNCIÓN EN TU VIEWS.PY Y REEMPLÁZALA ---
 
 @login_required
 def diseñador_plantillas(request):
     if not request.user.access_disenador: return redirect('dashboard')
-    if request.method == 'GET':
-        return render(request, 'generador/diseñador.html', {'glosario': VariableEstandar.objects.all().order_by('clave')})
-    return redirect('dashboard')
-
-@csrf_exempt
-def previsualizar_word_raw(request):
-    if request.method == 'POST' and request.FILES.get('archivo'):
-        return JsonResponse({'html': mammoth.convert_to_html(request.FILES['archivo']).value})
-    return JsonResponse({'error': 'No file'}, status=400)
-
-@csrf_exempt
-def crear_variable_api(request):
+    
+    # 1. LÓGICA DE GUARDADO (POST)
     if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            VariableEstandar.objects.create(clave=data.get('clave'), descripcion=data.get('descripcion'))
-            return JsonResponse({'status': 'ok'})
-        except: pass
-    return JsonResponse({'status': 'error'})
+        nombre = request.POST.get('nombre')
+        archivo = request.FILES.get('archivo_base')
+        data_reemplazos = request.POST.get('reemplazos') # El JSON que envía el JS
+
+        if archivo and nombre:
+            try:
+                # A. Abrimos el Word para editarlo
+                doc = DocumentoWord(archivo)
+                
+                # B. Aplicamos los cambios (Buscar texto original -> Poner {{ variable }})
+                if data_reemplazos:
+                    lista = json.loads(data_reemplazos)
+                    for item in lista:
+                        original = item.get('texto_original', '')
+                        # Formato Jinja2: {{ variable }}
+                        variable = "{{ " + item.get('variable', '') + " }}" 
+                        
+                        # Reemplazar en párrafos normales
+                        for p in doc.paragraphs:
+                            if original in p.text:
+                                p.text = p.text.replace(original, variable)
+                        
+                        # Reemplazar dentro de tablas
+                        for table in doc.tables:
+                            for row in table.rows:
+                                for cell in row.cells:
+                                    for p in cell.paragraphs:
+                                        if original in p.text:
+                                            p.text = p.text.replace(original, variable)
+
+                # C. Guardamos el Word modificado en memoria
+                buffer = BytesIO()
+                doc.save(buffer)
+                buffer.seek(0)
+                
+                # D. Guardar en Base de Datos (Biblioteca de Plantillas)
+                nombre_archivo = nombre if nombre.endswith('.docx') else f"{nombre}.docx"
+                nueva_plantilla = Plantilla(nombre=nombre)
+                # Guardamos el contenido del buffer, no el archivo original
+                nueva_plantilla.archivo.save(nombre_archivo, ContentFile(buffer.getvalue()))
+                nueva_plantilla.save()
+
+                messages.success(request, f"¡Plantilla '{nombre}' guardada en la biblioteca!")
+                
+            except Exception as e:
+                messages.error(request, f"Error al procesar el archivo: {e}")
+                
+            return redirect('dashboard')
+
+    # 2. LÓGICA DE VISUALIZACIÓN (GET)
+    return render(request, 'generador/diseñador.html', {'glosario': VariableEstandar.objects.all().order_by('clave')})
 
 # ==========================================
 # 8. COTIZACIONES
