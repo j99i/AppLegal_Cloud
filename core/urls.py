@@ -1,7 +1,7 @@
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, re_path
 from django.conf import settings
-from django.conf.urls.static import static
+from django.views.static import serve
 from django.contrib.auth import views as auth_views
 from expedientes import views
 
@@ -55,11 +55,12 @@ urlpatterns = [
     path('contratos/generar/<uuid:cliente_id>/', views.generador_contratos, name='generador_contratos'),
     path('contratos/visor/<int:documento_id>/', views.visor_docx, name='visor_docx'),
     path('plantillas/subir/', views.subir_plantilla, name='subir_plantilla'),
+    
+    # --- RUTAS DE LA API DEL DISEÑADOR (CORREGIDAS) ---
     path('herramientas/disenador/', views.diseñador_plantillas, name='diseñador_plantillas'),
     path('api/previsualizar-word/', views.previsualizar_word_raw, name='previsualizar_word_raw'),
-    path('api/crear-variable/', views.crear_variable_api, name='crear_variable_api'),
-    
-    # 👇 ESTA ES LA QUE FALTABA 👇
+    # 👇 AQUÍ ESTABA EL ERROR: Cambiamos name='crear_variable_api' por 'api_crear_variable'
+    path('api/crear-variable/', views.crear_variable_api, name='api_crear_variable'),
     path('api/convertir-html/', views.api_convertir_html, name='api_convertir_html'), 
 
     path('cotizaciones/servicios/', views.gestion_servicios, name='gestion_servicios'),
@@ -82,4 +83,6 @@ urlpatterns = [
     path('agenda/eliminar/<int:evento_id>/', views.eliminar_evento, name='eliminar_evento'),
     path('agenda/mover/', views.mover_evento_api, name='mover_evento_api'),
 
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    # --- PARCHE PARA IMÁGENES EN RAILWAY (DEBUG=False) ---
+    re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
+]
