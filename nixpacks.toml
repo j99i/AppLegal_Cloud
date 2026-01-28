@@ -1,17 +1,22 @@
 [phases.setup]
 nixPkgs = [
     "python312",
+    "gcc",
+    "glib",           # <--- ESTA ES LA QUE FALTABA (CRÍTICA)
     "pango",
-    "gobject-introspection",
-    "gdk-pixbuf",
+    "harfbuzz",       # <--- ESTA TAMBIÉN ES IMPORTANTE PARA TEXTO
     "cairo",
+    "gdk-pixbuf",
+    "gobject-introspection",
     "libffi",
-    "gcc"
+    "shared-mime-info",
+    "libxml2",
+    "libxslt"
 ]
 
 [phases.build]
 cmds = ["python manage.py collectstatic --noinput"]
 
 [start]
-# Versión final sin '|| true' para ver errores
-cmd = "python manage.py migrate && python manage.py createsuperuser --noinput && gunicorn core.wsgi:application --bind 0.0.0.0:$PORT"
+# Mantenemos el comando con '|| true' para evitar bloqueos por usuario duplicado
+cmd = "python manage.py migrate && python manage.py createsuperuser --noinput || true && gunicorn core.wsgi:application --bind 0.0.0.0:$PORT"
