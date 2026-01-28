@@ -21,7 +21,6 @@ from django.conf import settings
 from docxtpl import DocxTemplate
 import mammoth
 from docx import Document as DocumentoWord 
-import weasyprint
 
 # Modelos
 from .models import (
@@ -651,6 +650,7 @@ def detalle_cotizacion(request, cotizacion_id):
 
 @login_required
 def generar_pdf_cotizacion(request, cotizacion_id):
+    import weasyprint
     c = get_object_or_404(Cotizacion, id=cotizacion_id)
     html = render_to_string('cotizaciones/pdf_template.html', {'c': c, 'base_url': request.build_absolute_uri('/')})
     response = HttpResponse(content_type='application/pdf')
