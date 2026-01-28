@@ -21,7 +21,6 @@ from django.conf import settings
 from docxtpl import DocxTemplate
 import mammoth
 from docx import Document as DocumentoWord 
-import weasyprint
 
 # Modelos
 from .models import (
