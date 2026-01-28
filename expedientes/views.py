@@ -629,7 +629,6 @@ def diseñador_plantillas(request):
 
     # 2. LÓGICA DE VISUALIZACIÓN (GET)
     return render(request, 'generador/diseñador.html', {'glosario': VariableEstandar.objects.all().order_by('clave')})
-
 # ==========================================
 # 8. COTIZACIONES
 # ==========================================
