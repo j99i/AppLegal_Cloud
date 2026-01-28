@@ -1,21 +1,17 @@
 [phases.setup]
 nixPkgs = [
     "python312",
-    "gcc",
-    "zlib",
-    "libjpeg",
-    "libffi",
-    "cairo",
     "pango",
+    "gobject-introspection",
     "gdk-pixbuf",
-    "gobject-introspection"
+    "cairo",
+    "libffi",
+    "gcc"
 ]
 
 [phases.build]
-# IMPORTANTE: Aquí SOLO recolectamos estáticos. 
-# NO ponemos 'migrate' aquí porque fallará la conexión a la DB.
 cmds = ["python manage.py collectstatic --noinput"]
 
 [start]
-# 1. Migrar DB | 2. Crear Superuser (ignora error si ya existe) | 3. Iniciar Gunicorn
+# OJO A ESTA LÍNEA: Agregamos 'createsuperuser'
 cmd = "python manage.py migrate && python manage.py createsuperuser --noinput || true && gunicorn core.wsgi:application --bind 0.0.0.0:$PORT"
