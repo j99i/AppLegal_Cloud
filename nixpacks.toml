@@ -2,16 +2,19 @@
 nixPkgs = [
     "python312",
     "gcc",
-    "glib",           # <--- ESTA ES LA CLAVE QUE TE FALTA
+    "glib",           # La medicina principal
     "pango",
-    "harfbuzz",       # <--- ESTA TAMBIÉN
+    "harfbuzz",
     "cairo",
     "gdk-pixbuf",
     "gobject-introspection",
     "libffi",
     "shared-mime-info",
     "libxml2",
-    "libxslt"
+    "libxslt",
+    "fontconfig",     # Extra para fuentes
+    "freetype",       # Extra para fuentes
+    "wget"            # Truco para romper la caché
 ]
 
 [phases.build]
