@@ -6,7 +6,7 @@ ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
 # 3. INSTALACIÓN DE LIBRERÍAS DE SISTEMA
-# Corrección: Actualizamos 'libgdk-pixbuf2.0-0' a 'libgdk-pixbuf-2.0-0'
+# Incluye todo lo necesario para WeasyPrint (PDFs) y Django
 RUN apt-get update && apt-get install -y \
     build-essential \
     libpq-dev \
@@ -14,12 +14,14 @@ RUN apt-get update && apt-get install -y \
     python3-brotli \
     libpango-1.0-0 \
     libpangoft2-1.0-0 \
+    libpangocairo-1.0-0 \
     libharfbuzz-subset0 \
     libglib2.0-0 \
     libcairo2 \
     libgdk-pixbuf-2.0-0 \
     libffi-dev \
     shared-mime-info \
+    fonts-liberation \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # 4. Crear directorio de trabajo
@@ -35,5 +37,6 @@ COPY . .
 # 7. Recolectar archivos estáticos
 RUN python manage.py collectstatic --noinput
 
-# 8. Comando de inicio
-CMD ["sh", "-c", "python manage.py migrate && python manage.py createsuperuser --noinput || true && gunicorn core.wsgi:application --bind 0.0.0.0:$PORT"]
+# 8. COMANDO DE INICIO (Con Puerto 8000 FIJO)
+# Usamos el puerto 8000 explícitamente para evitar errores de conexión (502)
+CMD ["sh", "-c", "python manage.py migrate && python manage.py createsuperuser --noinput || true && gunicorn core.wsgi:application --bind 0.0.0.0:8000"]
