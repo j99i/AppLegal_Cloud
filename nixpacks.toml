@@ -2,9 +2,9 @@
 nixPkgs = [
     "python312",
     "gcc",
-    "glib",           # <--- ESTA ES LA QUE FALTABA (CRÍTICA)
+    "glib",           # <--- ESTA ES LA CLAVE QUE TE FALTA
     "pango",
-    "harfbuzz",       # <--- ESTA TAMBIÉN ES IMPORTANTE PARA TEXTO
+    "harfbuzz",       # <--- ESTA TAMBIÉN
     "cairo",
     "gdk-pixbuf",
     "gobject-introspection",
@@ -18,5 +18,4 @@ nixPkgs = [
 cmds = ["python manage.py collectstatic --noinput"]
 
 [start]
-# Mantenemos el comando con '|| true' para evitar bloqueos por usuario duplicado
 cmd = "python manage.py migrate && python manage.py createsuperuser --noinput || true && gunicorn core.wsgi:application --bind 0.0.0.0:$PORT"
