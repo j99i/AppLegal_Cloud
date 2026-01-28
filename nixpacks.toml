@@ -17,6 +17,5 @@ nixPkgs = [
 cmds = ["python manage.py collectstatic --noinput"]
 
 [start]
-# IMPORTANTE: Aquí SÍ ponemos 'migrate'.
-# Se ejecuta justo antes de encender el servidor (gunicorn).
-cmd = "python manage.py migrate && gunicorn core.wsgi:application --bind 0.0.0.0:$PORT"
+# 1. Migrar DB | 2. Crear Superuser (ignora error si ya existe) | 3. Iniciar Gunicorn
+cmd = "python manage.py migrate && python manage.py createsuperuser --noinput || true && gunicorn core.wsgi:application --bind 0.0.0.0:$PORT"
