@@ -5,8 +5,8 @@ FROM python:3.12-slim
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-# 3. INSTALACIÓN DE LIBRERÍAS DE SISTEMA (La parte crítica para WeasyPrint)
-# Instalamos glib, pango, cairo y gdk-pixbuf en rutas estándar.
+# 3. INSTALACIÓN DE LIBRERÍAS DE SISTEMA
+# Corrección: Actualizamos 'libgdk-pixbuf2.0-0' a 'libgdk-pixbuf-2.0-0'
 RUN apt-get update && apt-get install -y \
     build-essential \
     libpq-dev \
@@ -17,7 +17,7 @@ RUN apt-get update && apt-get install -y \
     libharfbuzz-subset0 \
     libglib2.0-0 \
     libcairo2 \
-    libgdk-pixbuf2.0-0 \
+    libgdk-pixbuf-2.0-0 \
     libffi-dev \
     shared-mime-info \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
@@ -35,6 +35,5 @@ COPY . .
 # 7. Recolectar archivos estáticos
 RUN python manage.py collectstatic --noinput
 
-# 8. Comando de inicio (Migrar + Crear Superuser + Gunicorn)
-# Usamos 'sh -c' para poder encadenar comandos
+# 8. Comando de inicio
 CMD ["sh", "-c", "python manage.py migrate && python manage.py createsuperuser --noinput || true && gunicorn core.wsgi:application --bind 0.0.0.0:$PORT"]
