@@ -1,0 +1,22 @@
+[phases.setup]
+nixPkgs = [
+    "python3",
+    "gcc",
+    "zlib",
+    "glib",
+    "pango",
+    "harfbuzz",
+    "cairo",
+    "gdk-pixbuf",
+    "gobject-introspection",
+    "libffi",
+    "shared-mime-info",
+    "libxml2",
+    "libxslt"
+]
+
+[phases.install]
+cmds = ["python3 -m venv /opt/venv && . /opt/venv/bin/activate && pip install -r requirements.txt"]
+
+[start]
+cmd = "export LD_LIBRARY_PATH=/nix/var/nix/profiles/default/lib:$LD_LIBRARY_PATH && . /opt/venv/bin/activate && python manage.py migrate && python manage.py collectstatic --noinput && gunicorn core.wsgi:application --bind 0.0.0.0:$PORT"
