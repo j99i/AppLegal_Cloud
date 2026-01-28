@@ -1,19 +1,22 @@
-# 1. Instalamos Python y las librerías para WeasyPrint
 [phases.setup]
 nixPkgs = [
     "python312",
-    "pango",
-    "gobject-introspection",
-    "gdk-pixbuf",
-    "cairo",
+    "gcc",
+    "zlib",
+    "libjpeg",
     "libffi",
-    "gcc"
+    "cairo",
+    "pango",
+    "gdk-pixbuf",
+    "gobject-introspection"
 ]
 
-# 2. En el BUILD solo recolectamos estáticos (NO migramos aquí)
 [phases.build]
+# IMPORTANTE: Aquí SOLO recolectamos estáticos. 
+# NO ponemos 'migrate' aquí porque fallará la conexión a la DB.
 cmds = ["python manage.py collectstatic --noinput"]
 
-# 3. En el START es donde migramos y luego prendemos el servidor
 [start]
+# IMPORTANTE: Aquí SÍ ponemos 'migrate'.
+# Se ejecuta justo antes de encender el servidor (gunicorn).
 cmd = "python manage.py migrate && gunicorn core.wsgi:application --bind 0.0.0.0:$PORT"
