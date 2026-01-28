@@ -798,3 +798,35 @@ def eliminar_evento(request, evento_id):
         evento.delete()
         return JsonResponse({'status': 'ok'})
     return JsonResponse({'status': 'error'}, status=403)
+# --- PEGAR ESTO EN VIEWS.PY (Sección Diseñador) ---
+
+@csrf_exempt
+def api_convertir_html(request):
+    """
+    Recibe HTML del diseñador y lo convierte a PDF para descargar.
+    """
+    import weasyprint # Importación local para no romper si falta la librería
+    
+    if request.method == 'POST':
+        try:
+            # Intentamos leer el JSON del cuerpo (si viene de JS fetch)
+            data = json.loads(request.body)
+            html_content = data.get('html', '')
+        except:
+            # Si falla, intentamos leer de un form tradicional
+            html_content = request.POST.get('html', '')
+
+        if not html_content:
+            return JsonResponse({'error': 'No content'}, status=400)
+
+        # Generar PDF usando WeasyPrint (ya lo usas en cotizaciones)
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = 'attachment; filename="documento_diseñado.pdf"'
+        
+        # Base URL es necesaria para que cargue imágenes si las hubiera
+        base_url = request.build_absolute_uri('/')
+        weasyprint.HTML(string=html_content, base_url=base_url).write_pdf(response)
+        
+        return response
+
+    return JsonResponse({'status': 'error', 'message': 'Only POST allowed'}, status=405)
