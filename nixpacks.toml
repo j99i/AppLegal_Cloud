@@ -13,4 +13,5 @@ nixPkgs = [
 cmds = ["python manage.py collectstatic --noinput"]
 
 [start]
-cmd = "python manage.py migrate && python manage.py createsuperuser --noinput || true && gunicorn core.wsgi:application --bind 0.0.0.0:$PORT"
+# QUITAMOS EL "|| true" PARA VER EL ERROR REAL
+cmd = "python manage.py migrate && python manage.py createsuperuser --noinput && gunicorn core.wsgi:application --bind 0.0.0.0:$PORT"
