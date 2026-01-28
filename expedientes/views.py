@@ -172,7 +172,6 @@ def dashboard(request):
         'docs_subidos': Documento.objects.filter(cliente__in=mis_clientes).count()
     }
     
-    # Lógica de Notificaciones (También está en Context Processor, pero útil aquí para KPIs)
     hoy = timezone.now().date()
     tareas_criticas = Tarea.objects.filter(cliente__in=mis_clientes, completada=False, fecha_limite__lte=hoy)
     
@@ -190,7 +189,6 @@ def dashboard(request):
         'stats': stats,
         'usuarios_pendientes_conteo': pendientes,
         'now': timezone.now(),
-        # Enviamos alertas si queremos usarlas en el cuerpo principal
         'alertas': {'tareas': tareas_criticas} 
     })
 
@@ -570,65 +568,89 @@ def subir_plantilla(request):
 # ==========================================
 # 7. DISEÑADOR
 # ==========================================
-# --- BUSCA ESTA FUNCIÓN EN TU VIEWS.PY Y REEMPLÁZALA ---
 
 @login_required
 def diseñador_plantillas(request):
     if not request.user.access_disenador: return redirect('dashboard')
     
-    # 1. LÓGICA DE GUARDADO (POST)
     if request.method == 'POST':
         nombre = request.POST.get('nombre')
         archivo = request.FILES.get('archivo_base')
-        data_reemplazos = request.POST.get('reemplazos') # El JSON que envía el JS
+        data_reemplazos = request.POST.get('reemplazos')
 
         if archivo and nombre:
             try:
-                # A. Abrimos el Word para editarlo
                 doc = DocumentoWord(archivo)
-                
-                # B. Aplicamos los cambios (Buscar texto original -> Poner {{ variable }})
                 if data_reemplazos:
                     lista = json.loads(data_reemplazos)
                     for item in lista:
                         original = item.get('texto_original', '')
-                        # Formato Jinja2: {{ variable }}
                         variable = "{{ " + item.get('variable', '') + " }}" 
-                        
-                        # Reemplazar en párrafos normales
                         for p in doc.paragraphs:
-                            if original in p.text:
-                                p.text = p.text.replace(original, variable)
-                        
-                        # Reemplazar dentro de tablas
+                            if original in p.text: p.text = p.text.replace(original, variable)
                         for table in doc.tables:
                             for row in table.rows:
                                 for cell in row.cells:
                                     for p in cell.paragraphs:
-                                        if original in p.text:
-                                            p.text = p.text.replace(original, variable)
+                                        if original in p.text: p.text = p.text.replace(original, variable)
 
-                # C. Guardamos el Word modificado en memoria
                 buffer = BytesIO()
                 doc.save(buffer)
                 buffer.seek(0)
-                
-                # D. Guardar en Base de Datos (Biblioteca de Plantillas)
                 nombre_archivo = nombre if nombre.endswith('.docx') else f"{nombre}.docx"
                 nueva_plantilla = Plantilla(nombre=nombre)
-                # Guardamos el contenido del buffer, no el archivo original
                 nueva_plantilla.archivo.save(nombre_archivo, ContentFile(buffer.getvalue()))
                 nueva_plantilla.save()
-
-                messages.success(request, f"¡Plantilla '{nombre}' guardada en la biblioteca!")
-                
+                messages.success(request, f"¡Plantilla '{nombre}' guardada!")
             except Exception as e:
-                messages.error(request, f"Error al procesar el archivo: {e}")
-                
+                messages.error(request, f"Error: {e}")
             return redirect('dashboard')
-
-    # 2. LÓGICA DE VISUALIZACIÓN (GET)
     return render(request, 'generador/diseñador.html', {'glosario': VariableEstandar.objects.all().order_by('clave')})
+
+@csrf_exempt
+@login_required
+def previsualizar_word_raw(request):
+    if request.method == 'POST' and request.FILES.get('archivo'):
+        try:
+            f = request.FILES['archivo']
+            result = mammoth.convert_to_html(f)
+            return JsonResponse({'html': result.value})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'msg': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'msg': 'No se envió archivo'}, status=400)
+
+@csrf_exempt
+@login_required
+def crear_variable_api(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            clave = data.get('clave')
+            descripcion = data.get('descripcion', '')
+            tipo = data.get('tipo', 'texto')
+            if not clave: return JsonResponse({'status': 'error', 'msg': 'Falta la clave'}, status=400)
+            variable, created = VariableEstandar.objects.get_or_create(clave=clave, defaults={'descripcion': descripcion, 'tipo': tipo})
+            return JsonResponse({'status': 'ok', 'id': str(variable.id), 'clave': variable.clave, 'created': created})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'msg': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'msg': 'Método no permitido'}, status=405)
+
+@csrf_exempt
+def api_convertir_html(request):
+    import weasyprint 
+    if request.method == 'POST':
+        try:
+            try: data = json.loads(request.body); html_content = data.get('html', '')
+            except: html_content = request.POST.get('html', '')
+            if not html_content: return JsonResponse({'error': 'No content'}, status=400)
+            response = HttpResponse(content_type='application/pdf')
+            response['Content-Disposition'] = 'attachment; filename="documento_diseñado.pdf"'
+            base_url = request.build_absolute_uri('/')
+            weasyprint.HTML(string=html_content, base_url=base_url).write_pdf(response)
+            return response
+        except Exception as e: return JsonResponse({'error': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Only POST allowed'}, status=405)
+
 # ==========================================
 # 8. COTIZACIONES
 # ==========================================
@@ -642,9 +664,7 @@ def gestion_servicios(request):
 def guardar_servicio(request):
     if request.method == 'POST':
         s = get_object_or_404(Servicio, id=request.POST.get('servicio_id')) if request.POST.get('servicio_id') else Servicio()
-        s.nombre = request.POST.get('nombre')
-        s.descripcion = request.POST.get('descripcion')
-        s.precio_base = request.POST.get('precio')
+        s.nombre = request.POST.get('nombre'); s.descripcion = request.POST.get('descripcion'); s.precio_base = request.POST.get('precio')
         s.save()
     return redirect('gestion_servicios')
 
@@ -696,13 +716,10 @@ def generar_pdf_cotizacion(request, cotizacion_id):
 def convertir_a_cliente(request, cotizacion_id):
     c = get_object_or_404(Cotizacion, id=cotizacion_id)
     if c.cliente_convertido: return redirect('detalle_cliente', cliente_id=c.cliente_convertido.id)
-    
     cli = Cliente.objects.create(nombre_empresa=c.prospecto_empresa or c.prospecto_nombre, nombre_contacto=c.prospecto_nombre, email=c.prospecto_email, telefono=c.prospecto_telefono)
     if request.user.rol != 'admin': request.user.clientes_asignados.add(cli)
-    
     Carpeta.objects.create(nombre="Documentos Generales", cliente=cli)
     Carpeta.objects.create(nombre="Contratos", cliente=cli)
-    
     CuentaPorCobrar.objects.create(cliente=cli, cotizacion=c, concepto=f"Cotización #{c.id}", monto_total=c.total, saldo_pendiente=c.total, fecha_vencimiento=c.validez_hasta)
     c.estado, c.cliente_convertido = 'aceptada', cli
     c.save()
@@ -712,8 +729,7 @@ def convertir_a_cliente(request, cotizacion_id):
 def enviar_cotizacion_email(request, cotizacion_id):
     if request.method == 'POST':
         c = get_object_or_404(Cotizacion, id=cotizacion_id)
-        c.estado = 'enviada'
-        c.save()
+        c.estado = 'enviada'; c.save()
         messages.success(request, "Enviado.")
     return redirect('detalle_cotizacion', cotizacion_id=cotizacion_id)
 
@@ -738,6 +754,7 @@ def registrar_pago(request):
 
 @login_required
 def recibo_pago_pdf(request, pago_id):
+    import weasyprint
     p = get_object_or_404(Pago, id=pago_id)
     html = render_to_string('finanzas/recibo_template.html', {'p': p, 'base_url': request.build_absolute_uri('/')})
     response = HttpResponse(content_type='application/pdf')
@@ -745,70 +762,39 @@ def recibo_pago_pdf(request, pago_id):
     return response
 
 # ==========================================
-# 10. AGENDA INTELIGENTE (JARVIS)
+# 10. AGENDA INTELIGENTE
 # ==========================================
 
 @login_required
 def agenda_legal(request):
     if not request.user.access_agenda: return redirect('dashboard')
-    
     hoy = timezone.now()
-    proximas_audiencias = Evento.objects.filter(
-        tipo='audiencia', inicio__gte=hoy, usuario=request.user
-    ).order_by('inicio')[:5]
-    
+    proximas = Evento.objects.filter(tipo='audiencia', inicio__gte=hoy, usuario=request.user).order_by('inicio')[:5]
     clientes = Cliente.objects.all() if request.user.rol == 'admin' else request.user.clientes_asignados.all()
-    
-    return render(request, 'agenda/calendario.html', {
-        'clientes': clientes,
-        'proximas_audiencias': proximas_audiencias
-    })
+    return render(request, 'agenda/calendario.html', {'clientes': clientes, 'proximas_audiencias': proximas})
 
 @login_required
 def api_eventos(request):
     if not request.user.access_agenda: return JsonResponse([], safe=False)
-    
-    start = request.GET.get('start')
-    end = request.GET.get('end')
+    start, end = request.GET.get('start'), request.GET.get('end')
     qs = Evento.objects.filter(inicio__range=[start, end])
-    
-    if request.user.rol != 'admin':
-        qs = qs.filter(Q(usuario=request.user) | Q(cliente__in=request.user.clientes_asignados.all()))
-    
+    if request.user.rol != 'admin': qs = qs.filter(Q(usuario=request.user) | Q(cliente__in=request.user.clientes_asignados.all()))
     eventos = []
     for e in qs:
-        titulo_mostrar = f"{e.cliente.nombre_empresa}: {e.titulo}" if e.cliente else e.titulo
-        eventos.append({
-            'id': e.id,
-            'title': titulo_mostrar,
-            'start': e.inicio.isoformat(),
-            'end': e.fin.isoformat() if e.fin else None,
-            'backgroundColor': e.color_hex,
-            'borderColor': e.color_hex,
-            'extendedProps': {
-                'descripcion': e.descripcion,
-                'cliente': e.cliente.nombre_empresa if e.cliente else 'Personal',
-                'tipo': e.get_tipo_display()
-            }
-        })
+        titulo = f"{e.cliente.nombre_empresa}: {e.titulo}" if e.cliente else e.titulo
+        eventos.append({'id': e.id, 'title': titulo, 'start': e.inicio.isoformat(), 'end': e.fin.isoformat() if e.fin else None, 'backgroundColor': e.color_hex, 'extendedProps': {'descripcion': e.descripcion, 'tipo': e.get_tipo_display()}})
     return JsonResponse(eventos, safe=False)
 
 @csrf_exempt
 @login_required
 def mover_evento_api(request):
-    """ Drag & Drop """
     if request.method == 'POST':
         try:
-            data = json.loads(request.body)
-            evento = get_object_or_404(Evento, id=data.get('id'))
-            
-            if request.user.rol != 'admin' and evento.usuario != request.user:
-                return JsonResponse({'status': 'error', 'msg': 'Sin permiso'})
-
+            data = json.loads(request.body); evento = get_object_or_404(Evento, id=data.get('id'))
+            if request.user.rol != 'admin' and evento.usuario != request.user: return JsonResponse({'status': 'error', 'msg': 'Sin permiso'})
             evento.inicio = data.get('start')
             if data.get('end'): evento.fin = data.get('end')
-            evento.save()
-            return JsonResponse({'status': 'ok'})
+            evento.save(); return JsonResponse({'status': 'ok'})
         except Exception as e: return JsonResponse({'status': 'error', 'msg': str(e)})
     return JsonResponse({'status': 'error'})
 
@@ -816,13 +802,8 @@ def mover_evento_api(request):
 def crear_evento(request):
     if request.method == 'POST':
         inicio = timezone.make_aware(timezone.datetime.strptime(f"{request.POST.get('fecha')} {request.POST.get('hora')}", "%Y-%m-%d %H:%M"))
-        cliente_id = request.POST.get('cliente_id')
-        cliente = get_object_or_404(Cliente, id=cliente_id) if cliente_id else None
-        
-        Evento.objects.create(
-            usuario=request.user, titulo=request.POST.get('titulo'), inicio=inicio,
-            tipo=request.POST.get('tipo'), cliente=cliente, descripcion=request.POST.get('descripcion')
-        )
+        cliente = get_object_or_404(Cliente, id=request.POST.get('cliente_id')) if request.POST.get('cliente_id') else None
+        Evento.objects.create(usuario=request.user, titulo=request.POST.get('titulo'), inicio=inicio, tipo=request.POST.get('tipo'), cliente=cliente, descripcion=request.POST.get('descripcion'))
         messages.success(request, "Evento agendado.")
     return redirect('agenda_legal')
 
@@ -830,38 +811,5 @@ def crear_evento(request):
 def eliminar_evento(request, evento_id):
     evento = get_object_or_404(Evento, id=evento_id)
     if request.user.rol == 'admin' or evento.usuario == request.user:
-        evento.delete()
-        return JsonResponse({'status': 'ok'})
+        evento.delete(); return JsonResponse({'status': 'ok'})
     return JsonResponse({'status': 'error'}, status=403)
-# --- PEGAR ESTO EN VIEWS.PY (Sección Diseñador) ---
-
-@csrf_exempt
-def api_convertir_html(request):
-    """
-    Recibe HTML del diseñador y lo convierte a PDF para descargar.
-    """
-    import weasyprint # Importación local para no romper si falta la librería
-    
-    if request.method == 'POST':
-        try:
-            # Intentamos leer el JSON del cuerpo (si viene de JS fetch)
-            data = json.loads(request.body)
-            html_content = data.get('html', '')
-        except:
-            # Si falla, intentamos leer de un form tradicional
-            html_content = request.POST.get('html', '')
-
-        if not html_content:
-            return JsonResponse({'error': 'No content'}, status=400)
-
-        # Generar PDF usando WeasyPrint (ya lo usas en cotizaciones)
-        response = HttpResponse(content_type='application/pdf')
-        response['Content-Disposition'] = 'attachment; filename="documento_diseñado.pdf"'
-        
-        # Base URL es necesaria para que cargue imágenes si las hubiera
-        base_url = request.build_absolute_uri('/')
-        weasyprint.HTML(string=html_content, base_url=base_url).write_pdf(response)
-        
-        return response
-
-    return JsonResponse({'status': 'error', 'message': 'Only POST allowed'}, status=405)
