@@ -117,6 +117,7 @@ def editar_usuario(request, user_id):
         user_obj.telefono = request.POST.get('telefono') or None
         user_obj.puesto = request.POST.get('puesto') or None
         
+        # Permisos
         user_obj.can_create_client = request.POST.get('can_create_client') == 'on'
         user_obj.can_edit_client = request.POST.get('can_edit_client') == 'on'
         user_obj.can_delete_client = request.POST.get('can_delete_client') == 'on'
@@ -296,7 +297,7 @@ def editar_cliente(request, cliente_id):
     })
 
 # ==========================================
-# 4. CAMPOS Y DRIVE AVANZADO
+# 4. CAMPOS CLIENTE Y DRIVE
 # ==========================================
 
 @login_required
@@ -472,7 +473,7 @@ def eliminar_tarea(request, tarea_id):
     return redirect('detalle_cliente', cliente_id=c_id)
 
 # ==========================================
-# 6. CONTRATOS
+# 6. CONTRATOS (GENERADOR)
 # ==========================================
 
 @login_required
@@ -566,7 +567,7 @@ def subir_plantilla(request):
     return redirect('dashboard')
 
 # ==========================================
-# 7. DISEÑADOR
+# 7. HERRAMIENTAS Y DISEÑADOR
 # ==========================================
 
 @login_required
@@ -652,7 +653,7 @@ def api_convertir_html(request):
     return JsonResponse({'status': 'error', 'message': 'Only POST allowed'}, status=405)
 
 # ==========================================
-# 8. COTIZACIONES
+# 8. COTIZACIONES Y SERVICIOS
 # ==========================================
 
 @login_required
@@ -671,17 +672,11 @@ def guardar_servicio(request):
         s.descripcion = request.POST.get('descripcion')
         s.precio_base = request.POST.get('precio')
         
-        # Procesar los campos "Confirmados" (inputs ocultos)
+        # Procesar los campos normales (vienen del modal de servicios)
         nombres = request.POST.getlist('campo_nombre[]')
         tipos = request.POST.getlist('campo_tipo[]')
         
-        # Generar lista de diccionarios para el JSONField
-        estructura = []
-        for nombre, tipo in zip(nombres, tipos):
-            if nombre.strip():
-                estructura.append({'nombre': nombre.strip(), 'tipo': tipo})
-        
-        s.campos_dinamicos = estructura
+        s.campos_dinamicos = [{'nombre': n.strip(), 'tipo': t} for n, t in zip(nombres, tipos) if n.strip()]
         s.save()
         messages.success(request, "Servicio actualizado.")
     return redirect('gestion_servicios')
@@ -690,6 +685,36 @@ def guardar_servicio(request):
 def eliminar_servicio(request, servicio_id):
     get_object_or_404(Servicio, id=servicio_id).delete()
     return redirect('gestion_servicios')
+
+# --- API NUEVA: AGREGAR CAMPO AL VUELO ---
+@csrf_exempt
+@login_required
+def api_agregar_campo_servicio(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            servicio_id = data.get('servicio_id')
+            nombre_campo = data.get('nombre')
+            tipo_campo = data.get('tipo', 'text')
+
+            if not servicio_id or not nombre_campo:
+                return JsonResponse({'status': 'error', 'msg': 'Faltan datos'})
+
+            servicio = get_object_or_404(Servicio, id=servicio_id)
+            
+            # Recuperar y actualizar lista de campos
+            campos = servicio.campos_dinamicos or []
+            
+            # Evitar duplicados
+            if not any(c['nombre'] == nombre_campo for c in campos):
+                campos.append({'nombre': nombre_campo, 'tipo': tipo_campo})
+                servicio.campos_dinamicos = campos
+                servicio.save()
+            
+            return JsonResponse({'status': 'ok', 'campos': campos})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'msg': str(e)})
+    return JsonResponse({'status': 'error'}, status=405)
 
 @login_required
 def lista_cotizaciones(request):
@@ -701,23 +726,28 @@ def nueva_cotizacion(request):
     if not request.user.access_cotizaciones: return redirect('dashboard')
     if request.method == 'POST':
         c = Cotizacion.objects.create(
-            prospecto_nombre=request.POST.get('nombre'), prospecto_email=request.POST.get('email'),
-            prospecto_telefono=request.POST.get('telefono'), prospecto_empresa=request.POST.get('empresa'),
-            validez_hasta=request.POST.get('validez') or None, creado_por=request.user
+            prospecto_nombre=request.POST.get('nombre'),
+            prospecto_email=request.POST.get('email'),
+            prospecto_telefono=request.POST.get('telefono'),
+            prospecto_empresa=request.POST.get('empresa'),
+            validez_hasta=request.POST.get('validez') or None,
+            creado_por=request.user
         )
         s_ids = request.POST.getlist('servicio_id')
         cants = request.POST.getlist('cantidad')
         precios = request.POST.getlist('precio')
         descs = request.POST.getlist('descripcion')
-        
-        # Capturamos el JSON generado por el JS al llenar campos dinámicos
+        # Datos extra llenados
         extras_json = request.POST.getlist('valores_adicionales_json[]')
 
         for i in range(len(s_ids)):
             if s_ids[i]:
                 item = ItemCotizacion.objects.create(
-                    cotizacion=c, servicio_id=s_ids[i], cantidad=int(cants[i] or 1),
-                    precio_unitario=Decimal(precios[i] or 0), descripcion_personalizada=descs[i]
+                    cotizacion=c, 
+                    servicio_id=s_ids[i], 
+                    cantidad=int(cants[i] or 1),
+                    precio_unitario=Decimal(precios[i] or 0), 
+                    descripcion_personalizada=descs[i]
                 )
                 if i < len(extras_json) and extras_json[i]:
                     try:
@@ -843,3 +873,8 @@ def eliminar_evento(request, evento_id):
     if request.user.rol == 'admin' or evento.usuario == request.user:
         evento.delete(); return JsonResponse({'status': 'ok'})
     return JsonResponse({'status': 'error'}, status=403)
+
+# ==========================================
+# MEDIA PARCHE PARA RAILWAY (Si fuera necesario)
+# ==========================================
+# (La configuración está en urls.py, aquí no se requiere acción extra)

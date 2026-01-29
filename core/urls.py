@@ -56,13 +56,16 @@ urlpatterns = [
     path('contratos/visor/<int:documento_id>/', views.visor_docx, name='visor_docx'),
     path('plantillas/subir/', views.subir_plantilla, name='subir_plantilla'),
     
-    # --- RUTAS DE LA API DEL DISEÑADOR (CORREGIDAS) ---
+    # HERRAMIENTAS Y API
     path('herramientas/disenador/', views.diseñador_plantillas, name='diseñador_plantillas'),
     path('api/previsualizar-word/', views.previsualizar_word_raw, name='previsualizar_word_raw'),
-    # 👇 AQUÍ ESTABA EL ERROR: Cambiamos name='crear_variable_api' por 'api_crear_variable'
     path('api/crear-variable/', views.crear_variable_api, name='api_crear_variable'),
     path('api/convertir-html/', views.api_convertir_html, name='api_convertir_html'), 
+    
+    # === NUEVA API PARA AGREGAR CAMPO AL SERVICIO ===
+    path('api/servicio/agregar-campo/', views.api_agregar_campo_servicio, name='api_agregar_campo_servicio'),
 
+    # COTIZACIONES
     path('cotizaciones/servicios/', views.gestion_servicios, name='gestion_servicios'),
     path('cotizaciones/servicios/guardar/', views.guardar_servicio, name='guardar_servicio'),
     path('cotizaciones/servicios/eliminar/<int:servicio_id>/', views.eliminar_servicio, name='eliminar_servicio'),
@@ -73,16 +76,18 @@ urlpatterns = [
     path('cotizaciones/<int:cotizacion_id>/convertir/', views.convertir_a_cliente, name='convertir_cliente'),
     path('cotizaciones/<int:cotizacion_id>/enviar-email/', views.enviar_cotizacion_email, name='enviar_cotizacion_email'),
 
+    # FINANZAS
     path('finanzas/', views.panel_finanzas, name='panel_finanzas'),
     path('finanzas/pagar/', views.registrar_pago, name='registrar_pago'),
     path('finanzas/recibo/<int:pago_id>/', views.recibo_pago_pdf, name='recibo_pago_pdf'),
 
+    # AGENDA
     path('agenda/', views.agenda_legal, name='agenda_legal'),
     path('agenda/api/', views.api_eventos, name='api_eventos'),
     path('agenda/crear/', views.crear_evento, name='crear_evento'),
     path('agenda/eliminar/<int:evento_id>/', views.eliminar_evento, name='eliminar_evento'),
     path('agenda/mover/', views.mover_evento_api, name='mover_evento_api'),
 
-    # --- PARCHE PARA IMÁGENES EN RAILWAY (DEBUG=False) ---
+    # MEDIA PARCHE
     re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
 ]
