@@ -17,23 +17,31 @@
         .font-serif { font-family: 'Playfair Display', serif; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Efecto cristal para el overlay */
+        .glass-effect {
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
     </style>
 </head>
 <body class="text-gray-700 h-screen flex overflow-hidden">
 
-    <div class="md:hidden fixed w-full top-0 z-50 bg-[#1A2238] text-white flex justify-between items-center p-4 shadow-md">
+    <div class="md:hidden fixed w-full top-0 z-30 bg-[#1A2238] text-white flex justify-between items-center p-4 shadow-md">
         <div class="flex items-center gap-2">
             <i class="fas fa-balance-scale text-[#C0A062] text-xl"></i>
             <span class="font-serif font-bold text-lg">AppLegal</span>
         </div>
-        <button onclick="toggleMobileMenu()" class="text-white focus:outline-none">
+        <button onclick="toggleMobileMenu()" class="text-white focus:outline-none active:scale-95 transition-transform p-2">
             <i class="fas fa-bars text-2xl"></i>
         </button>
     </div>
 
-    <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 bg-[#1A2238] text-white transition-transform duration-300 transform -translate-x-full md:translate-x-0 md:static md:flex md:flex-col shadow-2xl">
+    <div id="mobile-overlay" onclick="toggleMobileMenu()" class="fixed inset-0 bg-black/60 z-40 hidden md:hidden glass-effect transition-opacity duration-300"></div>
+
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-72 bg-[#1A2238] text-white transition-transform duration-300 transform -translate-x-full md:translate-x-0 md:static md:flex md:flex-col shadow-2xl">
         
-        <div class="h-20 flex items-center justify-center border-b border-gray-700/50 bg-[#151b2d]">
+        <div class="h-20 flex items-center justify-center border-b border-gray-700/50 bg-[#151b2d] relative">
             <a href="{% url 'dashboard' %}" class="flex items-center gap-3 group">
                 <div class="w-10 h-10 bg-[#C0A062] rounded-lg flex items-center justify-center text-[#1A2238] shadow-lg group-hover:rotate-12 transition-transform">
                     <i class="fas fa-balance-scale text-xl"></i>
@@ -43,7 +51,8 @@
                     <p class="text-[10px] text-gray-400 uppercase tracking-widest text-center">Cloud Platform</p>
                 </div>
             </a>
-            <button onclick="toggleMobileMenu()" class="md:hidden absolute right-4 text-gray-400">
+            
+            <button onclick="toggleMobileMenu()" class="md:hidden absolute right-4 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full bg-white/10 text-white hover:bg-red-500/20 hover:text-red-400 transition-colors">
                 <i class="fas fa-times"></i>
             </button>
         </div>
@@ -107,8 +116,6 @@
         </div>
     </aside>
 
-    <div id="mobile-overlay" onclick="toggleMobileMenu()" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden glass-effect"></div>
-
     <main class="flex-1 h-full overflow-y-auto bg-[#F8F9FA] w-full pt-16 md:pt-0"> 
         <div class="p-4 md:p-8 max-w-[1600px] mx-auto min-h-full">
             
@@ -156,9 +163,11 @@
             const overlay = document.getElementById('mobile-overlay');
             
             if (sidebar.classList.contains('-translate-x-full')) {
+                // ABRIR MENÚ
                 sidebar.classList.remove('-translate-x-full');
                 overlay.classList.remove('hidden');
             } else {
+                // CERRAR MENÚ
                 sidebar.classList.add('-translate-x-full');
                 overlay.classList.add('hidden');
             }
