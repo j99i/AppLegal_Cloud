@@ -6,7 +6,7 @@
     <style>
         @page {
             size: A4;
-            margin: 0cm; /* Margen cero para diseño de borde a borde */
+            margin: 0cm;
         }
         body {
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
@@ -17,21 +17,20 @@
             font-size: 14px;
         }
 
-        /* BARRA LATERAL ESTÉTICA */
+        /* --- ESTILOS GENERALES --- */
         .sidebar-decor {
             position: fixed;
             left: 0;
             top: 0;
             bottom: 0;
             width: 8px;
-            background-color: #2c3e50; /* Azul Oscuro Elegante */
+            background-color: #1A2238; /* Azul Oscuro Corporativo */
         }
-
         .container {
-            padding: 40px 40px 40px 60px; /* Padding extra a la izquierda por la barra */
+            padding: 40px 40px 40px 60px;
         }
 
-        /* HEADER */
+        /* --- HEADER --- */
         .header {
             display: flex;
             justify-content: space-between;
@@ -42,8 +41,8 @@
         }
         .logo-text {
             font-size: 24px;
-            font-weight: bold;
-            color: #2c3e50;
+            font-weight: 900;
+            color: #1A2238;
             text-transform: uppercase;
             letter-spacing: 2px;
         }
@@ -53,16 +52,18 @@
         .invoice-title h1 {
             margin: 0;
             font-size: 32px;
-            color: #bdc3c7; /* Gris claro moderno */
+            color: #C0A062; /* Dorado Elegante */
             font-weight: 300;
+            letter-spacing: 1px;
         }
         .meta-data {
             font-size: 12px;
             color: #7f8c8d;
             margin-top: 5px;
+            font-weight: bold;
         }
 
-        /* INFO CLIENTE Y EMISOR */
+        /* --- INFO SECTIONS --- */
         .info-section {
             width: 100%;
             margin-bottom: 40px;
@@ -77,20 +78,23 @@
             text-transform: uppercase;
             color: #95a5a6;
             letter-spacing: 1px;
-            margin-bottom: 5px;
-            font-weight: bold;
+            margin-bottom: 8px;
+            font-weight: 800;
         }
         .info-content {
-            font-size: 14px;
-            font-weight: 600;
+            font-size: 15px;
+            font-weight: 700;
+            color: #1A2238;
+            margin-bottom: 4px;
         }
         .info-sub {
             font-size: 13px;
             font-weight: normal;
             color: #555;
+            line-height: 1.4;
         }
 
-        /* TABLA DE SERVICIOS */
+        /* --- TABLA DE SERVICIOS --- */
         table {
             width: 100%;
             border-collapse: collapse;
@@ -98,65 +102,114 @@
         }
         th {
             text-align: left;
-            padding: 12px 10px;
-            background-color: #f8f9fa;
-            color: #2c3e50;
+            padding: 15px 10px;
+            background-color: #1A2238;
+            color: #ffffff;
             text-transform: uppercase;
             font-size: 11px;
             font-weight: bold;
-            border-bottom: 2px solid #2c3e50;
+            letter-spacing: 0.5px;
         }
         td {
-            padding: 15px 10px;
+            padding: 18px 10px;
             border-bottom: 1px solid #eee;
             vertical-align: top;
         }
-        .item-desc {
-            font-size: 12px;
-            color: #666;
-            margin-top: 4px;
+        
+        /* --- ESTILOS MEJORADOS PARA CAMPOS DINÁMICOS --- */
+        .item-main-title {
+            font-size: 15px;
+            color: #1A2238;
+            margin-bottom: 6px;
         }
+        .item-desc {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 12px;
+            line-height: 1.4;
+        }
+        
+        /* Caja para Especificaciones Fijas (Catálogo) */
+        .specs-box {
+            background-color: #fcfcfc;
+            border-left: 3px solid #C0A062; /* Borde Dorado */
+            padding: 8px 12px;
+            border-radius: 0 4px 4px 0;
+            margin-bottom: 8px;
+        }
+        .specs-title {
+            font-size: 10px;
+            font-weight: 800;
+            color: #C0A062;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+            letter-spacing: 0.5px;
+        }
+        .specs-item {
+            font-size: 12px; /* Letra más grande */
+            color: #444;
+            margin-bottom: 3px;
+        }
+
+        /* Caja para Valores Personalizados (Cotización) */
+        .custom-box {
+            background-color: #eff6ff; /* Azul muy pálido */
+            border: 1px solid #dbeafe;
+            border-radius: 6px;
+            padding: 8px 12px;
+        }
+        .custom-title {
+            font-size: 10px;
+            font-weight: 800;
+            color: #1d4ed8;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+            letter-spacing: 0.5px;
+        }
+        .custom-item {
+            font-size: 12px; /* Letra más grande */
+            color: #1e40af;
+            margin-bottom: 3px;
+        }
+
         .text-right { text-align: right; }
         .text-center { text-align: center; }
 
-        /* TOTALES */
+        /* --- TOTALES --- */
         .totals-section {
             width: 100%;
             text-align: right;
+            margin-top: 20px;
         }
         .totals-table {
-            width: 40%;
-            margin-left: 60%; /* Empujar a la derecha */
+            width: 45%;
+            margin-left: 55%;
         }
         .total-row td {
             border: none;
-            padding: 5px 10px;
+            padding: 8px 10px;
+            font-size: 13px;
+            color: #555;
         }
-        .total-final {
-            font-size: 18px;
-            font-weight: bold;
-            color: #2c3e50;
-            border-top: 2px solid #2c3e50 !important;
-            padding-top: 10px !important;
+        .total-final td {
+            font-size: 20px;
+            font-weight: 900;
+            color: #1A2238;
+            border-top: 3px solid #1A2238 !important;
+            padding-top: 15px !important;
         }
 
-        /* FOOTER */
+        /* --- FOOTER --- */
         .footer {
-            margin-top: 60px;
+            position: fixed;
+            bottom: 40px;
+            left: 60px;
+            right: 40px;
             padding-top: 20px;
             border-top: 1px solid #eee;
             text-align: center;
             font-size: 11px;
-            color: #95a5a6;
-        }
-        
-        .badge {
-            background: #e74c3c;
-            color: white;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 10px;
-            text-transform: uppercase;
+            color: #9ca3af;
         }
     </style>
 </head>
@@ -165,9 +218,7 @@
     
     <div class="container">
         <div class="header">
-            <div class="logo-text">
-                LEGAL CLOUD
-            </div>
+            <div class="logo-text">LEGAL CLOUD</div>
             <div class="invoice-title">
                 <h1>COTIZACIÓN</h1>
                 <div class="meta-data">FOLIO #{{ c.id|stringformat:"04d" }}</div>
@@ -180,28 +231,32 @@
                 <div class="info-label">PREPARADO PARA:</div>
                 <div class="info-content">
                     {% if c.prospecto_empresa %}
-                        {{ c.prospecto_empresa }}<br>
-                        <span class="info-sub">Atn: {{ c.prospecto_nombre }}</span>
+                        {{ c.prospecto_empresa }}
                     {% else %}
                         {{ c.prospecto_nombre }}
                     {% endif %}
                 </div>
-                <div class="info-sub">{{ c.prospecto_email }}</div>
-                <div class="info-sub">{{ c.prospecto_telefono }}</div>
+                <div class="info-sub">
+                    {% if c.prospecto_empresa %}Atn: {{ c.prospecto_nombre }}<br>{% endif %}
+                    {{ c.prospecto_email }}<br>
+                    {{ c.prospecto_telefono }}
+                </div>
             </div>
             
             <div class="info-col text-right">
                 <div class="info-label">EMITIDO POR:</div>
-                <div class="info-content">{{ c.creado_por.first_name }} {{ c.creado_por.last_name }}</div>
-                <div class="info-sub">Servicios Legales Profesionales</div>
-                <div class="info-sub">{{ user.email }}</div>
+                <div class="info-content">{{ c.creado_por.get_full_name|default:c.creado_por.username }}</div>
+                <div class="info-sub">
+                    Servicios Legales Profesionales<br>
+                    {{ c.creado_por.email }}
+                </div>
             </div>
         </div>
 
         <table>
             <thead>
                 <tr>
-                    <th width="50%">DESCRIPCIÓN</th>
+                    <th width="50%">SERVICIO Y DETALLES</th>
                     <th width="15%" class="text-center">CANT.</th>
                     <th width="15%" class="text-right">PRECIO U.</th>
                     <th width="20%" class="text-right">TOTAL</th>
@@ -211,34 +266,36 @@
                 {% for item in c.items.all %}
                 <tr>
                     <td>
-                        <strong>{{ item.servicio.nombre }}</strong>
+                        <div class="item-main-title"><strong>{{ item.servicio.nombre }}</strong></div>
                         <div class="item-desc">
                             {{ item.descripcion_personalizada|default:item.servicio.descripcion }}
-                            
-                            {% if item.servicio.campos_dinamicos %}
-                                <div style="margin-top: 8px; color: #555;">
-                                {% for spec in item.servicio.campos_dinamicos %}
-                                    <small style="display:block;">
-                                        • <strong>{{ spec.nombre }}:</strong> {{ spec.valor }}
-                                    </small>
-                                {% endfor %}
-                                </div>
-                            {% endif %}
-                            
-                            {% if item.valores_adicionales %}
-                                <div style="margin-top: 5px; border-top: 1px dashed #eee; padding-top: 4px;">
-                                {% for k, v in item.valores_adicionales.items %}
-                                    <small style="display:block; color: #1a5276;">
-                                        • <strong>{{ k }}:</strong> {{ v }}
-                                    </small>
-                                {% endfor %}
-                                </div>
-                            {% endif %}
                         </div>
+
+                        {% if item.servicio.campos_dinamicos %}
+                            <div class="specs-box">
+                                <div class="specs-title">ESPECIFICACIONES TÉCNICAS</div>
+                                {% for spec in item.servicio.campos_dinamicos %}
+                                    <div class="specs-item">
+                                        • <strong>{{ spec.nombre }}:</strong> {{ spec.valor }}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        
+                        {% if item.valores_adicionales %}
+                            <div class="custom-box">
+                                <div class="custom-title">DETALLES ADICIONALES</div>
+                                {% for k, v in item.valores_adicionales.items %}
+                                    <div class="custom-item">
+                                        • <strong>{{ k }}:</strong> {{ v }}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
                     </td>
-                    <td class="text-center">{{ item.cantidad }}</td>
-                    <td class="text-right">${{ item.precio_unitario }}</td>
-                    <td class="text-right"><strong>${{ item.subtotal }}</strong></td>
+                    <td class="text-center" style="font-weight:bold; color:#555;">{{ item.cantidad }}</td>
+                    <td class="text-right" style="color:#555;">${{ item.precio_unitario }}</td>
+                    <td class="text-right" style="font-weight:bold; color:#1A2238;">${{ item.subtotal }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -250,16 +307,16 @@
                     <td class="text-right">SUBTOTAL:</td>
                     <td class="text-right">${{ c.subtotal }}</td> 
                 </tr>
-                <tr class="total-row">
-                    <td class="text-right total-final">TOTAL MXN:</td>
-                    <td class="text-right total-final">${{ c.total }}</td>
+                <tr class="total-row total-final">
+                    <td class="text-right">TOTAL MXN:</td>
+                    <td class="text-right">${{ c.total }}</td>
                 </tr>
             </table>
         </div>
 
         <div class="footer">
-            <p><strong>VIGENCIA DE LA OFERTA:</strong> {{ c.validez_hasta|default:"15 días" }}</p>
-            <p>Gracias por la confianza. Quedamos a la espera de su confirmación para proceder.</p>
+            <p style="margin-bottom: 5px;"><strong>VIGENCIA DE LA OFERTA:</strong> {{ c.validez_hasta|default:"15 días hábiles" }}</p>
+            <p>Este documento es una propuesta de servicios profesionales. Quedamos a la espera de su confirmación.</p>
         </div>
     </div>
 </body>
