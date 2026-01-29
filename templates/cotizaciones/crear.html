@@ -3,45 +3,70 @@
 <div class="max-w-6xl mx-auto animate__animated animate__fadeIn">
     <div class="flex justify-between items-center mb-6">
         <h2 class="text-3xl font-black text-[#1A2238]">Nueva Cotización</h2>
-        <a href="{% url 'lista_cotizaciones' %}" class="text-gray-500 font-bold hover:text-[#1A2238]">Cancelar</a>
+        <a href="{% url 'lista_cotizaciones' %}" class="text-gray-500 font-bold">Cancelar</a>
     </div>
+
     <form method="POST" class="space-y-8">
         {% csrf_token %}
+        
         <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
-            <h3 class="text-lg font-bold text-[#C0A062] mb-4 border-b pb-2">1. Datos del Prospecto</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Nombre Completo</label><input type="text" name="nombre" class="w-full p-3 bg-gray-50 rounded-xl font-bold" required></div>
-                <div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Empresa</label><input type="text" name="empresa" class="w-full p-3 bg-gray-50 rounded-xl font-bold"></div>
-                <div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Email</label><input type="email" name="email" class="w-full p-3 bg-gray-50 rounded-xl font-bold" required></div>
-                <div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">WhatsApp</label><input type="text" name="telefono" class="w-full p-3 bg-gray-50 rounded-xl font-bold" required></div>
-                <div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Validez</label><input type="date" name="validez" class="w-full p-3 bg-gray-50 rounded-xl font-bold"></div>
+            <h3 class="text-lg font-bold text-[#C0A062] mb-4">1. Datos del Prospecto</h3>
+            <div class="grid grid-cols-2 gap-6">
+                <input type="text" name="nombre" placeholder="Nombre del Cliente" class="w-full p-3 bg-gray-50 rounded-xl font-bold" required>
+                <input type="text" name="empresa" placeholder="Empresa" class="w-full p-3 bg-gray-50 rounded-xl font-bold">
+                <input type="email" name="email" placeholder="Correo" class="w-full p-3 bg-gray-50 rounded-xl font-bold" required>
+                <input type="text" name="telefono" placeholder="WhatsApp" class="w-full p-3 bg-gray-50 rounded-xl font-bold" required>
             </div>
         </div>
+
         <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
             <div class="flex justify-between items-center mb-4 border-b pb-2">
-                <h3 class="text-lg font-bold text-[#C0A062]">2. Servicios a Cotizar</h3>
-                <button type="button" onclick="agregarFila()" class="bg-[#1A2238] text-white px-4 py-2 rounded-xl text-xs font-bold">+ Agregar Item</button>
+                <h3 class="text-lg font-bold text-[#C0A062]">2. Servicios y Datos del Caso</h3>
+                <button type="button" onclick="agregarFila()" class="bg-[#1A2238] text-white px-4 py-2 rounded-xl text-xs font-bold">+ Agregar Servicio</button>
             </div>
-            <div id="items-container" class="space-y-4"></div>
-            <div id="row-template" class="hidden flex flex-col md:flex-row gap-3 items-start p-4 bg-gray-50 rounded-xl relative group">
+            
+            <div id="items-container" class="space-y-4">
+                </div>
+            
+            <div id="row-template" class="hidden flex flex-col md:flex-row gap-4 p-6 bg-gray-50 rounded-[1.5rem] border border-gray-100 group relative">
                 <input type="hidden" name="valores_adicionales_json[]" class="json-extras">
+                
                 <div class="flex-1">
-                    <label class="text-[10px] font-bold text-gray-400">Servicio</label>
-                    <select name="servicio_id" class="w-full p-2 rounded-lg border text-sm font-bold" onchange="cargarServicio(this)">
+                    <label class="text-[10px] font-black text-gray-400 uppercase">Selecciona Servicio</label>
+                    <select name="servicio_id" class="w-full p-3 rounded-xl border-none font-bold text-sm shadow-sm" onchange="mostrarCamposDinámicos(this)">
                         <option value="">-- Seleccionar --</option>
                         {% for s in servicios %}
                         <option value="{{ s.id }}" data-precio="{{ s.precio_base }}" data-desc="{{ s.descripcion }}" data-campos="{{ s.campos_dinamicos|safe|escapejs }}">{{ s.nombre }}</option>
                         {% endfor %}
                     </select>
-                    <div class="dynamic-fields-area grid grid-cols-2 gap-2"></div>
+                    
+                    <div class="contenedor-campos-llenado grid grid-cols-2 gap-2 mt-4"></div>
                 </div>
-                <div class="flex-[2]"><label class="text-[10px] font-bold text-gray-400">Detalles</label><input type="text" name="descripcion" class="w-full p-2 rounded-lg border text-sm"></div>
-                <div class="w-24"><label class="text-[10px] font-bold text-gray-400">Cant.</label><input type="number" name="cantidad" value="1" min="1" class="w-full p-2 rounded-lg border text-sm font-bold text-center"></div>
-                <div class="w-32"><label class="text-[10px] font-bold text-gray-400">Precio</label><input type="number" name="precio" step="0.01" class="w-full p-2 rounded-lg border text-sm font-bold text-right text-green-700"></div>
-                <button type="button" onclick="this.parentElement.remove()" class="text-red-400 hover:text-red-600 mt-6"><i class="fas fa-trash"></i></button>
+
+                <div class="flex-1">
+                    <label class="text-[10px] font-black text-gray-400 uppercase">Notas del Servicio</label>
+                    <input type="text" name="descripcion" class="w-full p-3 rounded-xl border-none text-sm shadow-sm">
+                </div>
+
+                <div class="w-24">
+                    <label class="text-[10px] font-black text-gray-400 uppercase">Cant.</label>
+                    <input type="number" name="cantidad" value="1" min="1" class="w-full p-3 rounded-xl border-none font-bold text-center shadow-sm">
+                </div>
+
+                <div class="w-32">
+                    <label class="text-[10px] font-black text-gray-400 uppercase">Precio</label>
+                    <input type="number" name="precio" step="0.01" class="w-full p-3 rounded-xl border-none font-bold text-right text-green-700 shadow-sm">
+                </div>
+
+                <button type="button" onclick="this.parentElement.remove()" class="text-red-400 mt-6"><i class="fas fa-trash"></i></button>
             </div>
         </div>
-        <div class="flex justify-end"><button type="submit" class="bg-[#C0A062] text-white px-10 py-4 rounded-2xl font-black text-lg shadow-lg transition-all hover:shadow-xl hover:-translate-y-1">CREAR COTIZACIÓN</button></div>
+
+        <div class="flex justify-end">
+            <button type="submit" class="bg-[#C0A062] text-white px-10 py-4 rounded-2xl font-black text-lg shadow-lg hover:-translate-y-1 transition-all">
+                CREAR COTIZACIÓN
+            </button>
+        </div>
     </form>
 </div>
 
@@ -51,30 +76,51 @@
         clone.classList.remove('hidden'); clone.removeAttribute('id');
         document.getElementById('items-container').appendChild(clone);
     }
-    function cargarServicio(select) {
+
+    // Esta función detecta el cambio de servicio y dibuja los campos que configuramos antes
+    function mostrarCamposDinámicos(select) {
         const opcion = select.options[select.selectedIndex];
         const fila = select.closest('.group');
+        
+        // Poner precio y descripción por defecto
         fila.querySelector('input[name="precio"]').value = opcion.dataset.precio || 0;
         fila.querySelector('input[name="descripcion"]').value = opcion.dataset.desc || '';
-        const container = fila.querySelector('.dynamic-fields-area');
+
+        const container = fila.querySelector('.contenedor-campos-llenado');
         container.innerHTML = '';
-        if(opcion.dataset.campos) {
+        
+        if (opcion.dataset.campos) {
             try {
-                JSON.parse(opcion.dataset.campos).forEach(c => {
+                const campos = JSON.parse(opcion.dataset.campos);
+                campos.forEach(c => {
                     const div = document.createElement('div');
-                    div.className = "mt-2";
-                    div.innerHTML = `<label class="text-[9px] font-black text-[#C0A062] uppercase">${c.nombre}</label><input type="${c.tipo}" onchange="actualizarJsonDinamico(this)" data-field-name="${c.nombre}" class="w-full p-2 bg-white border rounded-lg text-xs font-bold" required>`;
+                    div.className = "p-2 bg-white rounded-xl shadow-sm border border-gray-100 animate__animated animate__zoomIn";
+                    div.innerHTML = `
+                        <label class="block text-[8px] font-black text-[#C0A062] uppercase mb-1">${c.nombre}</label>
+                        <input type="${c.tipo}" 
+                               placeholder="Llenar..."
+                               oninput="actualizarValoresExtras(this)" 
+                               data-label="${c.nombre}" 
+                               class="w-full p-1 border-none font-bold text-xs outline-none" required>`;
                     container.appendChild(div);
                 });
-            } catch(e){}
+            } catch(e) { console.error(e); }
         }
     }
-    function actualizarJsonDinamico(input) {
+
+    // Convierte lo que el abogado escribe en los campos extra a un JSON para mandarlo a Django
+    function actualizarValoresExtras(input) {
         const fila = input.closest('.group');
-        const data = {};
-        fila.querySelectorAll('.dynamic-fields-area input').forEach(i => { data[i.dataset.fieldName] = i.value; });
-        fila.querySelector('.json-extras').value = JSON.stringify(data);
+        const todosLosInputs = fila.querySelectorAll('.contenedor-campos-llenado input');
+        const resultado = {};
+        
+        todosLosInputs.forEach(i => {
+            resultado[i.dataset.label] = i.value;
+        });
+        
+        fila.querySelector('.json-extras').value = JSON.stringify(resultado);
     }
+
     document.addEventListener('DOMContentLoaded', agregarFila);
 </script>
 {% endblock %}
