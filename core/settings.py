@@ -40,7 +40,7 @@ INSTALLED_APPS = [
     
     # Librerías de Terceros
     'whitenoise.runserver_nostatic', 
-    'anymail',  # <--- NUEVO: Agregamos Anymail para conectar con Resend
+    'anymail',  # Para Resend
     
     # Mis Aplicaciones
     'expedientes',
@@ -100,8 +100,9 @@ DATABASES = {
 }
 
 # Si existe DATABASE_URL (Railway/Nube), sobrescribe la configuración para usar PostgreSQL
-db_from_env = dj_database_url.config(conn_max_age=600)
-DATABASES['default'].update(db_from_env)
+if 'DATABASE_URL' in os.environ:
+    db_from_env = dj_database_url.config(conn_max_age=600, ssl_require=True)
+    DATABASES['default'].update(db_from_env)
 
 
 # ==========================================
@@ -153,21 +154,43 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # ==========================================
 # 9. SISTEMA DE CORREO (Vía API - RESEND)
 # ==========================================
-# Esta configuración usa el puerto 443 (HTTPS) que NUNCA se bloquea en Railway.
-
 EMAIL_BACKEND = "anymail.backends.resend.EmailBackend"
 
 # Configuración de Anymail
 ANYMAIL = {
-    # Aquí le decimos que busque la clave en las variables de Railway.
-    # El default='' evita errores si se te olvida ponerla (aunque no enviará correos).
     "RESEND_API_KEY": env('RESEND_API_KEY', default=''),
 }
 
 # CONFIGURACIÓN DEL REMITENTE
-# Como estás en modo prueba, DEBES usar este correo de Resend.
-# Saldrá como "AppLegal <onboarding@resend.dev>"
 DEFAULT_FROM_EMAIL = "AppLegal <onboarding@resend.dev>" 
 SERVER_EMAIL = "onboarding@resend.dev" 
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# ==========================================
+# 10. SEGURIDAD PARA PRODUCCIÓN (BLINDAJE)
+# ==========================================
+# Este bloque se activa SOLO si DEBUG=False (en Railway)
+# Arregla la calificación "C" del reporte de seguridad.
+
+if not DEBUG:
+    # 1. Forzar HTTPS siempre
+    SECURE_SSL_REDIRECT = True
+    # Confiar en el proxy de Railway
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    
+    # 2. HSTS (Seguridad Estricta de Transporte)
+    # Obliga al navegador a usar HTTPS por 1 año
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+
+    # 3. Cookies Seguras (Encriptadas)
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    
+    # 4. Cabeceras extra contra ataques
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
