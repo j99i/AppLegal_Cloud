@@ -713,9 +713,6 @@ def nueva_cotizacion(request):
         s_ids = request.POST.getlist('servicio_id')
         cants = request.POST.getlist('cantidad')
         precios = request.POST.getlist('precio')
-        # NOTA: Se eliminó la captura de 'descripcion' ya que se quitó del formulario HTML
-        
-        # Recogemos las respuestas llenadas por el abogado
         extras_json = request.POST.getlist('valores_adicionales_json[]')
 
         for i in range(len(s_ids)):
@@ -725,7 +722,6 @@ def nueva_cotizacion(request):
                     servicio_id=s_ids[i], 
                     cantidad=int(cants[i] or 1),
                     precio_unitario=Decimal(precios[i] or 0)
-                    # NOTA: Se eliminó descripcion_personalizada=descs[i]
                 )
                 if i < len(extras_json) and extras_json[i]:
                     try:
@@ -735,10 +731,16 @@ def nueva_cotizacion(request):
         c.calcular_totales()
         return redirect('detalle_cotizacion', cotizacion_id=c.id)
     
-    # Serializamos los servicios para que el JS pueda leerlos (precios, nombres)
-    servicios_json = serialize('json', Servicio.objects.all())
-    return render(request, 'cotizaciones/crear.html', {'servicios': servicios_json})
-
+    # --- CORRECCIÓN AQUÍ: Enviamos una lista de diccionarios limpia ---
+    servicios_data = []
+    for s in Servicio.objects.all():
+        servicios_data.append({
+            'id': s.id,
+            'nombre': s.nombre,
+            'precio': float(s.precio_base)
+        })
+    
+    return render(request, 'cotizaciones/crear.html', {'servicios': servicios_data})
 @login_required
 def detalle_cotizacion(request, cotizacion_id):
     c = get_object_or_404(Cotizacion, id=cotizacion_id)

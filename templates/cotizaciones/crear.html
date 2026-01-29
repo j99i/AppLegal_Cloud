@@ -87,19 +87,22 @@
 {{ servicios|json_script:"data-servicios" }}
 
 <script>
+    // 1. Cargar datos del script oculto
     const serviciosData = JSON.parse(document.getElementById('data-servicios').textContent);
 
+    // 2. Función para agregar filas
     function agregarFila() {
         const tbody = document.getElementById('body-servicios');
         const tr = document.createElement('tr');
         tr.className = "group border-b border-gray-50 last:border-0";
         
         let options = '<option value="">Seleccionar...</option>';
+        
+        // Iteramos sobre la lista simple de diccionarios
         serviciosData.forEach(s => {
-            options += `<option value="${s.pk}" data-precio="${s.fields.precio_base}">${s.fields.nombre}</option>`;
+            options += `<option value="${s.id}" data-precio="${s.precio}">${s.nombre}</option>`;
         });
 
-        // NOTA: Se cambiaron los bg-gray-50 por bg-white y border-gray-200
         tr.innerHTML = `
             <td class="py-4 pr-4 align-top">
                 <div class="relative">
@@ -120,7 +123,6 @@
             <td class="py-4 px-2 align-top">
                 <div class="relative">
                     <span class="absolute left-3 top-3 text-gray-400 font-bold pointer-events-none">$</span>
-                    
                     <input type="number" name="precio" step="0.01" class="w-full p-3 pl-6 bg-white rounded-xl font-bold text-right text-[#1A2238] outline-none focus:border-[#C0A062] border border-gray-200 focus:ring-1 focus:ring-[#C0A062] transition-all">
                 </div>
             </td>
@@ -134,20 +136,21 @@
         tbody.appendChild(tr);
     }
 
+    // 3. Autocompletar precio
     function actualizarPrecio(select) {
         const precio = select.options[select.selectedIndex].dataset.precio;
         const row = select.closest('tr');
         const inputPrecio = row.querySelector('input[name="precio"]');
         
-        // Solo actualizamos si hay un precio base, pero el campo sigue siendo editable
         if(precio) {
             inputPrecio.value = precio;
-            // Efecto visual breve para indicar cambio
+            // Efecto visual de "actualizado"
             inputPrecio.classList.add('bg-yellow-50');
             setTimeout(() => inputPrecio.classList.remove('bg-yellow-50'), 500);
         }
     }
 
+    // 4. Agregar fila inicial al cargar
     document.addEventListener('DOMContentLoaded', () => {
         agregarFila();
     });
