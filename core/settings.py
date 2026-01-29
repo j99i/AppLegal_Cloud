@@ -152,17 +152,17 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # core/settings.py
 
 # ==========================================
-# 9. SISTEMA DE CORREO (Configuración SSL Final)
+# 9. SISTEMA DE CORREO (Configuración Final 587)
 # ==========================================
+# Usamos el 587 porque es el estándar universal de Gmail y evita bloqueos de red en Railway.
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 
-# VOLVEMOS A PUERTO 465 (SSL DIRECTO)
-# Al arreglar el bug del PDF en views.py, este puerto ya no se bloqueará.
-EMAIL_PORT = 465
-EMAIL_USE_SSL = True
-EMAIL_USE_TLS = False
-EMAIL_TIMEOUT = 20  # Tiempo de espera prudente
+# AQUÍ ES IMPORTANTE: 587 (No 8000, ni 465)
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_USE_SSL = False
+EMAIL_TIMEOUT = 30 
 
 # Variables de entorno
 EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
