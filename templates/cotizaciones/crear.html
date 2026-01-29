@@ -11,216 +11,107 @@
     <form method="POST" class="space-y-8" id="cotizacion-form">
         {% csrf_token %}
         
-        <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100 relative overflow-hidden">
-            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#1A2238] to-[#C0A062]"></div>
-            <h3 class="text-lg font-bold text-[#1A2238] mb-6 flex items-center gap-2">
-                <span class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-sm">1</span> 
-                Datos del Cliente
-            </h3>
-            
+        <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
+            <h3 class="text-lg font-bold text-[#C0A062] mb-6">1. Datos del Cliente</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Nombre Completo</label>
-                    <input type="text" name="nombre" class="w-full p-3 bg-gray-50 rounded-xl font-bold border-2 border-transparent focus:border-[#C0A062] outline-none" required>
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Empresa / Organización</label>
-                    <input type="text" name="empresa" class="w-full p-3 bg-gray-50 rounded-xl font-bold border-2 border-transparent focus:border-[#C0A062] outline-none">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Correo Electrónico</label>
-                    <input type="email" name="email" class="w-full p-3 bg-gray-50 rounded-xl font-bold border-2 border-transparent focus:border-[#C0A062] outline-none" required>
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Teléfono / WhatsApp</label>
-                    <input type="text" name="telefono" class="w-full p-3 bg-gray-50 rounded-xl font-bold border-2 border-transparent focus:border-[#C0A062] outline-none" required>
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Válida hasta</label>
-                    <input type="date" name="validez" class="w-full p-3 bg-gray-50 rounded-xl font-bold border-2 border-transparent focus:border-[#C0A062] outline-none">
-                </div>
+                <input type="text" name="nombre" placeholder="Nombre Completo" class="w-full p-3 bg-gray-50 rounded-xl font-bold outline-none border-2 border-transparent focus:border-[#C0A062]" required>
+                <input type="text" name="empresa" placeholder="Empresa" class="w-full p-3 bg-gray-50 rounded-xl font-bold outline-none border-2 border-transparent focus:border-[#C0A062]">
+                <input type="email" name="email" placeholder="Correo Electrónico" class="w-full p-3 bg-gray-50 rounded-xl font-bold outline-none border-2 border-transparent focus:border-[#C0A062]" required>
+                <input type="text" name="telefono" placeholder="WhatsApp" class="w-full p-3 bg-gray-50 rounded-xl font-bold outline-none border-2 border-transparent focus:border-[#C0A062]" required>
+                <input type="date" name="validez" class="w-full p-3 bg-gray-50 rounded-xl font-bold outline-none border-2 border-transparent focus:border-[#C0A062]">
             </div>
         </div>
 
-        <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100 relative overflow-hidden">
-            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#1A2238] to-[#C0A062]"></div>
-            
+        <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
             <div class="flex justify-between items-center mb-6">
-                <h3 class="text-lg font-bold text-[#1A2238] flex items-center gap-2">
-                    <span class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-sm">2</span> 
-                    Servicios a Cotizar
-                </h3>
-                <button type="button" onclick="agregarFila()" class="bg-[#1A2238] text-white px-5 py-2 rounded-xl text-xs font-bold hover:bg-black transition-colors shadow-lg">
-                    <i class="fas fa-plus mr-1"></i> AGREGAR SERVICIO
-                </button>
+                <h3 class="text-lg font-bold text-[#C0A062]">2. Servicios</h3>
+                <button type="button" onclick="agregarFila()" class="bg-[#1A2238] text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-black transition-colors shadow-lg">+ AGREGAR ITEM</button>
             </div>
             
-            <div id="items-container" class="space-y-6">
-                </div>
+            <div id="items-container" class="space-y-6"></div>
             
             <div id="row-template" class="hidden flex flex-col md:flex-row gap-4 p-6 bg-gray-50 rounded-[2rem] border border-gray-100 group relative hover:border-[#C0A062] transition-colors">
-                
                 <input type="hidden" name="valores_adicionales_json[]" class="json-extras">
                 
                 <div class="flex-1">
-                    <div class="flex justify-between">
-                        <label class="text-[10px] font-black text-gray-400 uppercase mb-1">Servicio</label>
-                    </div>
-                    <select name="servicio_id" class="w-full p-3 rounded-xl border-none font-bold text-sm shadow-sm focus:ring-2 focus:ring-[#C0A062] outline-none bg-white" onchange="procesarSeleccionServicio(this)">
+                    <label class="text-[10px] font-black text-gray-400 uppercase">Servicio</label>
+                    <select name="servicio_id" class="w-full p-3 rounded-xl border-none font-bold text-sm shadow-sm focus:ring-2 focus:ring-[#C0A062] outline-none bg-white" onchange="generarInputs(this)">
                         <option value="">-- Seleccionar --</option>
                         {% for s in servicios %}
-                        <option value="{{ s.id }}" 
-                                data-precio="{{ s.precio_base }}" 
-                                data-desc="{{ s.descripcion }}" 
-                                data-campos="{{ s.campos_dinamicos|safe|escapejs }}">
-                            {{ s.nombre }}
-                        </option>
+                        <option value="{{ s.id }}" data-precio="{{ s.precio_base }}" data-campos="{{ s.campos_dinamicos|safe|escapejs }}">{{ s.nombre }}</option>
                         {% endfor %}
                     </select>
                     
-                    <div class="area-llenado space-y-2 mt-4">
-                        </div>
-
-                    <div class="mt-3 text-right">
-                        <button type="button" onclick="agregarDatoExtraManual(this)" class="text-[10px] font-bold text-[#C0A062] hover:text-[#1A2238] transition-colors flex items-center gap-1 ml-auto">
-                            <i class="fas fa-plus-circle"></i> Agregar otro dato
-                        </button>
-                    </div>
+                    <div class="area-llenado grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4 empty:hidden"></div>
                 </div>
 
                 <div class="flex-1">
-                    <label class="text-[10px] font-black text-gray-400 uppercase mb-1">Descripción / Notas</label>
-                    <input type="text" name="descripcion" class="w-full p-3 rounded-xl border-none text-sm shadow-sm focus:ring-2 focus:ring-[#C0A062] outline-none" placeholder="Detalles personalizados...">
+                    <label class="text-[10px] font-black text-gray-400 uppercase">Notas</label>
+                    <input type="text" name="descripcion" class="w-full p-3 rounded-xl border-none text-sm shadow-sm focus:ring-2 focus:ring-[#C0A062] outline-none" placeholder="Detalles...">
                 </div>
 
                 <div class="w-24">
-                    <label class="text-[10px] font-black text-gray-400 uppercase mb-1">Cant.</label>
+                    <label class="text-[10px] font-black text-gray-400 uppercase">Cant.</label>
                     <input type="number" name="cantidad" value="1" min="1" class="w-full p-3 rounded-xl border-none font-bold text-center shadow-sm outline-none">
                 </div>
 
                 <div class="w-32">
-                    <label class="text-[10px] font-black text-gray-400 uppercase mb-1">Precio Unit.</label>
-                    <div class="relative">
-                        <span class="absolute left-3 top-3 text-gray-400 font-bold">$</span>
-                        <input type="number" name="precio" step="0.01" class="w-full p-3 pl-6 rounded-xl border-none font-bold text-right text-green-700 shadow-sm outline-none">
-                    </div>
+                    <label class="text-[10px] font-black text-gray-400 uppercase">Precio</label>
+                    <input type="number" name="precio" step="0.01" class="w-full p-3 rounded-xl border-none font-bold text-right text-green-700 shadow-sm outline-none">
                 </div>
-
-                <button type="button" onclick="this.parentElement.remove()" class="md:mt-6 text-gray-300 hover:text-red-500 transition-colors p-2">
-                    <i class="fas fa-trash-alt"></i>
-                </button>
+                <button type="button" onclick="this.parentElement.remove()" class="md:mt-6 text-gray-300 hover:text-red-500 p-2"><i class="fas fa-trash"></i></button>
             </div>
         </div>
 
         <div class="flex justify-end pt-4">
-            <button type="submit" class="bg-[#C0A062] text-white px-12 py-4 rounded-2xl font-black text-lg shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all">
-                GENERAR COTIZACIÓN
-            </button>
+            <button type="submit" class="bg-[#C0A062] text-white px-12 py-4 rounded-2xl font-black text-lg shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all">GENERAR COTIZACIÓN</button>
         </div>
     </form>
 </div>
 
 <script>
-    // 1. Agregar una nueva fila de servicio
     function agregarFila() {
-        const template = document.getElementById('row-template');
-        const clone = template.cloneNode(true);
-        clone.id = ''; clone.classList.remove('hidden');
-        document.getElementById('items-container').appendChild(clone);
+        const t = document.getElementById('row-template');
+        const c = t.cloneNode(true);
+        c.id = ''; c.classList.remove('hidden');
+        document.getElementById('items-container').appendChild(c);
     }
 
-    // 2. Procesar selección del servicio
-    function procesarSeleccionServicio(selectElement) {
-        const fila = selectElement.closest('.group');
-        const opcion = selectElement.options[selectElement.selectedIndex];
+    function generarInputs(select) {
+        const fila = select.closest('.group');
+        const op = select.options[select.selectedIndex];
+        fila.querySelector('input[name="precio"]').value = op.dataset.precio || 0;
         
-        fila.querySelector('input[name="precio"]').value = opcion.dataset.precio || '';
-        fila.querySelector('input[name="descripcion"]').value = opcion.dataset.desc || '';
-
-        const areaLlenado = fila.querySelector('.area-llenado');
-        areaLlenado.innerHTML = ''; // Limpiar anteriores
-
-        // Cargar campos definidos en el servicio
-        if (opcion.dataset.campos) {
-            try {
-                const campos = JSON.parse(opcion.dataset.campos);
-                if (campos.length > 0) {
-                    areaLlenado.innerHTML = '<div class="text-[10px] font-bold text-gray-400 uppercase tracking-wide border-b border-gray-100 pb-1 mb-2">Datos Requeridos:</div>';
-                }
-                campos.forEach(campo => {
-                    crearFilaCampo(areaLlenado, campo.nombre, '', true); // true = etiqueta fija
-                });
-            } catch (e) {}
-        }
-    }
-
-    // 3. Crear una fila de campo (Fija o Editable)
-    function crearFilaCampo(container, nombre, valor, esFijo) {
-        const div = document.createElement('div');
-        div.className = "flex items-center gap-2 bg-white p-2 rounded-lg border border-gray-200 shadow-sm animate__animated animate__fadeIn group/campo";
-        
-        let htmlLabel = '';
-        if (esFijo) {
-            // Si es fijo, mostramos el nombre como texto y un input oculto para la clave
-            htmlLabel = `<span class="text-[10px] font-black text-gray-500 uppercase w-1/3 truncate">${nombre}</span>
-                         <input type="hidden" class="clave-dato" value="${nombre}">`;
-        } else {
-            // Si es editable (agregado al vuelo), mostramos un input para el nombre
-            htmlLabel = `<input type="text" class="clave-dato w-1/3 text-[10px] font-black text-[#C0A062] uppercase bg-gray-50 p-1 rounded border-none outline-none placeholder-gray-300" placeholder="Nombre Dato" value="${nombre}">`;
-        }
-
-        div.innerHTML = `
-            ${htmlLabel}
-            <input type="text" class="valor-dato flex-1 bg-transparent border-none p-1 text-xs font-bold text-[#1A2238] outline-none" placeholder="Valor..." value="${valor}" oninput="actualizarJSON(this)">
-            <button type="button" onclick="eliminarCampo(this)" class="text-gray-300 hover:text-red-500 p-1">
-                <i class="fas fa-times text-xs"></i>
-            </button>
-        `;
-        container.appendChild(div);
-    }
-
-    // 4. Agregar campo manual (Al vuelo)
-    function agregarDatoExtraManual(btn) {
-        const fila = btn.closest('.group');
         const area = fila.querySelector('.area-llenado');
-        crearFilaCampo(area, '', '', false); // false = etiqueta editable
-    }
+        area.innerHTML = '';
 
-    function eliminarCampo(btn) {
-        const filaPrincipal = btn.closest('.group');
-        btn.closest('.group\\/campo').remove();
-        actualizarJSON(filaPrincipal); // Pasamos cualquier elemento dentro de la fila para recalcular
-    }
-
-    // 5. Serializar todo a JSON
-    function actualizarJSON(elemento) {
-        // Encontrar la fila padre (puede venir del input o del botón)
-        const fila = elemento.closest('.group');
-        if (!fila) return;
-
-        const inputsClave = fila.querySelectorAll('.clave-dato');
-        const inputsValor = fila.querySelectorAll('.valor-dato');
-        
-        const datos = {};
-        
-        for (let i = 0; i < inputsClave.length; i++) {
-            const clave = inputsClave[i].tagName === 'INPUT' ? inputsClave[i].value : inputsClave[i].textContent || inputsClave[i].value;
-            const valor = inputsValor[i].value;
-            
-            if (clave && clave.trim() !== '') {
-                datos[clave.trim()] = valor;
-            }
+        if(op.dataset.campos) {
+            try {
+                const campos = JSON.parse(op.dataset.campos);
+                if (campos.length > 0) {
+                    area.innerHTML = '<div class="col-span-full text-[10px] font-bold text-[#C0A062] uppercase tracking-wide border-b border-gray-100 pb-1 mb-2">Completar Datos:</div>';
+                }
+                campos.forEach(c => {
+                    const div = document.createElement('div');
+                    div.className = "bg-white p-2 rounded-lg border border-gray-200 shadow-sm focus-within:border-[#C0A062] transition-colors";
+                    div.innerHTML = `
+                        <label class="block text-[9px] font-black text-gray-400 uppercase mb-1">${c.nombre}</label>
+                        <input type="${c.tipo}" data-label="${c.nombre}" oninput="guardarJSON(this)" class="w-full bg-transparent border-none p-0 text-xs font-bold text-[#1A2238] outline-none" placeholder="Ingresar...">
+                    `;
+                    area.appendChild(div);
+                });
+            } catch(e){}
         }
-        
-        fila.querySelector('.json-extras').value = JSON.stringify(datos);
     }
 
-    // Escuchar cambios en claves también
-    document.addEventListener('input', function(e) {
-        if (e.target.classList.contains('clave-dato')) {
-            actualizarJSON(e.target);
-        }
-    });
+    function guardarJSON(input) {
+        const fila = input.closest('.group');
+        const data = {};
+        fila.querySelectorAll('.area-llenado input').forEach(i => {
+            if(i.value) data[i.dataset.label] = i.value;
+        });
+        fila.querySelector('.json-extras').value = JSON.stringify(data);
+    }
 
     document.addEventListener('DOMContentLoaded', agregarFila);
 </script>

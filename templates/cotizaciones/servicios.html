@@ -6,7 +6,7 @@
     <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
         <div>
             <h2 class="text-3xl font-black text-[#1A2238]">Catálogo de Servicios</h2>
-            <p class="text-gray-500 text-sm">Define tus honorarios y los datos extra que requiere cada trámite.</p>
+            <p class="text-gray-500 text-sm">Define tus servicios y qué datos debe llenar el abogado.</p>
         </div>
         
         <div class="flex gap-2">
@@ -23,42 +23,28 @@
         {% for s in servicios %}
         <div class="bg-white rounded-[2rem] p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all group relative overflow-hidden">
             <div class="absolute left-0 top-0 bottom-0 w-2 bg-[#C0A062] opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            
             <div class="flex justify-between items-start mb-4">
                 <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-[#1A2238]">
                     <i class="fas fa-balance-scale text-xl"></i>
                 </div>
                 <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onclick="editarServicio('{{ s.id }}', '{{ s.nombre|escapejs }}', '{{ s.precio_base }}', '{{ s.descripcion|escapejs }}', '{{ s.campos_dinamicos|safe|escapejs }}')" class="text-gray-400 hover:text-[#1A2238] p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Editar">
+                    <button onclick="editarServicio('{{ s.id }}', '{{ s.nombre|escapejs }}', '{{ s.precio_base }}', '{{ s.descripcion|escapejs }}', '{{ s.campos_dinamicos|safe|escapejs }}')" class="text-gray-400 hover:text-[#1A2238] p-2 hover:bg-gray-100 rounded-lg transition-colors">
                         <i class="fas fa-pen"></i>
                     </button>
-                    <a href="{% url 'eliminar_servicio' s.id %}" onclick="return confirm('¿Eliminar este servicio?')" class="text-gray-400 hover:text-red-500 p-2 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar">
-                        <i class="fas fa-trash"></i>
-                    </a>
+                    <a href="{% url 'eliminar_servicio' s.id %}" onclick="return confirm('¿Eliminar servicio?')" class="text-gray-400 hover:text-red-500 p-2"><i class="fas fa-trash"></i></a>
                 </div>
             </div>
-            
             <h3 class="font-black text-lg text-[#1A2238] mb-2">{{ s.nombre }}</h3>
-            <p class="text-xs text-gray-500 mb-6 h-12 overflow-hidden leading-relaxed">{{ s.descripcion|truncatechars:90 }}</p>
-            
             <div class="flex items-center justify-between border-t border-gray-50 pt-4">
                 <span class="text-[10px] font-bold text-gray-400 uppercase">
-                    {% if s.campos_dinamicos %}
-                        {{ s.campos_dinamicos|length }} Datos Extra
-                    {% else %}
-                        Sin datos extra
-                    {% endif %}
+                    {% if s.campos_dinamicos %}{{ s.campos_dinamicos|length }} Datos Extra{% else %}Estándar{% endif %}
                 </span>
                 <span class="text-xl font-black text-[#C0A062]">${{ s.precio_base|floatformat:2 }}</span>
             </div>
         </div>
         {% empty %}
         <div class="col-span-full text-center py-20 bg-white rounded-[2rem] border border-dashed border-gray-300">
-            <div class="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i class="fas fa-box-open text-3xl text-gray-300"></i>
-            </div>
-            <h3 class="text-lg font-bold text-gray-400">Tu catálogo está vacío</h3>
-            <button onclick="abrirModal()" class="text-[#C0A062] font-bold text-sm hover:underline">Registrar el primero</button>
+            <h3 class="text-lg font-bold text-gray-400">Catálogo Vacío</h3>
         </div>
         {% endfor %}
     </div>
@@ -66,104 +52,64 @@
 
 <div id="modal-servicio" class="fixed inset-0 bg-[#1A2238]/80 hidden items-center justify-center z-50 backdrop-blur-sm animate__animated animate__fadeIn">
     <div class="bg-white p-8 rounded-[2rem] w-full max-w-2xl m-4 shadow-2xl relative overflow-y-auto max-h-[90vh]">
-        
-        <button onclick="cerrarModal()" class="absolute top-6 right-6 text-gray-400 hover:text-red-500 transition-colors">
-            <i class="fas fa-times text-xl"></i>
-        </button>
-        
-        <h3 id="modal-titulo" class="text-2xl font-black text-[#1A2238] mb-6">Nuevo Servicio</h3>
-        
+        <h3 class="text-2xl font-black text-[#1A2238] mb-6">Configurar Servicio</h3>
         <form action="{% url 'guardar_servicio' %}" method="POST">
             {% csrf_token %}
             <input type="hidden" name="servicio_id" id="input-id">
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div>
-                    <label class="block text-xs font-black text-gray-400 uppercase mb-2">Nombre del Servicio</label>
-                    <input type="text" name="nombre" id="input-nombre" class="w-full p-3 bg-gray-50 rounded-xl font-bold border-2 border-transparent focus:border-[#C0A062] outline-none" required>
-                </div>
-                <div>
-                    <label class="block text-xs font-black text-gray-400 uppercase mb-2">Honorarios Base</label>
-                    <input type="number" name="precio" id="input-precio" step="0.01" class="w-full p-3 bg-gray-50 rounded-xl font-bold border-2 border-transparent focus:border-[#C0A062] outline-none" required>
-                </div>
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <input type="text" name="nombre" id="input-nombre" placeholder="Nombre" class="w-full p-4 bg-gray-50 rounded-xl font-bold border-2 border-transparent focus:border-[#C0A062] outline-none" required>
+                <input type="number" name="precio" id="input-precio" step="0.01" placeholder="Precio" class="w-full p-4 bg-gray-50 rounded-xl font-bold border-2 border-transparent focus:border-[#C0A062] outline-none" required>
             </div>
+            <textarea name="descripcion" id="input-descripcion" rows="2" placeholder="Descripción" class="w-full p-4 bg-gray-50 rounded-xl text-sm mb-6 border-2 border-transparent focus:border-[#C0A062] outline-none"></textarea>
 
-            <div class="mb-6">
-                <label class="block text-xs font-black text-gray-400 uppercase mb-2">Descripción (Para cotización)</label>
-                <textarea name="descripcion" id="input-descripcion" rows="2" class="w-full p-3 bg-gray-50 rounded-xl text-sm border-2 border-transparent focus:border-[#C0A062] outline-none"></textarea>
-            </div>
-
-            <div class="bg-gray-50 p-6 rounded-2xl mb-6 border border-gray-100">
-                <h4 class="text-xs font-black text-[#1A2238] uppercase mb-4 flex items-center gap-2">
-                    <i class="fas fa-list-ul"></i> Datos extra requeridos
-                </h4>
-                
-                <div class="flex gap-2 mb-4 bg-white p-2 rounded-xl border border-gray-200 shadow-sm">
-                    <input type="text" id="temp-nombre-campo" placeholder="Ej. Numero de Escritura" class="flex-1 p-2 rounded-lg text-sm font-bold outline-none">
-                    <select id="temp-tipo-campo" class="p-2 rounded-lg text-sm bg-gray-50 font-bold outline-none border-l">
+            <div class="bg-gray-100 p-6 rounded-[1.5rem] mb-6 border-2 border-dashed border-gray-300">
+                <h4 class="text-xs font-black text-gray-500 uppercase mb-4">Campos que el abogado DEBE llenar</h4>
+                <div class="flex gap-2 mb-4">
+                    <input type="text" id="temp-nombre" placeholder="Ej. Numero de Escritura" class="flex-1 p-3 rounded-xl border-none font-bold text-sm outline-none">
+                    <select id="temp-tipo" class="p-3 rounded-xl border-none font-bold text-sm outline-none">
                         <option value="text">Texto</option>
                         <option value="number">Número</option>
                         <option value="date">Fecha</option>
                     </select>
-                    <button type="button" onclick="confirmarYAñadirCampo()" class="bg-[#C0A062] text-white px-4 rounded-lg font-bold text-xs hover:bg-yellow-600 transition-colors">
-                        AÑADIR
-                    </button>
+                    <button type="button" onclick="confirmarCampo()" class="bg-[#C0A062] text-white px-4 rounded-xl font-bold text-xs">AGREGAR</button>
                 </div>
-
-                <div id="lista-campos-confirmados" class="space-y-2 max-h-40 overflow-y-auto pr-2">
-                    </div>
-                <p class="text-[10px] text-gray-400 mt-2 text-center">Estos campos aparecerán para llenarse al crear la cotización.</p>
+                <div id="lista-campos-config" class="space-y-2"></div>
             </div>
 
-            <button type="submit" class="w-full bg-[#1A2238] text-white py-4 rounded-xl font-black text-sm tracking-widest hover:bg-black transition-all shadow-lg">
-                GUARDAR CAMBIOS
-            </button>
+            <div class="flex justify-between items-center">
+                <button type="button" onclick="cerrarModal()" class="text-gray-400 font-bold hover:text-[#1A2238]">Cancelar</button>
+                <button type="submit" class="bg-[#1A2238] text-white px-8 py-3 rounded-xl font-bold shadow-lg">GUARDAR</button>
+            </div>
         </form>
     </div>
 </div>
 
 <script>
-    // Agrega el campo visualmente y crea los inputs ocultos para el formulario
-    function confirmarYAñadirCampo(nombre = '', tipo = 'text') {
-        const inputNombre = document.getElementById('temp-nombre-campo');
-        const inputTipo = document.getElementById('temp-tipo-campo');
-        
-        const finalNombre = nombre || inputNombre.value;
-        const finalTipo = tipo || inputTipo.value;
+    function confirmarCampo(nombre = '', tipo = 'text') {
+        const n = nombre || document.getElementById('temp-nombre').value;
+        const t = tipo || document.getElementById('temp-tipo').value;
+        if(!n) return;
 
-        if (!finalNombre.trim()) return;
-
-        const container = document.getElementById('lista-campos-confirmados');
+        const container = document.getElementById('lista-campos-config');
         const div = document.createElement('div');
-        div.className = "flex justify-between items-center bg-white p-3 rounded-xl border border-gray-200 animate__animated animate__fadeInLeft";
+        div.className = "flex justify-between items-center bg-white p-3 rounded-xl shadow-sm animate__animated animate__fadeInLeft";
         div.innerHTML = `
             <div class="flex items-center gap-3">
-                <span class="bg-gray-100 text-[10px] font-black p-1 rounded uppercase text-gray-500 w-16 text-center">${finalTipo}</span>
-                <span class="text-sm font-bold text-[#1A2238]">${finalNombre}</span>
-                <input type="hidden" name="campo_nombre[]" value="${finalNombre}">
-                <input type="hidden" name="campo_tipo[]" value="${finalTipo}">
+                <span class="bg-gray-100 text-[10px] font-black p-1 rounded uppercase">${t}</span>
+                <span class="text-sm font-bold text-[#1A2238]">${n}</span>
+                <input type="hidden" name="campo_nombre[]" value="${n}">
+                <input type="hidden" name="campo_tipo[]" value="${t}">
             </div>
-            <button type="button" onclick="this.parentElement.remove()" class="text-red-300 hover:text-red-500 p-1">
-                <i class="fas fa-times"></i>
-            </button>
+            <button type="button" onclick="this.parentElement.remove()" class="text-red-400 hover:text-red-600"><i class="fas fa-trash"></i></button>
         `;
         container.appendChild(div);
-
-        // Limpiar inputs temporales
-        if (!nombre) {
-            inputNombre.value = '';
-            inputNombre.focus();
-        }
+        document.getElementById('temp-nombre').value = '';
     }
 
-    function abrirModal() {
-        document.getElementById('modal-titulo').innerText = 'Nuevo Servicio';
-        document.getElementById('input-id').value = '';
-        document.getElementById('input-nombre').value = '';
-        document.getElementById('input-precio').value = '';
-        document.getElementById('input-descripcion').value = '';
-        document.getElementById('lista-campos-confirmados').innerHTML = '';
-        document.getElementById('modal-servicio').classList.replace('hidden', 'flex');
+    function abrirModal() { 
+        document.getElementById('input-id').value = ''; 
+        document.getElementById('lista-campos-config').innerHTML = '';
+        document.getElementById('modal-servicio').classList.replace('hidden', 'flex'); 
     }
 
     function editarServicio(id, nombre, precio, descripcion, camposJson) {
@@ -173,18 +119,10 @@
         document.getElementById('input-nombre').value = nombre;
         document.getElementById('input-precio').value = precio;
         document.getElementById('input-descripcion').value = descripcion;
-        
-        // Reconstruir los campos existentes
         if(camposJson) {
-            try {
-                const campos = JSON.parse(camposJson);
-                campos.forEach(c => confirmarYAñadirCampo(c.nombre, c.tipo));
-            } catch(e) { console.error("Error cargando campos", e); }
+            try { JSON.parse(camposJson).forEach(c => confirmarCampo(c.nombre, c.tipo)); } catch(e){}
         }
     }
-
-    function cerrarModal() {
-        document.getElementById('modal-servicio').classList.replace('flex', 'hidden');
-    }
+    function cerrarModal() { document.getElementById('modal-servicio').classList.replace('flex', 'hidden'); }
 </script>
 {% endblock %}

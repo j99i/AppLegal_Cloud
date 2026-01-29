@@ -6,7 +6,7 @@ from django.core.validators import FileExtensionValidator
 from django.utils import timezone
 
 # ==========================================
-# 1. USUARIOS Y PERMISOS
+# 1. USUARIOS
 # ==========================================
 class Usuario(AbstractUser):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -21,7 +21,7 @@ class Usuario(AbstractUser):
     )
     rol = models.CharField(max_length=20, choices=CHOICES_ROL, default='analista_jr', db_index=True)
     
-    # Permisos granulares
+    # Permisos
     can_create_client = models.BooleanField(default=False)
     can_edit_client = models.BooleanField(default=False)
     can_delete_client = models.BooleanField(default=False)
@@ -29,7 +29,7 @@ class Usuario(AbstractUser):
     can_upload_files = models.BooleanField(default=False)
     can_manage_users = models.BooleanField(default=False)
 
-    # Accesos a módulos
+    # Accesos
     access_finanzas = models.BooleanField(default=False)
     access_cotizaciones = models.BooleanField(default=False)
     access_contratos = models.BooleanField(default=False)
@@ -39,7 +39,6 @@ class Usuario(AbstractUser):
     clientes_asignados = models.ManyToManyField('Cliente', blank=True, related_name='abogados_asignados')
 
     def save(self, *args, **kwargs):
-        # Si es admin, forzamos todos los permisos a True
         if self.rol == 'admin':
             self.is_staff = True
             self.is_superuser = True
@@ -48,7 +47,7 @@ class Usuario(AbstractUser):
         super().save(*args, **kwargs)
 
 # ==========================================
-# 2. CLIENTE Y CAMPOS DINÁMICOS
+# 2. CLIENTES
 # ==========================================
 class Cliente(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -64,18 +63,13 @@ class Cliente(models.Model):
         return self.nombre_empresa
 
 class CampoAdicional(models.Model):
-    TIPOS = (
-        ('text', 'Texto Corto'),
-        ('textarea', 'Texto Largo'),
-        ('date', 'Fecha'),
-        ('number', 'Número')
-    )
+    TIPOS = (('text', 'Texto Corto'), ('textarea', 'Texto Largo'), ('date', 'Fecha'), ('number', 'Número'))
     nombre = models.CharField(max_length=100)
     tipo = models.CharField(max_length=20, choices=TIPOS, default='text')
     obligatorio = models.BooleanField(default=False)
 
 # ==========================================
-# 3. DRIVE LEGAL
+# 3. DRIVE
 # ==========================================
 class Carpeta(models.Model):
     nombre = models.CharField(max_length=255, db_index=True)
@@ -104,7 +98,7 @@ class Documento(models.Model):
     subido_por = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True)
 
 # ==========================================
-# 4. GESTIÓN (TAREAS, BITÁCORA, PLANTILLAS)
+# 4. GESTIÓN
 # ==========================================
 class Tarea(models.Model):
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='tareas')
@@ -134,13 +128,13 @@ class VariableEstandar(models.Model):
     campo_bd = models.CharField(max_length=100, blank=True, null=True)
 
 # ==========================================
-# 5. COTIZACIONES (CON CAMPOS DINÁMICOS)
+# 5. COTIZACIONES
 # ==========================================
 class Servicio(models.Model):
     nombre = models.CharField(max_length=200)
     descripcion = models.TextField(blank=True)
     precio_base = models.DecimalField(max_digits=10, decimal_places=2)
-    # Guarda la configuración de campos: [{'nombre': 'Escritura', 'tipo': 'text'}, ...]
+    # Guarda el "Molde" de campos: [{'nombre': 'Juzgado', 'tipo': 'text'}, ...]
     campos_dinamicos = models.JSONField(default=list, blank=True) 
 
     def __str__(self):
@@ -181,7 +175,7 @@ class ItemCotizacion(models.Model):
     cantidad = models.IntegerField(default=1)
     precio_unitario = models.DecimalField(max_digits=10, decimal_places=2)
     total = models.DecimalField(max_digits=10, decimal_places=2)
-    # Guarda las respuestas llenadas: {'Escritura': '1234', 'Fecha': '2026-01-28'}
+    # Guarda lo que el abogado llenó: {'Juzgado': 'Cuarto Civil', ...}
     valores_adicionales = models.JSONField(default=dict, blank=True) 
 
     def save(self, *args, **kwargs):
@@ -221,7 +215,6 @@ class Pago(models.Model):
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        # Actualizar la cuenta padre
         self.cuenta.monto_pagado = sum(p.monto for p in self.cuenta.pagos.all())
         self.cuenta.save()
 

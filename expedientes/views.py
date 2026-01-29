@@ -671,6 +671,7 @@ def guardar_servicio(request):
         s.descripcion = request.POST.get('descripcion')
         s.precio_base = request.POST.get('precio')
         
+        # Procesar lista de campos dinámicos
         nombres = request.POST.getlist('campo_nombre[]')
         tipos = request.POST.getlist('campo_tipo[]')
         
@@ -688,36 +689,6 @@ def guardar_servicio(request):
 def eliminar_servicio(request, servicio_id):
     get_object_or_404(Servicio, id=servicio_id).delete()
     return redirect('gestion_servicios')
-
-# === AQUI ESTABA EL ERROR: AGREGAMOS LA FUNCION FALTANTE ===
-@csrf_exempt
-@login_required
-def api_agregar_campo_servicio(request):
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            servicio_id = data.get('servicio_id')
-            nombre_campo = data.get('nombre')
-            tipo_campo = data.get('tipo', 'text')
-
-            if not servicio_id or not nombre_campo:
-                return JsonResponse({'status': 'error', 'msg': 'Faltan datos'})
-
-            servicio = get_object_or_404(Servicio, id=servicio_id)
-            
-            # Recuperar campos existentes
-            campos = servicio.campos_dinamicos or []
-            
-            # Verificar si ya existe
-            if not any(c.get('nombre') == nombre_campo for c in campos):
-                campos.append({'nombre': nombre_campo, 'tipo': tipo_campo})
-                servicio.campos_dinamicos = campos
-                servicio.save()
-            
-            return JsonResponse({'status': 'ok', 'campos': campos})
-        except Exception as e:
-            return JsonResponse({'status': 'error', 'msg': str(e)})
-    return JsonResponse({'status': 'error', 'msg': 'Método no permitido'}, status=405)
 
 @login_required
 def lista_cotizaciones(request):
@@ -740,6 +711,8 @@ def nueva_cotizacion(request):
         cants = request.POST.getlist('cantidad')
         precios = request.POST.getlist('precio')
         descs = request.POST.getlist('descripcion')
+        
+        # Procesar respuestas JSON de cada item
         extras_json = request.POST.getlist('valores_adicionales_json[]')
 
         for i in range(len(s_ids)):
