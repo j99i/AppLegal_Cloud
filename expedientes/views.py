@@ -770,7 +770,19 @@ def enviar_cotizacion_email(request, cotizacion_id):
     if request.method == 'POST':
         c = get_object_or_404(Cotizacion, id=cotizacion_id)
         
-        # 1. Obtener datos
+        # 1. Datos del Abogado (Usuario actual)
+        nombre_abogado = f"{request.user.first_name} {request.user.last_name}"
+        email_abogado = request.user.email
+        
+        # Validar que el abogado tenga correo, si no, usar el del sistema por defecto
+        if not email_abogado:
+            email_abogado = settings.DEFAULT_FROM_EMAIL
+            
+        # 2. Configurar el Remitente Visual
+        # Esto hará que llegue como: "Juan Pérez <notificaciones@tudominio.com>"
+        # Así Gmail lo acepta, pero el cliente ve el nombre del abogado.
+        remitente_visual = f"{nombre_abogado} <{settings.EMAIL_HOST_USER}>"
+
         asunto = request.POST.get('asunto', f"Cotización #{c.id}")
         mensaje = request.POST.get('mensaje', 'Adjunto cotización.')
         email_destino = c.prospecto_email
@@ -780,38 +792,34 @@ def enviar_cotizacion_email(request, cotizacion_id):
             return redirect('detalle_cotizacion', cotizacion_id=cotizacion_id)
 
         try:
-            # 2. Generar el PDF en memoria
+            # 3. Generar PDF
             html = render_to_string('cotizaciones/pdf_template.html', {
                 'c': c, 
                 'base_url': request.build_absolute_uri('/')
             })
             pdf_file = weasyprint.HTML(string=html, base_url=request.build_absolute_uri('/')).write_pdf()
 
-            # 3. Preparar el Correo
+            # 4. Construir el Correo Inteligente
             email = EmailMultiAlternatives(
                 subject=asunto,
                 body=mensaje,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                to=[email_destino]
+                from_email=remitente_visual, # Sale del sistema (para que no rebote)
+                to=[email_destino],
+                reply_to=[email_abogado]     # <--- MAGIA: La respuesta le llega al abogado
             )
             
-            # 4. Adjuntar el PDF
-            filename = f"Cotizacion_{c.id}.pdf"
-            email.attach(filename, pdf_file, 'application/pdf')
-            
-            # 5. Enviar
+            email.attach(f"Cotizacion_{c.id}.pdf", pdf_file, 'application/pdf')
             email.send()
 
-            # 6. Actualizar Estado
             c.estado = 'enviada'
             c.save()
-            messages.success(request, f"Correo enviado exitosamente a {email_destino}")
+            messages.success(request, f"Correo enviado a {email_destino}. Si el cliente responde, te llegará a {email_abogado}.")
 
         except Exception as e:
-            messages.error(request, f"Error al enviar correo: {e}")
+            # Mostrar el error técnico en pantalla para depurar si falla
+            messages.error(request, f"Error técnico: {str(e)}")
 
     return redirect('detalle_cotizacion', cotizacion_id=cotizacion_id)
-
 # ==========================================
 # 8. FINANZAS
 # ==========================================
