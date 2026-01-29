@@ -39,7 +39,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     
     # Librerías de Terceros
-    'whitenoise.runserver_nostatic', # Ayuda en desarrollo local
+    'whitenoise.runserver_nostatic', 
+    'anymail',  # <--- NUEVO: Agregamos Anymail para conectar con Resend
     
     # Mis Aplicaciones
     'expedientes',
@@ -51,7 +52,7 @@ INSTALLED_APPS = [
 # ==========================================
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    "whitenoise.middleware.WhiteNoiseMiddleware", # <--- VITAL PARA LA NUBE
+    "whitenoise.middleware.WhiteNoiseMiddleware", 
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -149,26 +150,24 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
-# core/settings.py
-
 # ==========================================
-# 9. SISTEMA DE CORREO (Configuración Final 587)
+# 9. SISTEMA DE CORREO (Vía API - RESEND)
 # ==========================================
-# Usamos el 587 porque es el estándar universal de Gmail y evita bloqueos de red en Railway.
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
+# Esta configuración usa el puerto 443 (HTTPS) que NUNCA se bloquea en Railway.
 
-# AQUÍ ES IMPORTANTE: 587 (No 8000, ni 465)
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_USE_SSL = False
-EMAIL_TIMEOUT = 30 
+EMAIL_BACKEND = "anymail.backends.resend.EmailBackend"
 
-# Variables de entorno
-EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
-EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
+# Configuración de Anymail
+ANYMAIL = {
+    # Aquí le decimos que busque la clave en las variables de Railway.
+    # El default='' evita errores si se te olvida ponerla (aunque no enviará correos).
+    "RESEND_API_KEY": env('RESEND_API_KEY', default=''),
+}
 
-if EMAIL_HOST_USER:
-    DEFAULT_FROM_EMAIL = f'AppLegal <{EMAIL_HOST_USER}>'
-else:
-    DEFAULT_FROM_EMAIL = 'AppLegal <noreply@applegal.com>'
+# CONFIGURACIÓN DEL REMITENTE
+# Como estás en modo prueba, DEBES usar este correo de Resend.
+# Saldrá como "AppLegal <onboarding@resend.dev>"
+DEFAULT_FROM_EMAIL = "AppLegal <onboarding@resend.dev>" 
+SERVER_EMAIL = "onboarding@resend.dev" 
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
