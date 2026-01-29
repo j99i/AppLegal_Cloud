@@ -61,9 +61,6 @@ urlpatterns = [
     path('api/previsualizar-word/', views.previsualizar_word_raw, name='previsualizar_word_raw'),
     path('api/crear-variable/', views.crear_variable_api, name='api_crear_variable'),
     path('api/convertir-html/', views.api_convertir_html, name='api_convertir_html'), 
-    
-    # === NUEVA API PARA AGREGAR CAMPO AL SERVICIO ===
-    path('api/servicio/agregar-campo/', views.api_agregar_campo_servicio, name='api_agregar_campo_servicio'),
 
     # COTIZACIONES
     path('cotizaciones/servicios/', views.gestion_servicios, name='gestion_servicios'),
