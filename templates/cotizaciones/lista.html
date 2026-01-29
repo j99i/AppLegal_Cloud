@@ -1,103 +1,175 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container-fluid">
+
+<style>
+    .card-dashboard {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.04);
+    }
+    .table-hover tbody tr:hover {
+        background-color: #f8f9fa;
+        transition: all 0.2s ease-in-out;
+    }
+    .btn-icon {
+        width: 35px;
+        height: 35px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        transition: transform 0.2s;
+    }
+    .btn-icon:hover {
+        transform: translateY(-2px);
+    }
+    .badge-status {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+    }
+    .client-avatar {
+        width: 40px;
+        height: 40px;
+        background-color: #e9ecef;
+        color: #495057;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 14px;
+        margin-right: 12px;
+    }
+</style>
+
+<div class="container-fluid py-4">
 
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3 text-gray-800">
-            <i class="fas fa-file-invoice-dollar me-2"></i>Cotizaciones
-        </h1>
-        <a href="{% url 'nueva_cotizacion' %}" class="btn btn-primary shadow-sm">
-            <i class="fas fa-plus fa-sm text-white-50"></i> Nueva Cotización
+        <div>
+            <h1 class="h3 font-weight-bold text-gray-800 mb-1">Cotizaciones</h1>
+            <p class="text-muted mb-0">Gestiona tus propuestas y seguimientos</p>
+        </div>
+        <a href="{% url 'nueva_cotizacion' %}" class="btn btn-primary btn-lg shadow-sm" style="border-radius: 50px; padding: 10px 25px;">
+            <i class="fas fa-plus me-2"></i> Crear Nueva
         </a>
     </div>
 
-    <div class="card shadow mb-4">
-        <div class="card-header py-3 d-flex justify-content-between align-items-center">
-            <h6 class="m-0 font-weight-bold text-primary">Historial de Propuestas</h6>
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm" role="alert" style="border-radius: 10px;">
+                <i class="fas fa-info-circle me-2"></i> {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="card card-dashboard mb-4">
+        <div class="card-header bg-white py-3 border-bottom-0 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-list me-2"></i> Historial Reciente
+            </h6>
             
-            <form class="d-none d-sm-inline-block form-inline mw-100 navbar-search">
-                <div class="input-group">
-                    <input type="text" class="form-control bg-light border-0 small" placeholder="Buscar cotización..." aria-label="Search">
-                    <div class="input-group-append">
-                        <button class="btn btn-primary" type="button">
-                            <i class="fas fa-search fa-sm"></i>
-                        </button>
-                    </div>
-                </div>
-            </form>
+            <div class="input-group" style="width: 250px;">
+                <input type="text" class="form-control border-end-0 bg-light" placeholder="Buscar..." style="border-radius: 20px 0 0 20px;">
+                <span class="input-group-text bg-light border-start-0" style="border-radius: 0 20px 20px 0;">
+                    <i class="fas fa-search text-gray-400"></i>
+                </span>
+            </div>
         </div>
-        
-        <div class="card-body">
+
+        <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-bordered table-hover" id="dataTable" width="100%" cellspacing="0">
-                    <thead class="thead-light">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light text-uppercase text-muted small font-weight-bold">
                         <tr>
-                            <th style="width: 10%;">Folio</th>
-                            <th style="width: 30%;">Cliente / Prospecto</th>
-                            <th style="width: 15%;">Fecha Creación</th>
-                            <th style="width: 15%;">Total (MXN)</th>
-                            <th style="width: 15%;">Estado</th>
-                            <th style="width: 15%; text-align: right;">Acciones</th>
+                            <th class="ps-4 py-3 border-0">Folio</th>
+                            <th class="py-3 border-0">Cliente / Prospecto</th>
+                            <th class="py-3 border-0">Fecha</th>
+                            <th class="py-3 border-0">Importe</th>
+                            <th class="py-3 border-0 text-center">Estado</th>
+                            <th class="py-3 border-0 text-end pe-4">Acciones</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody class="border-top-0">
                         {% for c in cotizaciones %}
                         <tr>
-                            <td class="align-middle font-weight-bold">
-                                #{{ c.id|stringformat:"04d" }}
+                            <td class="ps-4 font-weight-bold text-dark">
+                                <span class="text-muted">#</span>{{ c.id|stringformat:"04d" }}
                             </td>
                             
-                            <td class="align-middle">
-                                {% if c.prospecto_empresa %}
-                                    <div class="font-weight-bold text-dark">{{ c.prospecto_empresa }}</div>
-                                    <div class="small text-muted"><i class="fas fa-user mt-1"></i> {{ c.prospecto_nombre }}</div>
-                                {% else %}
-                                    <div class="font-weight-bold text-dark">{{ c.prospecto_nombre }}</div>
-                                    <div class="small text-muted">{{ c.prospecto_email }}</div>
-                                {% endif %}
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="client-avatar">
+                                        {% if c.prospecto_empresa %}
+                                            {{ c.prospecto_empresa|slice:":1"|upper }}
+                                        {% else %}
+                                            {{ c.prospecto_nombre|slice:":1"|upper }}
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        {% if c.prospecto_empresa %}
+                                            <div class="font-weight-bold text-dark">{{ c.prospecto_empresa }}</div>
+                                            <div class="small text-muted">{{ c.prospecto_nombre }}</div>
+                                        {% else %}
+                                            <div class="font-weight-bold text-dark">{{ c.prospecto_nombre }}</div>
+                                            <div class="small text-muted">{{ c.prospecto_email|default:"Sin email" }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
                             </td>
                             
-                            <td class="align-middle">
-                                {{ c.fecha_creacion|date:"d M, Y" }}
+                            <td class="text-muted small">
+                                <i class="far fa-calendar-alt me-1"></i> {{ c.fecha_creacion|date:"d M, Y" }}
                             </td>
                             
-                            <td class="align-middle font-weight-bold text-success">
-                                ${{ c.total }}
+                            <td class="font-weight-bold text-dark">
+                                ${{ c.total }} <span class="small text-muted">MXN</span>
                             </td>
                             
-                            <td class="align-middle">
+                            <td class="text-center">
                                 {% if c.estado == 'borrador' %}
-                                    <span class="badge bg-secondary text-white px-2 py-1">Borrador</span>
+                                    <span class="badge bg-secondary badge-status">Borrador</span>
                                 {% elif c.estado == 'enviada' %}
-                                    <span class="badge bg-primary text-white px-2 py-1">Enviada</span>
+                                    <span class="badge bg-primary badge-status"><i class="fas fa-paper-plane me-1"></i> Enviada</span>
                                 {% elif c.estado == 'aceptada' %}
-                                    <span class="badge bg-success text-white px-2 py-1">Aceptada</span>
+                                    <span class="badge bg-success badge-status"><i class="fas fa-check me-1"></i> Aceptada</span>
                                 {% elif c.estado == 'rechazada' %}
-                                    <span class="badge bg-danger text-white px-2 py-1">Rechazada</span>
+                                    <span class="badge bg-danger badge-status">Rechazada</span>
                                 {% else %}
-                                    <span class="badge bg-light text-dark border">{{ c.estado|title }}</span>
+                                    <span class="badge bg-light text-dark border badge-status">{{ c.estado|title }}</span>
                                 {% endif %}
                             </td>
                             
-                            <td class="align-middle text-right">
-                                <a href="{% url 'detalle_cotizacion' c.id %}" class="btn btn-sm btn-info text-white shadow-sm" title="Ver Detalles">
+                            <td class="text-end pe-4">
+                                <a href="{% url 'detalle_cotizacion' c.id %}" class="btn btn-icon btn-light text-primary me-2" title="Ver Detalles">
                                     <i class="fas fa-eye"></i>
                                 </a>
-
+                                
                                 <a href="{% url 'eliminar_cotizacion' c.id %}" 
-                                   class="btn btn-sm btn-danger shadow-sm ml-1" 
-                                   onclick="return confirm('⚠️ ¿Estás SEGURO de eliminar la Cotización #{{ c.id }}?\n\nEsta acción borrará permanentemente la cotización y no se podrá recuperar.');"
-                                   title="Eliminar Cotización">
-                                    <i class="fas fa-trash"></i>
+                                   class="btn btn-icon btn-light text-danger"
+                                   onclick="return confirm('⚠️ ¿Estás SEGURO de eliminar la Cotización #{{ c.id }}?');"
+                                   title="Eliminar">
+                                    <i class="fas fa-trash-alt"></i>
                                 </a>
                             </td>
                         </tr>
                         {% empty %}
                         <tr>
                             <td colspan="6" class="text-center py-5">
-                                <div class="text-gray-500 mb-2">No hay cotizaciones registradas aún.</div>
-                                <a href="{% url 'nueva_cotizacion' %}" class="btn btn-link">Crear la primera</a>
+                                <div class="py-4">
+                                    <div class="mb-3 text-gray-300">
+                                        <i class="fas fa-folder-open fa-4x"></i>
+                                    </div>
+                                    <h5 class="text-gray-600">No hay cotizaciones registradas</h5>
+                                    <p class="text-muted small mb-4">Comienza creando una nueva propuesta para tus clientes.</p>
+                                    <a href="{% url 'nueva_cotizacion' %}" class="btn btn-outline-primary btn-sm rounded-pill px-4">
+                                        Crear Primera Cotización
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}
@@ -106,6 +178,5 @@
             </div>
         </div>
     </div>
-
 </div>
 {% endblock %}
