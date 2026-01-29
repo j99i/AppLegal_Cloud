@@ -214,11 +214,25 @@
                         <strong>{{ item.servicio.nombre }}</strong>
                         <div class="item-desc">
                             {{ item.descripcion_personalizada|default:item.servicio.descripcion }}
-                            {% if item.valores_adicionales %}
-                                <br>
-                                {% for k, v in item.valores_adicionales.items %}
-                                    <small>• {{ k }}: {{ v }}</small>
+                            
+                            {% if item.servicio.campos_dinamicos %}
+                                <div style="margin-top: 8px; color: #555;">
+                                {% for spec in item.servicio.campos_dinamicos %}
+                                    <small style="display:block;">
+                                        • <strong>{{ spec.nombre }}:</strong> {{ spec.valor }}
+                                    </small>
                                 {% endfor %}
+                                </div>
+                            {% endif %}
+                            
+                            {% if item.valores_adicionales %}
+                                <div style="margin-top: 5px; border-top: 1px dashed #eee; padding-top: 4px;">
+                                {% for k, v in item.valores_adicionales.items %}
+                                    <small style="display:block; color: #1a5276;">
+                                        • <strong>{{ k }}:</strong> {{ v }}
+                                    </small>
+                                {% endfor %}
+                                </div>
                             {% endif %}
                         </div>
                     </td>
@@ -234,8 +248,8 @@
             <table class="totals-table">
                 <tr class="total-row">
                     <td class="text-right">SUBTOTAL:</td>
-                    <td class="text-right">${{ c.total }}</td> 
-                    </tr>
+                    <td class="text-right">${{ c.subtotal }}</td> 
+                </tr>
                 <tr class="total-row">
                     <td class="text-right total-final">TOTAL MXN:</td>
                     <td class="text-right total-final">${{ c.total }}</td>
