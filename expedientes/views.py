@@ -669,15 +669,16 @@ def guardar_servicio(request):
         s.descripcion = request.POST.get('descripcion')
         s.precio_base = request.POST.get('precio')
         
-        # Procesamos la "Receta" de campos dinámicos
-        # Recogemos las listas de nombres y tipos que envió el modal
+        # --- LÓGICA MODIFICADA: ESPECIFICACIONES FIJAS ---
+        # Recogemos las listas de nombres y VALORES que envió el formulario
         nombres = request.POST.getlist('campo_nombre[]')
-        tipos = request.POST.getlist('campo_tipo[]')
+        valores = request.POST.getlist('campo_valor[]')
         
         estructura = []
-        for nombre, tipo in zip(nombres, tipos):
+        # Unimos nombre y valor (Ej: "Aceite" con "Sintético")
+        for nombre, valor in zip(nombres, valores):
             if nombre.strip():
-                estructura.append({'nombre': nombre.strip(), 'tipo': tipo})
+                estructura.append({'nombre': nombre.strip(), 'valor': valor.strip()})
         
         s.campos_dinamicos = estructura
         s.save()
