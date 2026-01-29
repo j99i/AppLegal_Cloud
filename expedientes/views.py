@@ -689,6 +689,36 @@ def eliminar_servicio(request, servicio_id):
     get_object_or_404(Servicio, id=servicio_id).delete()
     return redirect('gestion_servicios')
 
+# === AQUI ESTABA EL ERROR: AGREGAMOS LA FUNCION FALTANTE ===
+@csrf_exempt
+@login_required
+def api_agregar_campo_servicio(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            servicio_id = data.get('servicio_id')
+            nombre_campo = data.get('nombre')
+            tipo_campo = data.get('tipo', 'text')
+
+            if not servicio_id or not nombre_campo:
+                return JsonResponse({'status': 'error', 'msg': 'Faltan datos'})
+
+            servicio = get_object_or_404(Servicio, id=servicio_id)
+            
+            # Recuperar campos existentes
+            campos = servicio.campos_dinamicos or []
+            
+            # Verificar si ya existe
+            if not any(c.get('nombre') == nombre_campo for c in campos):
+                campos.append({'nombre': nombre_campo, 'tipo': tipo_campo})
+                servicio.campos_dinamicos = campos
+                servicio.save()
+            
+            return JsonResponse({'status': 'ok', 'campos': campos})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'msg': str(e)})
+    return JsonResponse({'status': 'error', 'msg': 'Método no permitido'}, status=405)
+
 @login_required
 def lista_cotizaciones(request):
     if not request.user.access_cotizaciones: return redirect('dashboard')
@@ -710,7 +740,6 @@ def nueva_cotizacion(request):
         cants = request.POST.getlist('cantidad')
         precios = request.POST.getlist('precio')
         descs = request.POST.getlist('descripcion')
-        # AQUÍ ESTÁ LA CLAVE: Recibimos un JSON con { 'Color': 'Rojo', 'Otro Dato': 'Valor' }
         extras_json = request.POST.getlist('valores_adicionales_json[]')
 
         for i in range(len(s_ids)):
@@ -724,8 +753,6 @@ def nueva_cotizacion(request):
                 )
                 if i < len(extras_json) and extras_json[i]:
                     try:
-                        # Guardamos CUALQUIER cosa que venga en el JSON, 
-                        # sea campo predefinido o inventado en el momento.
                         item.valores_adicionales = json.loads(extras_json[i])
                         item.save()
                     except: pass
