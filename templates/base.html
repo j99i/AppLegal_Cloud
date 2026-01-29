@@ -3,230 +3,170 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AppLegal Cloud</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <title>{% block titulo_pagina %}AppLegal Cloud{% endblock %}</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <style>
-        body { font-family: 'Lato', sans-serif; background-color: #F3F4F6; }
-        h1, h2, h3, h4, .brand-font { font-family: 'Playfair Display', serif; }
-        .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #C0A062; border-radius: 10px; }
-        #sidebar { width: 4rem; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden; }
-        #sidebar:hover { width: 14rem; }
-        .nav-text { opacity: 0; transform: translateX(-10px); transition: all 0.3s ease; white-space: nowrap; pointer-events: none; }
-        #sidebar:hover .nav-text { opacity: 1; transform: translateX(0); pointer-events: auto; transition-delay: 0.1s; }
-        .logo-text { display: none; }
-        #sidebar:hover .logo-text { display: block; animation: fadeIn 0.5s; }
+        body { font-family: 'Lato', sans-serif; background-color: #F8F9FA; }
+        .font-serif { font-family: 'Playfair Display', serif; }
+        
+        /* Ocultar Scrollbar en Navegación pero permitir scroll */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="flex h-screen overflow-hidden">
+<body class="text-gray-700 h-screen flex overflow-hidden">
 
-    <aside id="sidebar" class="fixed inset-y-0 left-0 bg-[#1A2238] text-white shadow-2xl z-50 flex flex-col group border-r border-white/5">
-        <div class="h-16 flex items-center justify-center border-b border-white/5 shrink-0">
-            <div class="flex items-center gap-3 overflow-hidden px-2">
-                <i class="fas fa-balance-scale text-2xl text-[#C0A062] shrink-0 transform group-hover:scale-110 transition-transform duration-300"></i>
-                <span class="text-lg font-black tracking-widest text-[#C0A062] brand-font logo-text whitespace-nowrap">AppLegal</span>
+    <div class="md:hidden fixed w-full top-0 z-50 bg-[#1A2238] text-white flex justify-between items-center p-4 shadow-md">
+        <div class="flex items-center gap-2">
+            <i class="fas fa-balance-scale text-[#C0A062] text-xl"></i>
+            <span class="font-serif font-bold text-lg">AppLegal</span>
+        </div>
+        <button onclick="toggleMobileMenu()" class="text-white focus:outline-none">
+            <i class="fas fa-bars text-2xl"></i>
+        </button>
+    </div>
+
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 bg-[#1A2238] text-white transition-transform duration-300 transform -translate-x-full md:translate-x-0 md:static md:flex md:flex-col shadow-2xl">
+        
+        <div class="h-20 flex items-center justify-center border-b border-gray-700/50 bg-[#151b2d]">
+            <a href="{% url 'dashboard' %}" class="flex items-center gap-3 group">
+                <div class="w-10 h-10 bg-[#C0A062] rounded-lg flex items-center justify-center text-[#1A2238] shadow-lg group-hover:rotate-12 transition-transform">
+                    <i class="fas fa-balance-scale text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-serif font-black text-xl tracking-wide">AppLegal</h1>
+                    <p class="text-[10px] text-gray-400 uppercase tracking-widest text-center">Cloud Platform</p>
+                </div>
+            </a>
+            <button onclick="toggleMobileMenu()" class="md:hidden absolute right-4 text-gray-400">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="p-6 border-b border-gray-700/30">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-gray-600 overflow-hidden border-2 border-[#C0A062]">
+                    {% if user.avatar %}
+                        <img src="{{ user.avatar.url }}" class="w-full h-full object-cover">
+                    {% else %}
+                        <img src="https://ui-avatars.com/api/?name={{ user.first_name }}+{{ user.last_name }}&background=C0A062&color=1A2238" class="w-full h-full object-cover">
+                    {% endif %}
+                </div>
+                <div class="overflow-hidden">
+                    <p class="text-sm font-bold truncate">{{ user.first_name }}</p>
+                    <p class="text-xs text-gray-400 truncate">{{ user.puesto|default:"Usuario" }}</p>
+                </div>
             </div>
         </div>
-        <nav class="flex-1 overflow-y-auto custom-scrollbar py-4 space-y-1">
-            <a href="{% url 'dashboard' %}" class="flex items-center px-4 py-3 hover:bg-white/10 transition-colors relative {% if request.path == '/' %}text-[#C0A062]{% else %}text-gray-400{% endif %}">
-                <i class="fas fa-th-large text-lg w-6 text-center shrink-0"></i>
-                <span class="nav-text ml-4 text-xs font-bold tracking-widest uppercase">Panel General</span>
-                {% if request.path == '/' %}<div class="absolute left-0 top-0 bottom-0 w-1 bg-[#C0A062]"></div>{% endif %}
+
+        <nav class="flex-1 overflow-y-auto no-scrollbar py-6 space-y-1 px-3">
+            
+            <p class="px-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Principal</p>
+            <a href="{% url 'dashboard' %}" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all {% if request.path == '/' %}bg-[#C0A062] text-[#1A2238] font-bold shadow-lg{% else %}text-gray-300 hover:bg-white/10 hover:text-white{% endif %}">
+                <i class="fas fa-chart-pie w-5 text-center"></i> Panel General
             </a>
 
             {% if user.access_agenda %}
-            <a href="{% url 'agenda_legal' %}" class="flex items-center px-4 py-3 hover:bg-white/10 transition-colors relative {% if 'agenda' in request.path %}text-[#C0A062]{% else %}text-gray-400{% endif %}">
-                <i class="fas fa-calendar-alt text-lg w-6 text-center shrink-0"></i>
-                <span class="nav-text ml-4 text-xs font-bold tracking-widest uppercase">Agenda</span>
-                {% if 'agenda' in request.path %}<div class="absolute left-0 top-0 bottom-0 w-1 bg-[#C0A062]"></div>{% endif %}
+            <a href="{% url 'agenda_legal' %}" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all {% if 'agenda' in request.path %}bg-[#C0A062] text-[#1A2238] font-bold shadow-lg{% else %}text-gray-300 hover:bg-white/10 hover:text-white{% endif %}">
+                <i class="fas fa-calendar-alt w-5 text-center"></i> Agenda
             </a>
             {% endif %}
 
+            <p class="px-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider mt-6 mb-2">Comercial</p>
             {% if user.access_cotizaciones %}
-            <a href="{% url 'lista_cotizaciones' %}" class="flex items-center px-4 py-3 hover:bg-white/10 transition-colors relative {% if 'cotizaciones' in request.path %}text-[#C0A062]{% else %}text-gray-400{% endif %}">
-                <i class="fas fa-file-invoice-dollar text-lg w-6 text-center shrink-0"></i>
-                <span class="nav-text ml-4 text-xs font-bold tracking-widest uppercase">Cotizaciones</span>
-                {% if 'cotizaciones' in request.path %}<div class="absolute left-0 top-0 bottom-0 w-1 bg-[#C0A062]"></div>{% endif %}
+            <a href="{% url 'lista_cotizaciones' %}" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all {% if 'cotizaciones' in request.path %}bg-[#C0A062] text-[#1A2238] font-bold shadow-lg{% else %}text-gray-300 hover:bg-white/10 hover:text-white{% endif %}">
+                <i class="fas fa-file-invoice-dollar w-5 text-center"></i> Cotizaciones
+            </a>
+            <a href="{% url 'gestion_servicios' %}" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all {% if 'servicios' in request.path %}bg-[#C0A062] text-[#1A2238] font-bold shadow-lg{% else %}text-gray-300 hover:bg-white/10 hover:text-white{% endif %}">
+                <i class="fas fa-tags w-5 text-center"></i> Catálogo
             </a>
             {% endif %}
 
             {% if user.access_finanzas %}
-            <a href="{% url 'panel_finanzas' %}" class="flex items-center px-4 py-3 hover:bg-white/10 transition-colors relative {% if 'finanzas' in request.path %}text-[#C0A062]{% else %}text-gray-400{% endif %}">
-                <i class="fas fa-wallet text-lg w-6 text-center shrink-0"></i>
-                <span class="nav-text ml-4 text-xs font-bold tracking-widest uppercase">Finanzas</span>
-                {% if 'finanzas' in request.path %}<div class="absolute left-0 top-0 bottom-0 w-1 bg-[#C0A062]"></div>{% endif %}
+            <a href="{% url 'panel_finanzas' %}" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all {% if 'finanzas' in request.path %}bg-[#C0A062] text-[#1A2238] font-bold shadow-lg{% else %}text-gray-300 hover:bg-white/10 hover:text-white{% endif %}">
+                <i class="fas fa-wallet w-5 text-center"></i> Finanzas
             </a>
-            {% endif %}
-
-            {% if user.access_disenador %}
-            <a href="{% url 'diseñador_plantillas' %}" class="flex items-center px-4 py-3 hover:bg-white/10 transition-colors relative {% if 'herramientas' in request.path %}text-[#C0A062]{% else %}text-gray-400{% endif %}">
-                <i class="fas fa-pen-nib text-lg w-6 text-center shrink-0"></i>
-                <span class="nav-text ml-4 text-xs font-bold tracking-widest uppercase">Diseñador</span>
-                {% if 'herramientas' in request.path %}<div class="absolute left-0 top-0 bottom-0 w-1 bg-[#C0A062]"></div>{% endif %}
-            </a>
-            {% endif %}
-
-            {% if user.access_cotizaciones %}
-            <div class="mt-6 pt-4 border-t border-white/5 space-y-2">
-                <a href="{% url 'gestion_servicios' %}" class="flex items-center px-4 py-3 hover:bg-white/10 transition-colors relative group/btn">
-                    <i class="fas fa-list-ul text-lg w-6 text-center shrink-0"></i>
-                    <span class="nav-text ml-4 text-xs font-bold tracking-widest uppercase">Catálogo</span>
-                </a>
-                <a href="{% url 'nueva_cotizacion' %}" class="flex items-center px-4 py-3 transition-colors relative group/btn text-[#C0A062] hover:bg-[#C0A062] hover:text-[#1A2238]">
-                    <i class="fas fa-plus-circle text-lg w-6 text-center shrink-0"></i>
-                    <span class="nav-text ml-4 text-xs font-black tracking-widest uppercase">Nueva Cotización</span>
-                </a>
-            </div>
             {% endif %}
 
             {% if user.rol == 'admin' %}
-            <div class="mt-4 pt-2 border-t border-white/5">
-                <a href="{% url 'gestion_usuarios' %}" class="flex items-center px-4 py-3 hover:bg-white/10 transition-colors relative">
-                    <i class="fas fa-users-cog text-lg w-6 text-center shrink-0"></i>
-                    <span class="nav-text ml-4 text-xs font-bold tracking-widest uppercase">Usuarios</span>
-                </a>
-            </div>
+            <p class="px-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider mt-6 mb-2">Administración</p>
+            <a href="{% url 'gestion_usuarios' %}" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all {% if 'usuarios' in request.path %}bg-[#C0A062] text-[#1A2238] font-bold shadow-lg{% else %}text-gray-300 hover:bg-white/10 hover:text-white{% endif %}">
+                <i class="fas fa-users-cog w-5 text-center"></i> Usuarios
+            </a>
             {% endif %}
+
         </nav>
+
+        <div class="p-4 bg-[#151b2d]">
+            <a href="{% url 'signout' %}" class="flex items-center gap-2 text-red-400 hover:text-red-300 transition-colors text-sm font-bold justify-center">
+                <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+            </a>
+        </div>
     </aside>
 
-    <div class="flex-1 ml-16 flex flex-col h-screen overflow-hidden bg-[#F3F4F6] transition-all duration-300">
-        
-        <header class="h-16 bg-white shadow-sm flex items-center justify-between px-8 relative z-40 shrink-0">
-            <div>
-                <h2 class="text-xl font-black text-[#1A2238] brand-font">{% block titulo_pagina %}Panel de Control{% endblock %}</h2>
-                <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{{ now|date:"l, d F Y" }}</p>
-            </div>
+    <div id="mobile-overlay" onclick="toggleMobileMenu()" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden glass-effect"></div>
 
-            <div class="flex items-center gap-6">
-                
-                <div class="relative">
-                    <button onclick="toggleNotificaciones()" class="relative p-2 text-gray-400 hover:text-[#C0A062] transition-colors focus:outline-none">
-                        <i class="fas fa-bell text-xl"></i>
-                        {% if total_notif > 0 %}
-                        <span class="absolute top-0 right-0 w-4 h-4 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center animate-bounce border border-white">
-                            {{ total_notif }}
-                        </span>
-                        {% endif %}
+    <main class="flex-1 h-full overflow-y-auto bg-[#F8F9FA] w-full pt-16 md:pt-0"> 
+        <div class="p-4 md:p-8 max-w-[1600px] mx-auto min-h-full">
+            
+            <header class="hidden md:flex justify-between items-center mb-8">
+                <div>
+                    <h2 class="text-2xl font-black text-[#1A2238] font-serif">
+                        {% block titulo_pagina %}Panel General{% endblock %}
+                    </h2>
+                    <p class="text-sm text-gray-500">{% now "l, d F Y" %}</p>
+                </div>
+                <div class="flex gap-4">
+                    <button class="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center text-gray-400 hover:text-[#C0A062] transition-colors relative">
+                        <i class="fas fa-bell"></i>
+                        <span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
                     </button>
-
-                    <div id="panel-notificaciones" class="hidden absolute right-0 mt-3 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden animate__animated animate__fadeInUp z-50">
-                        <div class="bg-[#1A2238] p-3 border-b border-gray-100 flex justify-between items-center">
-                            <h3 class="text-xs font-bold text-white uppercase tracking-widest">Recordatorios</h3>
-                            <span class="text-[10px] text-gray-400">Hoy y Urgentes</span>
-                        </div>
-                        
-                        <div class="max-h-80 overflow-y-auto custom-scrollbar">
-                            {% if total_notif == 0 %}
-                                <div class="p-6 text-center text-gray-400">
-                                    <i class="fas fa-check-circle text-3xl mb-2 text-green-100"></i>
-                                    <p class="text-xs font-bold">Todo al día.</p>
-                                </div>
-                            {% else %}
-                                
-                                {% if notif_tareas %}
-                                <div class="p-2 bg-red-50/50">
-                                    <p class="text-[10px] font-black text-red-400 uppercase px-2 mb-1">Tareas Críticas</p>
-                                    {% for t in notif_tareas %}
-                                    <a href="{% url 'detalle_cliente' t.cliente.id %}" class="block p-2 hover:bg-white rounded-lg transition-colors mb-1">
-                                        <div class="flex justify-between items-start">
-                                            <span class="text-xs font-bold text-[#1A2238]">{{ t.titulo }}</span>
-                                            <span class="text-[9px] font-bold text-red-500 bg-red-100 px-1 rounded">Vence Hoy</span>
-                                        </div>
-                                        <p class="text-[9px] text-gray-500 truncate">{{ t.cliente.nombre_empresa }}</p>
-                                    </a>
-                                    {% endfor %}
-                                </div>
-                                {% endif %}
-
-                                {% if notif_eventos %}
-                                <div class="p-2 bg-blue-50/50 border-t border-gray-100">
-                                    <p class="text-[10px] font-black text-blue-400 uppercase px-2 mb-1">Agenda (Próx. 48h)</p>
-                                    {% for e in notif_eventos %}
-                                    <div class="p-2 hover:bg-white rounded-lg transition-colors mb-1 cursor-default">
-                                        <div class="flex justify-between items-center">
-                                            <span class="text-xs font-bold text-[#1A2238]">{{ e.titulo }}</span>
-                                            <span class="text-[9px] font-bold text-blue-500">{{ e.inicio|date:"H:i" }}</span>
-                                        </div>
-                                        <p class="text-[9px] text-gray-500">{{ e.cliente.nombre_empresa|default:"Evento Personal" }}</p>
-                                    </div>
-                                    {% endfor %}
-                                </div>
-                                {% endif %}
-
-                                {% if notif_cobros %}
-                                <div class="p-2 bg-amber-50/50 border-t border-gray-100">
-                                    <p class="text-[10px] font-black text-amber-500 uppercase px-2 mb-1">Cobranza (3 días)</p>
-                                    {% for c in notif_cobros %}
-                                    <div class="p-2 hover:bg-white rounded-lg transition-colors mb-1">
-                                        <div class="flex justify-between items-center">
-                                            <span class="text-xs font-bold text-[#1A2238]">{{ c.cliente.nombre_empresa }}</span>
-                                            <span class="text-xs font-black text-amber-600">${{ c.saldo_pendiente }}</span>
-                                        </div>
-                                    </div>
-                                    {% endfor %}
-                                </div>
-                                {% endif %}
-
-                            {% endif %}
-                        </div>
-                    </div>
+                    <a href="{% url 'mi_perfil' %}" class="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center text-gray-400 hover:text-[#1A2238] transition-colors">
+                        <i class="fas fa-cog"></i>
+                    </a>
                 </div>
+            </header>
 
-                <a href="{% url 'mi_perfil' %}" class="flex items-center gap-4 group cursor-pointer border-l border-gray-200 pl-6">
-                    <div class="text-right hidden md:block">
-                        <p class="text-xs font-bold text-[#1A2238] group-hover:text-[#C0A062] transition-colors">{{ user.get_full_name|default:user.username }}</p>
-                        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{{ user.get_rol_display }}</p>
-                    </div>
-                    <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-[#C0A062] to-amber-200 p-[2px] shadow-sm overflow-hidden group-hover:scale-105 transition-transform">
-                        <div class="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden">
-                            {% if user.avatar %}
-                            <img src="{{ user.avatar.url }}" class="w-full h-full object-cover">
-                            {% else %}
-                            <span class="text-[#1A2238] font-black text-xs">{{ user.username|slice:":2"|upper }}</span>
-                            {% endif %}
-                        </div>
-                    </div>
-                </a>
-                <a href="{% url 'logout' %}" class="ml-2 text-gray-400 hover:text-red-500 transition-colors p-2 rounded-full hover:bg-red-50">
-                    <i class="fas fa-power-off text-sm"></i>
-                </a>
-            </div>
-        </header>
-
-        <main class="flex-1 overflow-x-hidden overflow-y-auto custom-scrollbar p-6 md:p-10">
             {% if messages %}
-            <div class="mb-6 space-y-2 animate__animated animate__fadeInDown max-w-4xl mx-auto">
-                {% for message in messages %}
-                <div class="p-3 rounded-lg shadow-sm border-l-4 flex items-center gap-3 backdrop-blur-sm {% if message.tags == 'success' %}bg-green-50/80 border-green-500 text-green-800{% elif message.tags == 'error' %}bg-red-50/80 border-red-500 text-red-800{% else %}bg-blue-50/80 border-blue-500 text-blue-800{% endif %}">
-                    <i class="fas {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'error' %}fa-exclamation-triangle{% else %}fa-info-circle{% endif %} text-sm"></i>
-                    <span class="font-bold text-xs">{{ message }}</span>
+                <div class="mb-6 space-y-2">
+                    {% for message in messages %}
+                        <div class="p-4 rounded-xl text-sm font-bold flex items-center gap-3 shadow-sm animate__animated animate__fadeInDown
+                            {% if message.tags == 'error' %}bg-red-50 text-red-700 border-l-4 border-red-500{% elif message.tags == 'success' %}bg-green-50 text-green-700 border-l-4 border-green-500{% else %}bg-blue-50 text-blue-700 border-l-4 border-blue-500{% endif %}">
+                            <i class="fas {% if message.tags == 'error' %}fa-exclamation-triangle{% elif message.tags == 'success' %}fa-check-circle{% else %}fa-info-circle{% endif %}"></i>
+                            {{ message }}
+                        </div>
+                    {% endfor %}
                 </div>
-                {% endfor %}
-            </div>
             {% endif %}
-            {% block content %}
-            {% endblock %}
-        </main>
-    </div>
+
+            {% block content %}{% endblock %}
+            
+            <footer class="mt-12 text-center text-xs text-gray-400 py-4 border-t border-gray-200">
+                &copy; {% now "Y" %} AppLegal Cloud. Todos los derechos reservados.
+            </footer>
+        </div>
+    </main>
 
     <script>
-        function toggleNotificaciones() {
-            const panel = document.getElementById('panel-notificaciones');
-            panel.classList.toggle('hidden');
-        }
-        document.addEventListener('click', function(event) {
-            const panel = document.getElementById('panel-notificaciones');
-            const btn = event.target.closest('button');
-            if (!panel.contains(event.target) && (!btn || !btn.onclick || !btn.onclick.toString().includes('toggleNotificaciones'))) {
-                panel.classList.add('hidden');
+        function toggleMobileMenu() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobile-overlay');
+            
+            // Si tiene la clase -translate-x-full, está cerrado. Se la quitamos para abrir.
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
             }
-        });
+        }
     </script>
 </body>
 </html>
