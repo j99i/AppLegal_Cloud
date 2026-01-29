@@ -87,7 +87,7 @@
 
                                 <a href="{% url 'eliminar_cotizacion' c.id %}" 
                                    class="btn btn-sm btn-danger shadow-sm ml-1" 
-                                   onclick="return confirm('⚠️ ¿Estás SEGURO de eliminar la Cotización #{{ c.id|stringformat:\"04d\" }}?\n\nEsta acción borrará permanentemente la cotización y no se podrá recuperar.');"
+                                   onclick="return confirm('⚠️ ¿Estás SEGURO de eliminar la Cotización #{{ c.id }}?\n\nEsta acción borrará permanentemente la cotización y no se podrá recuperar.');"
                                    title="Eliminar Cotización">
                                     <i class="fas fa-trash"></i>
                                 </a>
@@ -96,8 +96,7 @@
                         {% empty %}
                         <tr>
                             <td colspan="6" class="text-center py-5">
-                                <img src="https://cdn-icons-png.flaticon.com/512/7486/7486744.png" width="80" class="mb-3 opacity-50" alt="Vacio">
-                                <p class="text-gray-500 mb-0">No hay cotizaciones registradas aún.</p>
+                                <div class="text-gray-500 mb-2">No hay cotizaciones registradas aún.</div>
                                 <a href="{% url 'nueva_cotizacion' %}" class="btn btn-link">Crear la primera</a>
                             </td>
                         </tr>
