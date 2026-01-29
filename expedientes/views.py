@@ -13,16 +13,18 @@ from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.core.files.base import ContentFile
 from django.utils import timezone
-from django.utils.text import slugify # <--- IMPORTANTE: Para nombres de archivo limpios
+from django.utils.text import slugify 
 from django.template.loader import render_to_string
 from django.core.mail import EmailMultiAlternatives
 from django.conf import settings 
+# Importante para serializar los servicios en la nueva cotización
+from django.core.serializers import serialize 
 
 # Librerías para Documentos
 from docxtpl import DocxTemplate
 import mammoth
 from docx import Document as DocumentoWord 
-import weasyprint # Importar aquí para uso general si es necesario
+import weasyprint 
 
 # Importación de Modelos
 from .models import (
@@ -711,7 +713,7 @@ def nueva_cotizacion(request):
         s_ids = request.POST.getlist('servicio_id')
         cants = request.POST.getlist('cantidad')
         precios = request.POST.getlist('precio')
-        descs = request.POST.getlist('descripcion')
+        # NOTA: Se eliminó la captura de 'descripcion' ya que se quitó del formulario HTML
         
         # Recogemos las respuestas llenadas por el abogado
         extras_json = request.POST.getlist('valores_adicionales_json[]')
@@ -722,8 +724,8 @@ def nueva_cotizacion(request):
                     cotizacion=c, 
                     servicio_id=s_ids[i], 
                     cantidad=int(cants[i] or 1),
-                    precio_unitario=Decimal(precios[i] or 0), 
-                    descripcion_personalizada=descs[i]
+                    precio_unitario=Decimal(precios[i] or 0)
+                    # NOTA: Se eliminó descripcion_personalizada=descs[i]
                 )
                 if i < len(extras_json) and extras_json[i]:
                     try:
@@ -732,7 +734,10 @@ def nueva_cotizacion(request):
                     except: pass
         c.calcular_totales()
         return redirect('detalle_cotizacion', cotizacion_id=c.id)
-    return render(request, 'cotizaciones/crear.html', {'servicios': Servicio.objects.all()})
+    
+    # Serializamos los servicios para que el JS pueda leerlos (precios, nombres)
+    servicios_json = serialize('json', Servicio.objects.all())
+    return render(request, 'cotizaciones/crear.html', {'servicios': servicios_json})
 
 @login_required
 def detalle_cotizacion(request, cotizacion_id):
@@ -828,6 +833,19 @@ def enviar_cotizacion_email(request, cotizacion_id):
 
     return redirect('detalle_cotizacion', cotizacion_id=cotizacion_id)
 
+@login_required
+def eliminar_cotizacion(request, cotizacion_id):
+    if not request.user.access_cotizaciones:
+        messages.error(request, "No tienes permiso para realizar esta acción.")
+        return redirect('lista_cotizaciones')
+    
+    cotizacion = get_object_or_404(Cotizacion, id=cotizacion_id)
+    cotizacion_id_ref = cotizacion.id 
+    cotizacion.delete()
+    
+    messages.success(request, f"La cotización #{cotizacion_id_ref} fue eliminada exitosamente.")
+    return redirect('lista_cotizaciones')
+
 # ==========================================
 # 8. FINANZAS
 # ==========================================
@@ -908,22 +926,3 @@ def eliminar_evento(request, evento_id):
     if request.user.rol == 'admin' or evento.usuario == request.user:
         evento.delete(); return JsonResponse({'status': 'ok'})
     return JsonResponse({'status': 'error'}, status=403)
-# En expedientes/views.py
-
-@login_required
-def eliminar_cotizacion(request, cotizacion_id):
-    # 1. Verificar permisos
-    if not request.user.access_cotizaciones:
-        messages.error(request, "No tienes permiso para realizar esta acción.")
-        return redirect('lista_cotizaciones')
-    
-    # 2. Buscar la cotización
-    cotizacion = get_object_or_404(Cotizacion, id=cotizacion_id)
-    
-    # 3. Eliminarla
-    cotizacion_id_ref = cotizacion.id # Guardamos el ID para el mensaje
-    cotizacion.delete()
-    
-    # 4. Confirmar y regresar
-    messages.success(request, f"La cotización #{cotizacion_id_ref} fue eliminada exitosamente.")
-    return redirect('lista_cotizaciones')

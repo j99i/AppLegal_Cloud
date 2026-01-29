@@ -1,118 +1,152 @@
 {% extends 'base.html' %}
+{% load static %}
+
+{% block titulo_pagina %}Nueva Cotización{% endblock %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto animate__animated animate__fadeIn">
-    
-    <div class="flex justify-between items-center mb-6">
-        <h2 class="text-3xl font-black text-[#1A2238]">Nueva Cotización</h2>
-        <a href="{% url 'lista_cotizaciones' %}" class="text-gray-500 font-bold hover:text-[#1A2238] transition-colors">Cancelar</a>
+<div class="max-w-7xl mx-auto animate__animated animate__fadeIn">
+
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-black text-[#1A2238] font-serif mb-1">Nueva Cotización</h1>
+            <p class="text-gray-500 font-medium text-sm">Crea una propuesta comercial para un prospecto.</p>
+        </div>
+        <a href="{% url 'lista_cotizaciones' %}" class="text-gray-400 hover:text-[#1A2238] transition-colors">
+            <i class="fas fa-times text-xl"></i>
+        </a>
     </div>
 
-    <form method="POST" class="space-y-8" id="cotizacion-form">
+    <form action="" method="POST" id="form-cotizacion">
         {% csrf_token %}
         
-        <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
-            <h3 class="text-lg font-bold text-[#C0A062] mb-6">1. Datos del Cliente</h3>
+        <div class="bg-white rounded-[2rem] p-8 shadow-sm border border-gray-100 mb-6">
+            <h3 class="text-lg font-black text-[#1A2238] mb-6 flex items-center gap-2">
+                <i class="fas fa-user-circle text-[#C0A062]"></i> Datos del Prospecto
+            </h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <input type="text" name="nombre" placeholder="Nombre Completo" class="w-full p-3 bg-gray-50 rounded-xl font-bold outline-none border-2 border-transparent focus:border-[#C0A062]" required>
-                <input type="text" name="empresa" placeholder="Empresa" class="w-full p-3 bg-gray-50 rounded-xl font-bold outline-none border-2 border-transparent focus:border-[#C0A062]">
-                <input type="email" name="email" placeholder="Correo Electrónico" class="w-full p-3 bg-gray-50 rounded-xl font-bold outline-none border-2 border-transparent focus:border-[#C0A062]" required>
-                <input type="text" name="telefono" placeholder="WhatsApp" class="w-full p-3 bg-gray-50 rounded-xl font-bold outline-none border-2 border-transparent focus:border-[#C0A062]" required>
-                <input type="date" name="validez" class="w-full p-3 bg-gray-50 rounded-xl font-bold outline-none border-2 border-transparent focus:border-[#C0A062]">
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Nombre Completo</label>
+                    <input type="text" name="nombre" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-[#1A2238] outline-none border-2 border-transparent focus:border-[#C0A062] transition-all" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Empresa (Opcional)</label>
+                    <input type="text" name="empresa" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-[#1A2238] outline-none border-2 border-transparent focus:border-[#C0A062] transition-all">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Email</label>
+                    <input type="email" name="email" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-[#1A2238] outline-none border-2 border-transparent focus:border-[#C0A062] transition-all" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Teléfono</label>
+                    <input type="text" name="telefono" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-[#1A2238] outline-none border-2 border-transparent focus:border-[#C0A062] transition-all" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Validez de la Oferta</label>
+                    <input type="date" name="validez" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-[#1A2238] outline-none border-2 border-transparent focus:border-[#C0A062] transition-all">
+                </div>
             </div>
         </div>
 
-        <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
+        <div class="bg-white rounded-[2rem] p-8 shadow-sm border border-gray-100 mb-8">
             <div class="flex justify-between items-center mb-6">
-                <h3 class="text-lg font-bold text-[#C0A062]">2. Servicios</h3>
-                <button type="button" onclick="agregarFila()" class="bg-[#1A2238] text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-black transition-colors shadow-lg">+ AGREGAR ITEM</button>
+                <h3 class="text-lg font-black text-[#1A2238] flex items-center gap-2">
+                    <i class="fas fa-list-ul text-[#C0A062]"></i> Servicios a Cotizar
+                </h3>
+                <button type="button" onclick="agregarFila()" class="text-[#C0A062] font-bold text-xs uppercase hover:text-[#1A2238] transition-colors flex items-center gap-1">
+                    <i class="fas fa-plus-circle"></i> Agregar Fila
+                </button>
             </div>
-            
-            <div id="items-container" class="space-y-6"></div>
-            
-            <div id="row-template" class="hidden flex flex-col md:flex-row gap-4 p-6 bg-gray-50 rounded-[2rem] border border-gray-100 group relative hover:border-[#C0A062] transition-colors">
-                <input type="hidden" name="valores_adicionales_json[]" class="json-extras">
-                
-                <div class="flex-1">
-                    <label class="text-[10px] font-black text-gray-400 uppercase">Servicio</label>
-                    <select name="servicio_id" class="w-full p-3 rounded-xl border-none font-bold text-sm shadow-sm focus:ring-2 focus:ring-[#C0A062] outline-none bg-white" onchange="generarInputs(this)">
-                        <option value="">-- Seleccionar --</option>
-                        {% for s in servicios %}
-                        <option value="{{ s.id }}" data-precio="{{ s.precio_base }}" data-campos="{{ s.campos_dinamicos|safe|escapejs }}">{{ s.nombre }}</option>
-                        {% endfor %}
-                    </select>
-                    
-                    <div class="area-llenado grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4 empty:hidden"></div>
-                </div>
 
-                <div class="flex-1">
-                    <label class="text-[10px] font-black text-gray-400 uppercase">Notas</label>
-                    <input type="text" name="descripcion" class="w-full p-3 rounded-xl border-none text-sm shadow-sm focus:ring-2 focus:ring-[#C0A062] outline-none" placeholder="Detalles...">
-                </div>
-
-                <div class="w-24">
-                    <label class="text-[10px] font-black text-gray-400 uppercase">Cant.</label>
-                    <input type="number" name="cantidad" value="1" min="1" class="w-full p-3 rounded-xl border-none font-bold text-center shadow-sm outline-none">
-                </div>
-
-                <div class="w-32">
-                    <label class="text-[10px] font-black text-gray-400 uppercase">Precio</label>
-                    <input type="number" name="precio" step="0.01" class="w-full p-3 rounded-xl border-none font-bold text-right text-green-700 shadow-sm outline-none">
-                </div>
-                <button type="button" onclick="this.parentElement.remove()" class="md:mt-6 text-gray-300 hover:text-red-500 p-2"><i class="fas fa-trash"></i></button>
+            <div class="overflow-x-auto">
+                <table class="w-full" id="tabla-servicios">
+                    <thead>
+                        <tr class="text-left border-b border-gray-100">
+                            <th class="pb-4 text-xs font-bold text-gray-400 uppercase tracking-wider w-1/3">Servicio</th>
+                            <th class="pb-4 text-xs font-bold text-gray-400 uppercase tracking-wider w-24 text-center">Cant.</th>
+                            <th class="pb-4 text-xs font-bold text-gray-400 uppercase tracking-wider w-32 text-right">Precio U.</th>
+                            <th class="pb-4 text-xs font-bold text-gray-400 uppercase tracking-wider w-10"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="space-y-4" id="body-servicios">
+                        </tbody>
+                </table>
             </div>
         </div>
 
-        <div class="flex justify-end pt-4">
-            <button type="submit" class="bg-[#C0A062] text-white px-12 py-4 rounded-2xl font-black text-lg shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all">GENERAR COTIZACIÓN</button>
+        <div class="flex justify-end gap-4">
+            <a href="{% url 'lista_cotizaciones' %}" class="px-8 py-4 rounded-xl font-bold text-xs text-gray-500 hover:bg-gray-100 transition-all uppercase tracking-widest">
+                Cancelar
+            </a>
+            <button type="submit" class="bg-[#1A2238] text-white px-8 py-4 rounded-xl font-black text-xs shadow-xl hover:bg-[#C0A062] hover:text-[#1A2238] transition-all uppercase tracking-widest flex items-center gap-2">
+                <i class="fas fa-paper-plane"></i> Crear Cotización
+            </button>
         </div>
     </form>
 </div>
 
+{{ servicios|json_script:"data-servicios" }}
+
 <script>
+    const serviciosData = JSON.parse(document.getElementById('data-servicios').textContent);
+
     function agregarFila() {
-        const t = document.getElementById('row-template');
-        const c = t.cloneNode(true);
-        c.id = ''; c.classList.remove('hidden');
-        document.getElementById('items-container').appendChild(c);
-    }
-
-    function generarInputs(select) {
-        const fila = select.closest('.group');
-        const op = select.options[select.selectedIndex];
-        fila.querySelector('input[name="precio"]').value = op.dataset.precio || 0;
+        const tbody = document.getElementById('body-servicios');
+        const tr = document.createElement('tr');
+        tr.className = "group border-b border-gray-50 last:border-0";
         
-        const area = fila.querySelector('.area-llenado');
-        area.innerHTML = '';
-
-        if(op.dataset.campos) {
-            try {
-                const campos = JSON.parse(op.dataset.campos);
-                if (campos.length > 0) {
-                    area.innerHTML = '<div class="col-span-full text-[10px] font-bold text-[#C0A062] uppercase tracking-wide border-b border-gray-100 pb-1 mb-2">Completar Datos:</div>';
-                }
-                campos.forEach(c => {
-                    const div = document.createElement('div');
-                    div.className = "bg-white p-2 rounded-lg border border-gray-200 shadow-sm focus-within:border-[#C0A062] transition-colors";
-                    div.innerHTML = `
-                        <label class="block text-[9px] font-black text-gray-400 uppercase mb-1">${c.nombre}</label>
-                        <input type="${c.tipo}" data-label="${c.nombre}" oninput="guardarJSON(this)" class="w-full bg-transparent border-none p-0 text-xs font-bold text-[#1A2238] outline-none" placeholder="Ingresar...">
-                    `;
-                    area.appendChild(div);
-                });
-            } catch(e){}
-        }
-    }
-
-    function guardarJSON(input) {
-        const fila = input.closest('.group');
-        const data = {};
-        fila.querySelectorAll('.area-llenado input').forEach(i => {
-            if(i.value) data[i.dataset.label] = i.value;
+        let options = '<option value="">Seleccionar...</option>';
+        serviciosData.forEach(s => {
+            options += `<option value="${s.pk}" data-precio="${s.fields.precio_base}">${s.fields.nombre}</option>`;
         });
-        fila.querySelector('.json-extras').value = JSON.stringify(data);
+
+        // NOTA: Se eliminó el <textarea name="descripcion"> de esta estructura
+        tr.innerHTML = `
+            <td class="py-4 pr-4 align-top">
+                <div class="relative">
+                    <select name="servicio_id" onchange="actualizarPrecio(this)" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-sm text-[#1A2238] border-2 border-transparent focus:border-[#C0A062] outline-none appearance-none cursor-pointer">
+                        ${options}
+                    </select>
+                    <div class="absolute right-3 top-3 pointer-events-none text-gray-400">
+                        <i class="fas fa-chevron-down text-xs"></i>
+                    </div>
+                </div>
+                
+                <input type="hidden" name="valores_adicionales_json[]">
+                
+                <div class="mt-2" id="contenedor-specs">
+                    </div>
+            </td>
+            
+            <td class="py-4 px-2 align-top">
+                <input type="number" name="cantidad" value="1" min="1" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-center text-[#1A2238] outline-none focus:border-[#C0A062] border-2 border-transparent">
+            </td>
+            
+            <td class="py-4 px-2 align-top">
+                <div class="relative">
+                    <span class="absolute left-3 top-3 text-gray-400 font-bold">$</span>
+                    <input type="number" name="precio" step="0.01" class="w-full p-3 pl-6 bg-gray-50 rounded-xl font-bold text-right text-[#1A2238] outline-none focus:border-[#C0A062] border-2 border-transparent">
+                </div>
+            </td>
+
+            <td class="py-4 pl-2 align-top text-center">
+                <button type="button" onclick="this.closest('tr').remove()" class="p-3 text-gray-300 hover:text-red-500 transition-colors">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(tr);
     }
 
-    document.addEventListener('DOMContentLoaded', agregarFila);
+    function actualizarPrecio(select) {
+        const precio = select.options[select.selectedIndex].dataset.precio;
+        const row = select.closest('tr');
+        const inputPrecio = row.querySelector('input[name="precio"]');
+        if(precio) inputPrecio.value = precio;
+    }
+
+    // Agregar una fila inicial por defecto
+    document.addEventListener('DOMContentLoaded', () => {
+        agregarFila();
+    });
 </script>
 {% endblock %}
