@@ -117,7 +117,6 @@ def editar_usuario(request, user_id):
         user_obj.telefono = request.POST.get('telefono') or None
         user_obj.puesto = request.POST.get('puesto') or None
         
-        # Permisos
         user_obj.can_create_client = request.POST.get('can_create_client') == 'on'
         user_obj.can_edit_client = request.POST.get('can_edit_client') == 'on'
         user_obj.can_delete_client = request.POST.get('can_delete_client') == 'on'
@@ -672,11 +671,15 @@ def guardar_servicio(request):
         s.descripcion = request.POST.get('descripcion')
         s.precio_base = request.POST.get('precio')
         
-        # Procesar los campos normales (vienen del modal de servicios)
         nombres = request.POST.getlist('campo_nombre[]')
         tipos = request.POST.getlist('campo_tipo[]')
         
-        s.campos_dinamicos = [{'nombre': n.strip(), 'tipo': t} for n, t in zip(nombres, tipos) if n.strip()]
+        estructura = []
+        for nombre, tipo in zip(nombres, tipos):
+            if nombre.strip():
+                estructura.append({'nombre': nombre.strip(), 'tipo': tipo})
+        
+        s.campos_dinamicos = estructura
         s.save()
         messages.success(request, "Servicio actualizado.")
     return redirect('gestion_servicios')
@@ -685,36 +688,6 @@ def guardar_servicio(request):
 def eliminar_servicio(request, servicio_id):
     get_object_or_404(Servicio, id=servicio_id).delete()
     return redirect('gestion_servicios')
-
-# --- API NUEVA: AGREGAR CAMPO AL VUELO ---
-@csrf_exempt
-@login_required
-def api_agregar_campo_servicio(request):
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            servicio_id = data.get('servicio_id')
-            nombre_campo = data.get('nombre')
-            tipo_campo = data.get('tipo', 'text')
-
-            if not servicio_id or not nombre_campo:
-                return JsonResponse({'status': 'error', 'msg': 'Faltan datos'})
-
-            servicio = get_object_or_404(Servicio, id=servicio_id)
-            
-            # Recuperar y actualizar lista de campos
-            campos = servicio.campos_dinamicos or []
-            
-            # Evitar duplicados
-            if not any(c['nombre'] == nombre_campo for c in campos):
-                campos.append({'nombre': nombre_campo, 'tipo': tipo_campo})
-                servicio.campos_dinamicos = campos
-                servicio.save()
-            
-            return JsonResponse({'status': 'ok', 'campos': campos})
-        except Exception as e:
-            return JsonResponse({'status': 'error', 'msg': str(e)})
-    return JsonResponse({'status': 'error'}, status=405)
 
 @login_required
 def lista_cotizaciones(request):
@@ -737,7 +710,7 @@ def nueva_cotizacion(request):
         cants = request.POST.getlist('cantidad')
         precios = request.POST.getlist('precio')
         descs = request.POST.getlist('descripcion')
-        # Datos extra llenados
+        # AQUÍ ESTÁ LA CLAVE: Recibimos un JSON con { 'Color': 'Rojo', 'Otro Dato': 'Valor' }
         extras_json = request.POST.getlist('valores_adicionales_json[]')
 
         for i in range(len(s_ids)):
@@ -751,6 +724,8 @@ def nueva_cotizacion(request):
                 )
                 if i < len(extras_json) and extras_json[i]:
                     try:
+                        # Guardamos CUALQUIER cosa que venga en el JSON, 
+                        # sea campo predefinido o inventado en el momento.
                         item.valores_adicionales = json.loads(extras_json[i])
                         item.save()
                     except: pass
@@ -873,8 +848,3 @@ def eliminar_evento(request, evento_id):
     if request.user.rol == 'admin' or evento.usuario == request.user:
         evento.delete(); return JsonResponse({'status': 'ok'})
     return JsonResponse({'status': 'error'}, status=403)
-
-# ==========================================
-# MEDIA PARCHE PARA RAILWAY (Si fuera necesario)
-# ==========================================
-# (La configuración está en urls.py, aquí no se requiere acción extra)
