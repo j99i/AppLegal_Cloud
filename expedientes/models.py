@@ -14,39 +14,37 @@ class Usuario(AbstractUser):
     telefono = models.CharField(max_length=20, blank=True, null=True)
     puesto = models.CharField(max_length=100, blank=True, null=True)
 
-    CHOICES_ROL = (('admin', 'Administrador Master'), ('analista_sr', 'Abogado Senior'), ('analista_jr', 'Abogado Junior'))
+    CHOICES_ROL = (
+        ('admin', 'Administrador Master'),
+        ('analista_sr', 'Abogado Senior'),
+        ('analista_jr', 'Abogado Junior')
+    )
     rol = models.CharField(max_length=20, choices=CHOICES_ROL, default='analista_jr', db_index=True)
-    area = models.CharField(max_length=100, blank=True, null=True)
     
-    can_create_client = models.BooleanField(default=False, verbose_name="Crear Clientes")
-    can_edit_client = models.BooleanField(default=False, verbose_name="Editar Clientes")
-    can_delete_client = models.BooleanField(default=False, verbose_name="Eliminar Clientes")
-    can_view_documents = models.BooleanField(default=True, verbose_name="Ver Documentos")
-    can_upload_files = models.BooleanField(default=False, verbose_name="Subir Archivos")
-    can_manage_users = models.BooleanField(default=False, verbose_name="Gestionar Usuarios")
+    # Permisos granulares
+    can_create_client = models.BooleanField(default=False)
+    can_edit_client = models.BooleanField(default=False)
+    can_delete_client = models.BooleanField(default=False)
+    can_view_documents = models.BooleanField(default=True)
+    can_upload_files = models.BooleanField(default=False)
+    can_manage_users = models.BooleanField(default=False)
 
-    access_finanzas = models.BooleanField(default=False, verbose_name="Acceso Finanzas")
-    access_cotizaciones = models.BooleanField(default=False, verbose_name="Acceso Cotizaciones")
-    access_contratos = models.BooleanField(default=False, verbose_name="Acceso Contratos")
-    access_disenador = models.BooleanField(default=False, verbose_name="Acceso Diseñador")
-    access_agenda = models.BooleanField(default=False, verbose_name="Acceso Agenda")
+    # Accesos a módulos
+    access_finanzas = models.BooleanField(default=False)
+    access_cotizaciones = models.BooleanField(default=False)
+    access_contratos = models.BooleanField(default=False)
+    access_disenador = models.BooleanField(default=False)
+    access_agenda = models.BooleanField(default=False)
 
     clientes_asignados = models.ManyToManyField('Cliente', blank=True, related_name='abogados_asignados')
 
     def save(self, *args, **kwargs):
+        # Si es admin, forzamos todos los permisos a True
         if self.rol == 'admin':
             self.is_staff = True
             self.is_superuser = True
-            self.can_create_client = True
-            self.can_edit_client = True
-            self.can_delete_client = True
-            self.can_upload_files = True
-            self.can_manage_users = True
-            self.access_finanzas = True
-            self.access_cotizaciones = True
-            self.access_contratos = True
-            self.access_disenador = True
-            self.access_agenda = True
+            for field in ['can_create_client', 'can_edit_client', 'can_delete_client', 'can_upload_files', 'can_manage_users', 'access_finanzas', 'access_cotizaciones', 'access_contratos', 'access_disenador', 'access_agenda']:
+                setattr(self, field, True)
         super().save(*args, **kwargs)
 
 # ==========================================
@@ -66,13 +64,18 @@ class Cliente(models.Model):
         return self.nombre_empresa
 
 class CampoAdicional(models.Model):
-    TIPOS = (('text', 'Texto Corto'), ('textarea', 'Texto Largo'), ('date', 'Fecha'), ('number', 'Número'))
+    TIPOS = (
+        ('text', 'Texto Corto'),
+        ('textarea', 'Texto Largo'),
+        ('date', 'Fecha'),
+        ('number', 'Número')
+    )
     nombre = models.CharField(max_length=100)
     tipo = models.CharField(max_length=20, choices=TIPOS, default='text')
     obligatorio = models.BooleanField(default=False)
 
 # ==========================================
-# 3. DRIVE
+# 3. DRIVE LEGAL
 # ==========================================
 class Carpeta(models.Model):
     nombre = models.CharField(max_length=255, db_index=True)
@@ -85,10 +88,10 @@ class Expediente(models.Model):
     ESTADOS = (('abierto', 'Abierto'), ('pausado', 'En Pausa'), ('finalizado', 'Finalizado'))
     cliente = models.ForeignKey(Cliente, related_name='expedientes', on_delete=models.CASCADE)
     carpeta = models.OneToOneField(Carpeta, on_delete=models.CASCADE, null=True, blank=True)
-    num_expediente = models.CharField(max_length=50, unique=True, db_index=True)
+    num_expediente = models.CharField(max_length=50, unique=True)
     titulo = models.CharField(max_length=200)
     descripcion = models.TextField(blank=True)
-    estado = models.CharField(max_length=20, choices=ESTADOS, default='abierto', db_index=True)
+    estado = models.CharField(max_length=20, choices=ESTADOS, default='abierto')
     prioridad = models.IntegerField(choices=((1, 'Baja'), (2, 'Media'), (3, 'Crítica')), default=2)
     creado_el = models.DateTimeField(auto_now_add=True)
 
@@ -96,18 +99,18 @@ class Documento(models.Model):
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='documentos_cliente')
     carpeta = models.ForeignKey(Carpeta, on_delete=models.CASCADE, related_name='documentos', null=True, blank=True)
     archivo = models.FileField(upload_to='drive_legal/%Y/%m/%d/')
-    nombre_archivo = models.CharField(max_length=255, db_index=True)
+    nombre_archivo = models.CharField(max_length=255)
     fecha_subida = models.DateTimeField(auto_now_add=True)
     subido_por = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True)
 
 # ==========================================
-# 4. GESTIÓN (TAREAS Y BITÁCORA)
+# 4. GESTIÓN (TAREAS, BITÁCORA, PLANTILLAS)
 # ==========================================
 class Tarea(models.Model):
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='tareas')
     titulo = models.CharField(max_length=255)
-    fecha_limite = models.DateField(db_index=True)
-    completada = models.BooleanField(default=False, db_index=True)
+    fecha_limite = models.DateField()
+    completada = models.BooleanField(default=False)
     prioridad = models.CharField(max_length=10, default='media')
     creada_el = models.DateTimeField(auto_now_add=True)
 
@@ -116,7 +119,7 @@ class Bitacora(models.Model):
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
     accion = models.CharField(max_length=50)
     descripcion = models.TextField()
-    fecha = models.DateTimeField(auto_now_add=True, db_index=True)
+    fecha = models.DateTimeField(auto_now_add=True)
 
 class Plantilla(models.Model):
     nombre = models.CharField(max_length=100)
@@ -131,13 +134,13 @@ class VariableEstandar(models.Model):
     campo_bd = models.CharField(max_length=100, blank=True, null=True)
 
 # ==========================================
-# 5. COTIZACIONES
+# 5. COTIZACIONES (CON CAMPOS DINÁMICOS)
 # ==========================================
 class Servicio(models.Model):
     nombre = models.CharField(max_length=200)
     descripcion = models.TextField(blank=True)
     precio_base = models.DecimalField(max_digits=10, decimal_places=2)
-    # NUEVO: Guarda la estructura de campos adicionales
+    # Guarda la configuración de campos: [{'nombre': 'Escritura', 'tipo': 'text'}, ...]
     campos_dinamicos = models.JSONField(default=list, blank=True) 
 
     def __str__(self):
@@ -162,8 +165,8 @@ class Cotizacion(models.Model):
     subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     impuestos = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    cliente_convertido = models.ForeignKey(Cliente, on_delete=models.SET_NULL, null=True, blank=True)
     creado_por = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True)
+    cliente_convertido = models.ForeignKey(Cliente, on_delete=models.SET_NULL, null=True, blank=True)
 
     def calcular_totales(self):
         self.subtotal = sum(item.total for item in self.items.all())
@@ -178,7 +181,7 @@ class ItemCotizacion(models.Model):
     cantidad = models.IntegerField(default=1)
     precio_unitario = models.DecimalField(max_digits=10, decimal_places=2)
     total = models.DecimalField(max_digits=10, decimal_places=2)
-    # NUEVO: Guarda los valores específicos para esta cotización
+    # Guarda las respuestas llenadas: {'Escritura': '1234', 'Fecha': '2026-01-28'}
     valores_adicionales = models.JSONField(default=dict, blank=True) 
 
     def save(self, *args, **kwargs):
@@ -218,6 +221,7 @@ class Pago(models.Model):
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
+        # Actualizar la cuenta padre
         self.cuenta.monto_pagado = sum(p.monto for p in self.cuenta.pagos.all())
         self.cuenta.save()
 

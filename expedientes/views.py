@@ -658,7 +658,8 @@ def api_convertir_html(request):
 @login_required
 def gestion_servicios(request):
     if not request.user.access_cotizaciones: return redirect('dashboard')
-    return render(request, 'cotizaciones/servicios.html', {'servicios': Servicio.objects.all().order_by('nombre')})
+    servicios = Servicio.objects.all().order_by('nombre')
+    return render(request, 'cotizaciones/servicios.html', {'servicios': servicios})
 
 @login_required
 def guardar_servicio(request):
@@ -670,9 +671,11 @@ def guardar_servicio(request):
         s.descripcion = request.POST.get('descripcion')
         s.precio_base = request.POST.get('precio')
         
+        # Procesar los campos "Confirmados" (inputs ocultos)
         nombres = request.POST.getlist('campo_nombre[]')
         tipos = request.POST.getlist('campo_tipo[]')
         
+        # Generar lista de diccionarios para el JSONField
         estructura = []
         for nombre, tipo in zip(nombres, tipos):
             if nombre.strip():
@@ -706,6 +709,8 @@ def nueva_cotizacion(request):
         cants = request.POST.getlist('cantidad')
         precios = request.POST.getlist('precio')
         descs = request.POST.getlist('descripcion')
+        
+        # Capturamos el JSON generado por el JS al llenar campos dinámicos
         extras_json = request.POST.getlist('valores_adicionales_json[]')
 
         for i in range(len(s_ids)):
