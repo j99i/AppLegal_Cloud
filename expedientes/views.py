@@ -908,3 +908,22 @@ def eliminar_evento(request, evento_id):
     if request.user.rol == 'admin' or evento.usuario == request.user:
         evento.delete(); return JsonResponse({'status': 'ok'})
     return JsonResponse({'status': 'error'}, status=403)
+# En expedientes/views.py
+
+@login_required
+def eliminar_cotizacion(request, cotizacion_id):
+    # 1. Verificar permisos
+    if not request.user.access_cotizaciones:
+        messages.error(request, "No tienes permiso para realizar esta acción.")
+        return redirect('lista_cotizaciones')
+    
+    # 2. Buscar la cotización
+    cotizacion = get_object_or_404(Cotizacion, id=cotizacion_id)
+    
+    # 3. Eliminarla
+    cotizacion_id_ref = cotizacion.id # Guardamos el ID para el mensaje
+    cotizacion.delete()
+    
+    # 4. Confirmar y regresar
+    messages.success(request, f"La cotización #{cotizacion_id_ref} fue eliminada exitosamente.")
+    return redirect('lista_cotizaciones')
