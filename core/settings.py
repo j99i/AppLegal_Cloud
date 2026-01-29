@@ -150,15 +150,21 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
 # ==========================================
-# 9. SISTEMA DE CORREO (Configuración Real SMTP)
+# 9. SISTEMA DE CORREO (Configuración Robusta)
 # ==========================================
-# CORREO SEGURO PARA RAILWAY
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 465
-EMAIL_USE_TLS = True
+EMAIL_USE_SSL = True
+EMAIL_USE_TLS = False
 
-# Railway inyectará estos valores automáticamente:
-EMAIL_HOST_USER = env('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD')
-DEFAULT_FROM_EMAIL = f'AppLegal <{EMAIL_HOST_USER}>'
+# --- EL CAMBIO ESTÁ AQUÍ ---
+# Agregamos "default=''" para que la construcción no falle si no las encuentra.
+EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
+
+# Usamos un valor seguro para el remitente también
+if EMAIL_HOST_USER:
+    DEFAULT_FROM_EMAIL = f'AppLegal <{EMAIL_HOST_USER}>'
+else:
+    DEFAULT_FROM_EMAIL = 'AppLegal <noreply@applegal.com>'
