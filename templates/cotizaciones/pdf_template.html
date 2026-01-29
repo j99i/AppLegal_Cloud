@@ -1,150 +1,252 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
     <meta charset="UTF-8">
+    <title>Cotización</title>
     <style>
         @page {
-            size: Letter;
-            margin: 1.5cm; 
-            @bottom-right {
-                content: "Página " counter(page) " de " counter(pages);
-                font-family: 'Helvetica', sans-serif;
-                font-size: 9pt;
-                color: #888;
-            }
+            size: A4;
+            margin: 0cm; /* Margen cero para diseño de borde a borde */
         }
-        body { font-family: 'Helvetica', sans-serif; color: #1A2238; font-size: 10pt; line-height: 1.4; }
-        
-        .header { width: 100%; border-bottom: 2px solid #C0A062; padding-bottom: 15px; margin-bottom: 30px; }
-        .header-left { float: left; width: 60%; }
-        .header-right { float: right; width: 35%; text-align: right; }
-        .title { font-size: 20pt; font-weight: bold; color: #1A2238; text-transform: uppercase; margin: 0; }
-        .subtitle { color: #C0A062; font-weight: bold; font-size: 12pt; margin-top: 5px; }
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            line-height: 1.5;
+            font-size: 14px;
+        }
 
-        .client-box { background-color: #f8f9fa; border-left: 4px solid #1A2238; padding: 15px; margin-bottom: 30px; border-radius: 4px; }
-        .client-label { font-size: 8pt; color: #888; text-transform: uppercase; font-weight: bold; margin-bottom: 5px; }
-        .client-name { font-size: 12pt; font-weight: bold; }
+        /* BARRA LATERAL ESTÉTICA */
+        .sidebar-decor {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 8px;
+            background-color: #2c3e50; /* Azul Oscuro Elegante */
+        }
 
-        table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-bottom: 20px; }
-        th { background-color: #1A2238; color: white; padding: 8px; text-transform: uppercase; font-size: 8pt; text-align: left; }
-        td { padding: 10px 8px; border-bottom: 1px solid #eee; vertical-align: top; font-size: 9pt; }
-        
-        /* Columnas */
-        th.col-desc { width: 50%; } 
-        th.col-cant { width: 10%; text-align: center; }
-        th.col-precio { width: 20%; text-align: right; }
-        th.col-total { width: 20%; text-align: right; }
-        
+        .container {
+            padding: 40px 40px 40px 60px; /* Padding extra a la izquierda por la barra */
+        }
+
+        /* HEADER */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .logo-text {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .invoice-title {
+            text-align: right;
+        }
+        .invoice-title h1 {
+            margin: 0;
+            font-size: 32px;
+            color: #bdc3c7; /* Gris claro moderno */
+            font-weight: 300;
+        }
+        .meta-data {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+
+        /* INFO CLIENTE Y EMISOR */
+        .info-section {
+            width: 100%;
+            margin-bottom: 40px;
+        }
+        .info-col {
+            width: 48%;
+            display: inline-block;
+            vertical-align: top;
+        }
+        .info-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            color: #95a5a6;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .info-content {
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .info-sub {
+            font-size: 13px;
+            font-weight: normal;
+            color: #555;
+        }
+
+        /* TABLA DE SERVICIOS */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+        th {
+            text-align: left;
+            padding: 12px 10px;
+            background-color: #f8f9fa;
+            color: #2c3e50;
+            text-transform: uppercase;
+            font-size: 11px;
+            font-weight: bold;
+            border-bottom: 2px solid #2c3e50;
+        }
+        td {
+            padding: 15px 10px;
+            border-bottom: 1px solid #eee;
+            vertical-align: top;
+        }
+        .item-desc {
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+        }
         .text-right { text-align: right; }
         .text-center { text-align: center; }
-        
-        /* Estilos para detalles */
-        .specs-box {
-            margin-top: 8px;
-            padding-top: 8px;
-            border-top: 1px dashed #ddd;
+
+        /* TOTALES */
+        .totals-section {
+            width: 100%;
+            text-align: right;
         }
-        .spec-item {
-            font-size: 8pt;
-            color: #555;
-            margin-bottom: 2px;
+        .totals-table {
+            width: 40%;
+            margin-left: 60%; /* Empujar a la derecha */
         }
-        .desc-manual {
-            color: #666;
-            font-style: italic;
-            font-size: 9pt;
-            display: block;
-            margin-bottom: 5px;
+        .total-row td {
+            border: none;
+            padding: 5px 10px;
+        }
+        .total-final {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+            border-top: 2px solid #2c3e50 !important;
+            padding-top: 10px !important;
         }
 
-        .totals-box { width: 40%; float: right; margin-top: 10px; }
-        .total-row { padding: 5px 0; border-bottom: 1px solid #eee; display: flex; }
-        .total-label { float: left; font-weight: bold; color: #666; }
-        .total-value { float: right; font-weight: bold; }
-        .grand-total { background-color: #1A2238; color: white; padding: 10px; margin-top: 10px; border-radius: 4px; }
-        .grand-total .total-label { color: #C0A062; }
-        .grand-total .total-value { color: white; font-size: 12pt; }
+        /* FOOTER */
+        .footer {
+            margin-top: 60px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            text-align: center;
+            font-size: 11px;
+            color: #95a5a6;
+        }
         
-        .footer { position: fixed; bottom: 0; left: 0; right: 0; text-align: center; font-size: 8pt; color: #aaa; border-top: 1px solid #eee; padding-top: 10px; }
+        .badge {
+            background: #e74c3c;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            text-transform: uppercase;
+        }
     </style>
 </head>
 <body>
-
-    <div class="header">
-        <div class="header-left">
-            <h1 class="title">AppLegal</h1>
-            <div class="subtitle">COTIZACIÓN DE SERVICIOS</div>
+    <div class="sidebar-decor"></div>
+    
+    <div class="container">
+        <div class="header">
+            <div class="logo-text">
+                LEGAL CLOUD
+            </div>
+            <div class="invoice-title">
+                <h1>COTIZACIÓN</h1>
+                <div class="meta-data">FOLIO #{{ c.id|stringformat:"04d" }}</div>
+                <div class="meta-data">FECHA: {% now "d/m/Y" %}</div>
+            </div>
         </div>
-        <div class="header-right">
-            <p><strong>FOLIO: #{{ c.id|stringformat:"04d" }}</strong></p> 
-            <p>Fecha: {{ c.fecha_creacion|date:"d/m/Y" }}</p>
-            <p style="color: #c00;">Vence: {{ c.validez_hasta|default:"15 días" }}</p>
-        </div>
-    </div>
 
-    <div class="client-box">
-        <div class="client-label">PREPARADO PARA:</div>
-        <div class="client-name">{{ c.prospecto_nombre }}</div>
-        <div>{{ c.prospecto_empresa }}</div>
-        <div>{{ c.prospecto_email }}</div>
-        <div>{{ c.prospecto_telefono }}</div>
-    </div>
-
-    <table>
-        <thead>
-            <tr>
-                <th class="col-desc">Descripción del Servicio</th>
-                <th class="col-cant">Cant.</th>
-                <th class="col-precio">Precio Unit.</th>
-                <th class="col-total">Total</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in c.items.all %}
-            <tr>
-                <td>
-                    <strong style="font-size: 10pt;">{{ item.servicio.nombre }}</strong><br>
-                    
-                    {% if item.descripcion_personalizada %}
-                        <span class="desc-manual">{{ item.descripcion_personalizada }}</span>
+        <div class="info-section">
+            <div class="info-col">
+                <div class="info-label">PREPARADO PARA:</div>
+                <div class="info-content">
+                    {% if c.prospecto_empresa %}
+                        {{ c.prospecto_empresa }}<br>
+                        <span class="info-sub">Atn: {{ c.prospecto_nombre }}</span>
+                    {% else %}
+                        {{ c.prospecto_nombre }}
                     {% endif %}
-
-                    {% if item.servicio.campos_dinamicos %}
-                    <div class="specs-box">
-                        {% for spec in item.servicio.campos_dinamicos %}
-                            <div class="spec-item">
-                                <b style="color: #1A2238;">• {{ spec.nombre }}:</b> {{ spec.valor }}
-                            </div>
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-                </td>
-                <td class="text-center">{{ item.cantidad }}</td>
-                <td class="text-right">${{ item.precio_unitario|floatformat:2 }}</td>
-                <td class="text-right"><strong>${{ item.total|floatformat:2 }}</strong></td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
-    <div class="totals-box">
-        <div class="total-row">
-            <span class="total-label">Subtotal:</span>
-            <span class="total-value">${{ c.subtotal|floatformat:2 }}</span>
+                </div>
+                <div class="info-sub">{{ c.prospecto_email }}</div>
+                <div class="info-sub">{{ c.prospecto_telefono }}</div>
+            </div>
+            
+            <div class="info-col text-right">
+                <div class="info-label">EMITIDO POR:</div>
+                <div class="info-content">{{ c.creado_por.first_name }} {{ c.creado_por.last_name }}</div>
+                <div class="info-sub">Servicios Legales Profesionales</div>
+                <div class="info-sub">{{ user.email }}</div>
+            </div>
         </div>
-        <div class="total-row">
-            <span class="total-label">IVA (16%):</span>
-            <span class="total-value">${{ c.impuestos|floatformat:2 }}</span>
-        </div>
-        <div class="total-row grand-total">
-            <span class="total-label">TOTAL NETO:</span>
-            <span class="total-value">${{ c.total|floatformat:2 }}</span>
-        </div>
-    </div>
 
-    <div class="footer">
-        <p>Gracias por su confianza. Términos y condiciones disponibles en nuestro sitio web.</p>
-        <p>Generado automáticamente por AppLegal Cloud Platform</p>
+        <table>
+            <thead>
+                <tr>
+                    <th width="50%">DESCRIPCIÓN</th>
+                    <th width="15%" class="text-center">CANT.</th>
+                    <th width="15%" class="text-right">PRECIO U.</th>
+                    <th width="20%" class="text-right">TOTAL</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in c.items.all %}
+                <tr>
+                    <td>
+                        <strong>{{ item.servicio.nombre }}</strong>
+                        <div class="item-desc">
+                            {{ item.descripcion_personalizada|default:item.servicio.descripcion }}
+                            {% if item.valores_adicionales %}
+                                <br>
+                                {% for k, v in item.valores_adicionales.items %}
+                                    <small>• {{ k }}: {{ v }}</small>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td class="text-center">{{ item.cantidad }}</td>
+                    <td class="text-right">${{ item.precio_unitario }}</td>
+                    <td class="text-right"><strong>${{ item.subtotal }}</strong></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="totals-section">
+            <table class="totals-table">
+                <tr class="total-row">
+                    <td class="text-right">SUBTOTAL:</td>
+                    <td class="text-right">${{ c.total }}</td> 
+                    </tr>
+                <tr class="total-row">
+                    <td class="text-right total-final">TOTAL MXN:</td>
+                    <td class="text-right total-final">${{ c.total }}</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="footer">
+            <p><strong>VIGENCIA DE LA OFERTA:</strong> {{ c.validez_hasta|default:"15 días" }}</p>
+            <p>Gracias por la confianza. Quedamos a la espera de su confirmación para proceder.</p>
+        </div>
     </div>
 </body>
 </html>

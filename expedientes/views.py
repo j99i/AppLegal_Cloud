@@ -13,14 +13,16 @@ from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.core.files.base import ContentFile
 from django.utils import timezone
+from django.utils.text import slugify # <--- IMPORTANTE: Para nombres de archivo limpios
 from django.template.loader import render_to_string
 from django.core.mail import EmailMultiAlternatives
-from django.conf import settings # <--- IMPORTANTE: Necesario para leer BASE_DIR y credenciales
+from django.conf import settings 
 
 # Librerías para Documentos
 from docxtpl import DocxTemplate
 import mammoth
 from docx import Document as DocumentoWord 
+import weasyprint # Importar aquí para uso general si es necesario
 
 # Importación de Modelos
 from .models import (
@@ -669,13 +671,11 @@ def guardar_servicio(request):
         s.descripcion = request.POST.get('descripcion')
         s.precio_base = request.POST.get('precio')
         
-        # --- LÓGICA MODIFICADA: ESPECIFICACIONES FIJAS ---
-        # Recogemos las listas de nombres y VALORES que envió el formulario
+        # Guardar lista de campos dinámicos (Nombre: Valor)
         nombres = request.POST.getlist('campo_nombre[]')
         valores = request.POST.getlist('campo_valor[]')
         
         estructura = []
-        # Unimos nombre y valor (Ej: "Aceite" con "Sintético")
         for nombre, valor in zip(nombres, valores):
             if nombre.strip():
                 estructura.append({'nombre': nombre.strip(), 'valor': valor.strip()})
@@ -762,31 +762,35 @@ def convertir_a_cliente(request, cotizacion_id):
     return redirect('panel_finanzas')
 
 # ----------------------------------------------------
-# AQUI ESTÁ LA FUNCIÓN BLINDADA CONTRA TIMEOUTS
+# FUNCIÓN DE CORREO ACTUALIZADA (RESEND + NOMBRE INTELIGENTE)
 # ----------------------------------------------------
-# En expedientes/views.py
-
 @login_required
 def enviar_cotizacion_email(request, cotizacion_id):
     import weasyprint 
+    
     if request.method == 'POST':
         c = get_object_or_404(Cotizacion, id=cotizacion_id)
         
-        # 1. Datos del Cliente y Abogado
+        # 1. Lógica de Nombres Inteligentes
+        nombre_cliente = c.prospecto_empresa if c.prospecto_empresa else c.prospecto_nombre
+        fecha_str = timezone.now().strftime("%d-%m-%Y")
+        
+        # "Cotización_CocaCola_29-01-2026.pdf" (El slugify limpia espacios y caracteres raros)
+        nombre_archivo_pdf = f"Cotizacion_{slugify(nombre_cliente)}_{fecha_str}.pdf"
+        asunto_default = f"Cotización {nombre_cliente}"
+
+        # 2. Configuración Email
         email_destino = c.prospecto_email
-        email_abogado = request.user.email  # Para que el cliente responda aquí
+        email_abogado = request.user.email
+        # Resend requiere un remitente verificado (o onboarding@resend.dev si es prueba)
+        remitente_oficial = settings.DEFAULT_FROM_EMAIL 
 
         if not email_destino:
             messages.error(request, "El cliente no tiene email registrado.")
             return redirect('detalle_cotizacion', cotizacion_id=cotizacion_id)
 
-        # 2. Configuración para RESEND
-        # Usamos el remitente oficial configurado en settings (onboarding@resend.dev)
-        # Esto es OBLIGATORIO en el modo de prueba de Resend.
-        remitente_oficial = settings.DEFAULT_FROM_EMAIL 
-
-        asunto = request.POST.get('asunto', f"Cotización #{c.id}")
-        mensaje = request.POST.get('mensaje', 'Adjunto cotización.')
+        asunto = request.POST.get('asunto', asunto_default)
+        mensaje = request.POST.get('mensaje', 'Adjunto encontrará la propuesta de servicios legales solicitada.')
 
         try:
             # 3. Generar PDF (Usando BASE_DIR para evitar bloqueos)
@@ -804,27 +808,26 @@ def enviar_cotizacion_email(request, cotizacion_id):
             email = EmailMultiAlternatives(
                 subject=asunto,
                 body=mensaje,
-                from_email=remitente_oficial,  # <--- AQUÍ ESTABA EL ERROR, AHORA ES FIJO
+                from_email=remitente_oficial,
                 to=[email_destino],
-                reply_to=[email_abogado] if email_abogado else None # La respuesta va al abogado
+                reply_to=[email_abogado] if email_abogado else None
             )
             
-            email.attach(f"Cotizacion_{c.id}.pdf", pdf_file, 'application/pdf')
+            # Adjuntamos el PDF con el nuevo nombre cool
+            email.attach(nombre_archivo_pdf, pdf_file, 'application/pdf')
             
-            # 5. Enviar
             email.send()
 
-            # 6. Éxito
             c.estado = 'enviada'
             c.save()
-            messages.success(request, f"Correo enviado a {email_destino} vía Resend.")
+            messages.success(request, f"Cotización enviada a {nombre_cliente} ({email_destino}).")
 
         except Exception as e:
-            # Imprimir error en consola de Railway para depurar
-            print(f"Error enviando correo: {e}")
+            print(f"Error enviando: {e}")
             messages.error(request, f"Error técnico: {str(e)}")
 
     return redirect('detalle_cotizacion', cotizacion_id=cotizacion_id)
+
 # ==========================================
 # 8. FINANZAS
 # ==========================================
