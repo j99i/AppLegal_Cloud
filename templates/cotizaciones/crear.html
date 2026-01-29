@@ -78,8 +78,14 @@
                         {% endfor %}
                     </select>
                     
-                    <div class="area-llenado grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4 empty:hidden animate__animated animate__fadeIn">
+                    <div class="area-llenado grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
                         </div>
+
+                    <div class="mt-3 text-right">
+                        <button type="button" onclick="agregarCampoAlVuelo(this)" class="text-[10px] font-bold text-[#C0A062] hover:text-[#1A2238] transition-colors flex items-center gap-1 ml-auto">
+                            <i class="fas fa-plus-circle"></i> Agregar otro dato aquí
+                        </button>
+                    </div>
                 </div>
 
                 <div class="flex-1">
@@ -115,79 +121,113 @@
 </div>
 
 <script>
-    // 1. Agregar una nueva fila vacía
+    // 1. Agregar una nueva fila de servicio
     function agregarFila() {
         const template = document.getElementById('row-template');
         const clone = template.cloneNode(true);
-        clone.id = ''; // Quitamos ID para evitar duplicados
+        clone.id = ''; 
         clone.classList.remove('hidden');
         document.getElementById('items-container').appendChild(clone);
     }
 
-    // 2. Cuando se selecciona un servicio del dropdown
+    // 2. Procesar selección del servicio (Cargar campos del catálogo)
     function procesarSeleccionServicio(selectElement) {
         const fila = selectElement.closest('.group');
         const opcion = selectElement.options[selectElement.selectedIndex];
         
-        // Autocompletar precio y descripción
+        // Autocompletar precio y descripción base
         fila.querySelector('input[name="precio"]').value = opcion.dataset.precio || '';
         fila.querySelector('input[name="descripcion"]').value = opcion.dataset.desc || '';
 
-        // Generar los campos dinámicos
         const areaLlenado = fila.querySelector('.area-llenado');
         areaLlenado.innerHTML = ''; // Limpiar anteriores
 
         if (opcion.dataset.campos) {
             try {
                 const campos = JSON.parse(opcion.dataset.campos);
-                
                 if (campos.length > 0) {
-                    // Título pequeño si hay campos
-                    const titulo = document.createElement('div');
-                    titulo.className = "col-span-full text-[10px] font-bold text-[#C0A062] uppercase tracking-wide border-b border-gray-100 pb-1 mb-1";
-                    titulo.innerText = "Datos requeridos:";
-                    areaLlenado.appendChild(titulo);
+                    areaLlenado.innerHTML = '<div class="col-span-full text-[10px] font-bold text-[#C0A062] uppercase tracking-wide border-b border-gray-100 pb-1 mb-1">Datos requeridos:</div>';
                 }
-
                 campos.forEach(campo => {
-                    const wrapper = document.createElement('div');
-                    wrapper.className = "bg-white p-2 rounded-lg border border-gray-200 shadow-sm focus-within:border-[#C0A062] transition-colors";
-                    
-                    wrapper.innerHTML = `
-                        <label class="block text-[9px] font-black text-gray-400 uppercase mb-1">${campo.nombre}</label>
-                        <input type="${campo.tipo}" 
-                               data-label="${campo.nombre}"
-                               oninput="guardarDatosExtras(this)"
-                               class="w-full bg-transparent border-none p-0 text-xs font-bold text-[#1A2238] outline-none placeholder-gray-300"
-                               placeholder="Ingresar dato...">
-                    `;
-                    areaLlenado.appendChild(wrapper);
+                    crearInputVisual(areaLlenado, campo.nombre, campo.tipo);
                 });
-            } catch (e) {
-                console.error("Error parseando campos dinámicos:", e);
-            }
+            } catch (e) { console.error("Error campos", e); }
         }
     }
 
-    // 3. Serializar lo que escribe el usuario a JSON
+    // 3. NUEVA FUNCIÓN: Agregar campo manual al vuelo
+    function agregarCampoAlVuelo(btn) {
+        const nombre = prompt("¿Qué nombre tiene el dato extra? (Ej. Placa, Color, Testigo)");
+        if (!nombre) return;
+        
+        const areaLlenado = btn.closest('.flex-1').querySelector('.area-llenado');
+        
+        // Si estaba vacío, ponemos el titulito
+        if (!areaLlenado.querySelector('.col-span-full')) {
+            const titulo = document.createElement('div');
+            titulo.className = "col-span-full text-[10px] font-bold text-[#C0A062] uppercase tracking-wide border-b border-gray-100 pb-1 mb-1";
+            titulo.innerText = "Datos Adicionales:";
+            areaLlenado.prepend(titulo);
+        }
+
+        crearInputVisual(areaLlenado, nombre, 'text');
+    }
+
+    // Helper para dibujar el input
+    function crearInputVisual(container, nombre, tipo) {
+        const wrapper = document.createElement('div');
+        wrapper.className = "bg-white p-2 rounded-lg border border-gray-200 shadow-sm relative group/input focus-within:border-[#C0A062] transition-colors animate__animated animate__fadeIn";
+        
+        wrapper.innerHTML = `
+            <label class="block text-[9px] font-black text-gray-400 uppercase mb-1">${nombre}</label>
+            <input type="${tipo}" 
+                   data-label="${nombre}"
+                   oninput="guardarDatosExtras(this)"
+                   class="w-full bg-transparent border-none p-0 text-xs font-bold text-[#1A2238] outline-none placeholder-gray-300"
+                   placeholder="Llenar ahora...">
+            <button type="button" onclick="eliminarInputExtra(this)" class="absolute top-1 right-1 text-red-200 hover:text-red-500 hidden group-hover/input:block">
+                <i class="fas fa-times text-xs"></i>
+            </button>
+        `;
+        container.appendChild(wrapper);
+    }
+
+    function eliminarInputExtra(btn) {
+        const wrapper = btn.closest('.group\\/input');
+        const input = wrapper.querySelector('input');
+        wrapper.remove();
+        // Disparamos guardarDatosExtras usando el input eliminado (aunque ya no esté en el DOM, 
+        // necesitamos referenciar la fila para recalcular el JSON, así que mejor buscamos la fila desde el botón)
+        // Como el elemento se borró, mejor buscamos la fila desde el botón ANTES de borrar o pasamos la fila
+        // Hack rápido: como ya no existe el input para buscar la fila, actualizamos la fila entera:
+        // (Nota: el 'closest' no funcionará después del remove, así que el input de arriba ya no sirve)
+        // Mejor enfoque: recalcular JSON de todos los inputs restantes en la fila.
+    }
+    
+    // 4. Guardar todo en el JSON oculto
     function guardarDatosExtras(inputElement) {
         const fila = inputElement.closest('.group');
+        actualizarJSONFila(fila);
+    }
+
+    // Sobrescribimos la función de eliminar para que actualice el JSON correctamente
+    window.eliminarInputExtra = function(btn) {
+        const fila = btn.closest('.group');
+        btn.closest('.group\\/input').remove();
+        actualizarJSONFila(fila);
+    }
+
+    function actualizarJSONFila(fila) {
         const inputs = fila.querySelectorAll('.area-llenado input');
         const datos = {};
-        
         inputs.forEach(inp => {
             if (inp.value.trim()) {
                 datos[inp.dataset.label] = inp.value;
             }
         });
-        
-        // Guardar en el input oculto que se envía a Django
         fila.querySelector('.json-extras').value = JSON.stringify(datos);
     }
 
-    // Iniciar con una fila al cargar
-    document.addEventListener('DOMContentLoaded', () => {
-        agregarFila();
-    });
+    document.addEventListener('DOMContentLoaded', agregarFila);
 </script>
 {% endblock %}
