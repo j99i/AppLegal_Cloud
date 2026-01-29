@@ -15,7 +15,7 @@ from django.core.files.base import ContentFile
 from django.utils import timezone
 from django.template.loader import render_to_string
 from django.core.mail import EmailMultiAlternatives
-from django.conf import settings
+from django.conf import settings # <--- IMPORTANTE: Necesario para leer BASE_DIR y credenciales
 
 # Librerías para Documentos
 from docxtpl import DocxTemplate
@@ -762,11 +762,11 @@ def convertir_a_cliente(request, cotizacion_id):
     return redirect('panel_finanzas')
 
 # ----------------------------------------------------
-# AQUI ESTÁ EL CAMBIO IMPORTANTE: CORREO REAL CON PDF
+# AQUI ESTÁ LA FUNCIÓN BLINDADA CONTRA TIMEOUTS
 # ----------------------------------------------------
 @login_required
 def enviar_cotizacion_email(request, cotizacion_id):
-    import weasyprint # Importación local
+    import weasyprint 
     if request.method == 'POST':
         c = get_object_or_404(Cotizacion, id=cotizacion_id)
         
@@ -774,13 +774,13 @@ def enviar_cotizacion_email(request, cotizacion_id):
         nombre_abogado = f"{request.user.first_name} {request.user.last_name}"
         email_abogado = request.user.email
         
-        # Validar que el abogado tenga correo, si no, usar el del sistema por defecto
+        # Validar que el abogado tenga correo, si no, usar el del sistema
         if not email_abogado:
             email_abogado = settings.DEFAULT_FROM_EMAIL
             
         # 2. Configurar el Remitente Visual
-        # Esto hará que llegue como: "Juan Pérez <notificaciones@tudominio.com>"
-        # Así Gmail lo acepta, pero el cliente ve el nombre del abogado.
+        # Usamos el EMAIL_HOST_USER del settings para asegurar que salga del servidor autorizado
+        # pero le ponemos el nombre del abogado.
         remitente_visual = f"{nombre_abogado} <{settings.EMAIL_HOST_USER}>"
 
         asunto = request.POST.get('asunto', f"Cotización #{c.id}")
@@ -792,34 +792,43 @@ def enviar_cotizacion_email(request, cotizacion_id):
             return redirect('detalle_cotizacion', cotizacion_id=cotizacion_id)
 
         try:
-            # 3. Generar PDF
+            # 3. Generar PDF (OPTIMIZADO PARA NO BLOQUEARSE)
+            # Usamos str(settings.BASE_DIR) para que busque las imágenes en disco local
+            # y no intente descargarlas de internet (que es lo que causa el Timeout)
             html = render_to_string('cotizaciones/pdf_template.html', {
                 'c': c, 
-                'base_url': request.build_absolute_uri('/')
+                'base_url': str(settings.BASE_DIR) 
             })
-            pdf_file = weasyprint.HTML(string=html, base_url=request.build_absolute_uri('/')).write_pdf()
+            
+            pdf_file = weasyprint.HTML(
+                string=html, 
+                base_url=str(settings.BASE_DIR)
+            ).write_pdf()
 
             # 4. Construir el Correo Inteligente
             email = EmailMultiAlternatives(
                 subject=asunto,
                 body=mensaje,
-                from_email=remitente_visual, # Sale del sistema (para que no rebote)
+                from_email=remitente_visual, # Sale del sistema
                 to=[email_destino],
-                reply_to=[email_abogado]     # <--- MAGIA: La respuesta le llega al abogado
+                reply_to=[email_abogado]     # La respuesta llega al abogado
             )
             
             email.attach(f"Cotizacion_{c.id}.pdf", pdf_file, 'application/pdf')
+            
+            # 5. Enviar
             email.send()
 
+            # 6. Actualizar Estado
             c.estado = 'enviada'
             c.save()
-            messages.success(request, f"Correo enviado a {email_destino}. Si el cliente responde, te llegará a {email_abogado}.")
+            messages.success(request, f"Correo enviado a {email_destino}. Si responden, llegará a {email_abogado}.")
 
         except Exception as e:
-            # Mostrar el error técnico en pantalla para depurar si falla
             messages.error(request, f"Error técnico: {str(e)}")
 
     return redirect('detalle_cotizacion', cotizacion_id=cotizacion_id)
+
 # ==========================================
 # 8. FINANZAS
 # ==========================================
