@@ -764,37 +764,32 @@ def convertir_a_cliente(request, cotizacion_id):
 # ----------------------------------------------------
 # AQUI ESTÁ LA FUNCIÓN BLINDADA CONTRA TIMEOUTS
 # ----------------------------------------------------
+# En expedientes/views.py
+
 @login_required
 def enviar_cotizacion_email(request, cotizacion_id):
     import weasyprint 
     if request.method == 'POST':
         c = get_object_or_404(Cotizacion, id=cotizacion_id)
         
-        # 1. Datos del Abogado (Usuario actual)
-        nombre_abogado = f"{request.user.first_name} {request.user.last_name}"
-        email_abogado = request.user.email
-        
-        # Validar que el abogado tenga correo, si no, usar el del sistema
-        if not email_abogado:
-            email_abogado = settings.DEFAULT_FROM_EMAIL
-            
-        # 2. Configurar el Remitente Visual
-        # Usamos el EMAIL_HOST_USER del settings para asegurar que salga del servidor autorizado
-        # pero le ponemos el nombre del abogado.
-        remitente_visual = f"{nombre_abogado} <{settings.EMAIL_HOST_USER}>"
-
-        asunto = request.POST.get('asunto', f"Cotización #{c.id}")
-        mensaje = request.POST.get('mensaje', 'Adjunto cotización.')
+        # 1. Datos del Cliente y Abogado
         email_destino = c.prospecto_email
+        email_abogado = request.user.email  # Para que el cliente responda aquí
 
         if not email_destino:
             messages.error(request, "El cliente no tiene email registrado.")
             return redirect('detalle_cotizacion', cotizacion_id=cotizacion_id)
 
+        # 2. Configuración para RESEND
+        # Usamos el remitente oficial configurado en settings (onboarding@resend.dev)
+        # Esto es OBLIGATORIO en el modo de prueba de Resend.
+        remitente_oficial = settings.DEFAULT_FROM_EMAIL 
+
+        asunto = request.POST.get('asunto', f"Cotización #{c.id}")
+        mensaje = request.POST.get('mensaje', 'Adjunto cotización.')
+
         try:
-            # 3. Generar PDF (OPTIMIZADO PARA NO BLOQUEARSE)
-            # Usamos str(settings.BASE_DIR) para que busque las imágenes en disco local
-            # y no intente descargarlas de internet (que es lo que causa el Timeout)
+            # 3. Generar PDF (Usando BASE_DIR para evitar bloqueos)
             html = render_to_string('cotizaciones/pdf_template.html', {
                 'c': c, 
                 'base_url': str(settings.BASE_DIR) 
@@ -805,13 +800,13 @@ def enviar_cotizacion_email(request, cotizacion_id):
                 base_url=str(settings.BASE_DIR)
             ).write_pdf()
 
-            # 4. Construir el Correo Inteligente
+            # 4. Construir el Correo
             email = EmailMultiAlternatives(
                 subject=asunto,
                 body=mensaje,
-                from_email=remitente_visual, # Sale del sistema
+                from_email=remitente_oficial,  # <--- AQUÍ ESTABA EL ERROR, AHORA ES FIJO
                 to=[email_destino],
-                reply_to=[email_abogado]     # La respuesta llega al abogado
+                reply_to=[email_abogado] if email_abogado else None # La respuesta va al abogado
             )
             
             email.attach(f"Cotizacion_{c.id}.pdf", pdf_file, 'application/pdf')
@@ -819,16 +814,17 @@ def enviar_cotizacion_email(request, cotizacion_id):
             # 5. Enviar
             email.send()
 
-            # 6. Actualizar Estado
+            # 6. Éxito
             c.estado = 'enviada'
             c.save()
-            messages.success(request, f"Correo enviado a {email_destino}. Si responden, llegará a {email_abogado}.")
+            messages.success(request, f"Correo enviado a {email_destino} vía Resend.")
 
         except Exception as e:
+            # Imprimir error en consola de Railway para depurar
+            print(f"Error enviando correo: {e}")
             messages.error(request, f"Error técnico: {str(e)}")
 
     return redirect('detalle_cotizacion', cotizacion_id=cotizacion_id)
-
 # ==========================================
 # 8. FINANZAS
 # ==========================================
