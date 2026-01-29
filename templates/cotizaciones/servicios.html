@@ -6,7 +6,7 @@
     <div class="flex justify-between items-center mb-8">
         <div>
             <h2 class="text-3xl font-black text-[#1A2238]">Catálogo de Servicios</h2>
-            <p class="text-gray-500 text-sm">Configura tus servicios y sus requisitos.</p>
+            <p class="text-gray-500 text-sm">Define tus servicios y configura qué datos (campos) pedirá cada uno.</p>
         </div>
         <button onclick="abrirModal()" class="bg-[#1A2238] text-white px-6 py-3 rounded-xl font-bold text-xs shadow-lg hover:bg-opacity-90 transition-all flex items-center gap-2">
             <i class="fas fa-plus"></i> NUEVO SERVICIO
@@ -26,7 +26,7 @@
                     <button onclick="editarServicio('{{ s.id }}', '{{ s.nombre|escapejs }}', '{{ s.precio_base }}', '{{ s.descripcion|escapejs }}', '{{ s.campos_dinamicos|safe|escapejs }}')" class="text-gray-400 hover:text-[#1A2238] p-2 hover:bg-gray-100 rounded-lg transition-colors">
                         <i class="fas fa-pen"></i>
                     </button>
-                    <a href="{% url 'eliminar_servicio' s.id %}" onclick="return confirm('¿Eliminar este servicio?')" class="text-gray-400 hover:text-red-500 p-2"><i class="fas fa-trash"></i></a>
+                    <a href="{% url 'eliminar_servicio' s.id %}" onclick="return confirm('¿Eliminar servicio?')" class="text-gray-400 hover:text-red-500 p-2"><i class="fas fa-trash"></i></a>
                 </div>
             </div>
             
@@ -34,7 +34,11 @@
             
             <div class="flex items-center justify-between border-t border-gray-50 pt-4">
                 <span class="text-[10px] font-bold text-gray-400 uppercase">
-                    {% if s.campos_dinamicos %}{{ s.campos_dinamicos|length }} Requisitos{% else %}Básico{% endif %}
+                    {% if s.campos_dinamicos %}
+                        {{ s.campos_dinamicos|length }} Datos Configurados
+                    {% else %}
+                        Sin datos extra
+                    {% endif %}
                 </span>
                 <span class="text-xl font-black text-[#C0A062]">${{ s.precio_base|floatformat:2 }}</span>
             </div>
@@ -50,7 +54,7 @@
         
         <button onclick="cerrarModal()" class="absolute top-6 right-6 text-gray-400 hover:text-red-500"><i class="fas fa-times text-xl"></i></button>
         
-        <h3 id="modal-titulo" class="text-2xl font-black text-[#1A2238] mb-6">Nuevo Servicio</h3>
+        <h3 id="modal-titulo" class="text-2xl font-black text-[#1A2238] mb-6">Configurar Servicio</h3>
         
         <form action="{% url 'guardar_servicio' %}" method="POST" id="form-servicio">
             {% csrf_token %}
@@ -58,15 +62,17 @@
             
             <div class="grid grid-cols-2 gap-4 mb-4">
                 <input type="text" name="nombre" id="input-nombre" placeholder="Nombre del Servicio" class="w-full p-4 bg-gray-50 rounded-xl font-bold border-2 border-transparent focus:border-[#C0A062] outline-none" required>
-                <input type="number" name="precio" id="input-precio" step="0.01" placeholder="Precio Base" class="w-full p-4 bg-gray-50 rounded-xl font-bold border-2 border-transparent focus:border-[#C0A062] outline-none" required>
+                <input type="number" name="precio" id="input-precio" step="0.01" placeholder="Honorarios Base" class="w-full p-4 bg-gray-50 rounded-xl font-bold border-2 border-transparent focus:border-[#C0A062] outline-none" required>
             </div>
-            <textarea name="descripcion" id="input-descripcion" rows="2" placeholder="Descripción breve..." class="w-full p-4 bg-gray-50 rounded-xl text-sm mb-6 border-2 border-transparent focus:border-[#C0A062] outline-none"></textarea>
+            <textarea name="descripcion" id="input-descripcion" rows="2" placeholder="Descripción para la cotización..." class="w-full p-4 bg-gray-50 rounded-xl text-sm mb-6 border-2 border-transparent focus:border-[#C0A062] outline-none"></textarea>
 
-            <div class="border-2 border-dashed border-gray-300 rounded-[1.5rem] p-6 mb-6">
-                <h4 class="text-xs font-black text-gray-500 uppercase mb-4">Paso 1: Definir campos para el abogado</h4>
+            <div class="border-2 border-dashed border-gray-300 rounded-[1.5rem] p-6 mb-6 relative bg-gray-50">
+                <h4 class="text-xs font-black text-gray-500 uppercase mb-4 flex items-center gap-2">
+                    <i class="fas fa-list-ul"></i> Definir Datos Requeridos
+                </h4>
                 
-                <div class="flex gap-2 mb-6 items-center">
-                    <input type="text" id="temp-nombre" placeholder="Ej. Numero de Escritura" class="flex-1 p-3 bg-white border border-gray-200 rounded-xl font-bold text-sm outline-none focus:border-[#C0A062]">
+                <div class="flex gap-2 mb-4 items-center">
+                    <input type="text" id="temp-nombre" placeholder="Ej. Número de Expediente" class="flex-1 p-3 bg-white border border-gray-200 rounded-xl font-bold text-sm outline-none focus:border-[#C0A062]">
                     
                     <select id="temp-tipo" class="p-3 bg-white border border-gray-200 rounded-xl font-bold text-sm outline-none focus:border-[#C0A062]">
                         <option value="text">Texto</option>
@@ -74,64 +80,69 @@
                         <option value="date">Fecha</option>
                     </select>
                     
-                    <button type="button" onclick="confirmarCampo()" class="bg-[#C0A062] text-white px-5 py-3 rounded-xl font-bold text-xs shadow-md hover:bg-[#a3864d] transition-all">
-                        CONFIRMAR
+                    <button type="button" onclick="confirmarCampo()" class="bg-[#C0A062] text-white px-5 py-3 rounded-xl font-bold text-[10px] uppercase shadow-md hover:bg-[#a3864d] transition-all">
+                        AGREGAR
                     </button>
                 </div>
 
                 <div id="lista-campos-confirmados" class="space-y-2">
                     </div>
+                
+                <p class="text-[9px] text-gray-400 mt-4 text-center">
+                    * Estos campos aparecerán automáticamente al crear una cotización con este servicio.
+                </p>
             </div>
 
             <button type="submit" class="w-full bg-[#1A2238] text-white py-4 rounded-xl font-black text-sm tracking-widest shadow-lg hover:bg-black transition-all">
-                PASO 2: GUARDAR SERVICIO COMPLETO
+                GUARDAR SERVICIO
             </button>
         </form>
     </div>
 </div>
 
 <script>
-    // ESTA FUNCIÓN TOMA EL DATO DE ARRIBA Y LO "BAJA" A LA LISTA DE CONFIRMADOS
+    // --- LÓGICA DE LA RECETA ---
+
+    // 1. Confirmar Campo: Toma lo escrito arriba y lo pone en la lista visual + inputs ocultos
     function confirmarCampo(nombre = '', tipo = 'text') {
-        // 1. Obtener valores
         const inputNombre = document.getElementById('temp-nombre');
         const inputTipo = document.getElementById('temp-tipo');
         
+        // Usamos parámetros (al editar) o valores del input (al crear)
         const finalNombre = nombre || inputNombre.value;
         const finalTipo = tipo || inputTipo.value;
 
-        // 2. Validar
         if (!finalNombre.trim()) {
-            alert("Escribe un nombre para el campo");
+            alert("Escribe el nombre del dato que necesitas pedir.");
             return;
         }
 
-        // 3. Crear el HTML del campo confirmado
         const container = document.getElementById('lista-campos-confirmados');
         const div = document.createElement('div');
-        div.className = "flex justify-between items-center bg-gray-50 p-3 rounded-xl border border-gray-100 animate__animated animate__fadeInLeft";
+        div.className = "flex justify-between items-center bg-white p-3 rounded-xl border border-gray-200 shadow-sm animate__animated animate__fadeInLeft";
         
         div.innerHTML = `
             <div class="flex items-center gap-3">
-                <span class="bg-gray-200 text-[10px] font-black px-2 py-1 rounded text-gray-600 uppercase">${finalTipo}</span>
+                <span class="bg-gray-100 text-[9px] font-black px-2 py-1 rounded text-gray-500 uppercase tracking-wide w-16 text-center">${finalTipo}</span>
                 <span class="text-sm font-bold text-[#1A2238]">${finalNombre}</span>
                 
                 <input type="hidden" name="campo_nombre[]" value="${finalNombre}">
                 <input type="hidden" name="campo_tipo[]" value="${finalTipo}">
             </div>
-            <button type="button" onclick="this.parentElement.remove()" class="text-red-400 hover:text-red-600 p-2">
+            <button type="button" onclick="this.parentElement.remove()" class="text-red-300 hover:text-red-500 p-2 transition-colors">
                 <i class="fas fa-trash-alt"></i>
             </button>
         `;
         container.appendChild(div);
 
-        // 4. Limpiar los inputs de arriba para agregar otro
+        // Limpiar para agregar otro
         if(!nombre) {
             inputNombre.value = '';
             inputNombre.focus();
         }
     }
 
+    // 2. Abrir Modal Limpio
     function abrirModal() {
         document.getElementById('modal-titulo').innerText = 'Nuevo Servicio';
         document.getElementById('form-servicio').reset();
@@ -140,6 +151,7 @@
         document.getElementById('modal-servicio').classList.replace('hidden', 'flex');
     }
 
+    // 3. Editar: Carga la receta guardada
     function editarServicio(id, nombre, precio, descripcion, camposJson) {
         abrirModal();
         document.getElementById('modal-titulo').innerText = 'Editar Servicio';
@@ -148,12 +160,12 @@
         document.getElementById('input-precio').value = precio;
         document.getElementById('input-descripcion').value = descripcion;
         
-        // Cargar los campos guardados previamente
+        // Reconstruimos la lista visual desde el JSON guardado
         if (camposJson) {
             try {
                 const campos = typeof camposJson === 'object' ? camposJson : JSON.parse(camposJson);
                 campos.forEach(c => confirmarCampo(c.nombre, c.tipo));
-            } catch(e) {}
+            } catch(e) { console.error(e); }
         }
     }
 

@@ -17,12 +17,12 @@ from django.template.loader import render_to_string
 from django.core.mail import EmailMultiAlternatives
 from django.conf import settings
 
-# Librerías Documentos
+# Librerías para Documentos
 from docxtpl import DocxTemplate
 import mammoth
 from docx import Document as DocumentoWord 
 
-# Modelos
+# Importación de Modelos
 from .models import (
     Usuario, Cliente, Carpeta, Expediente, Documento, 
     Tarea, Bitacora, Plantilla, VariableEstandar,
@@ -31,7 +31,7 @@ from .models import (
 )
 
 # ==========================================
-# 1. AUTH & PERFIL
+# 1. AUTENTICACIÓN Y PERFIL
 # ==========================================
 
 def signout(request):
@@ -52,7 +52,7 @@ def registro(request):
             return render(request, 'registro.html')
 
         if Usuario.objects.filter(username=username).exists():
-            messages.error(request, "El nombre de usuario ya está en uso.")
+            messages.error(request, "El usuario ya existe.")
             return render(request, 'registro.html')
 
         try:
@@ -80,12 +80,12 @@ def mi_perfil(request):
             user.avatar = request.FILES['avatar']
             
         user.save()
-        messages.success(request, "Tu perfil ha sido actualizado correctamente.")
+        messages.success(request, "Perfil actualizado correctamente.")
         return redirect('mi_perfil')
     return render(request, 'usuarios/mi_perfil.html', {'user': user})
 
 # ==========================================
-# 2. GESTIÓN DE USUARIOS
+# 2. GESTIÓN DE USUARIOS (ADMIN)
 # ==========================================
 
 @login_required
@@ -117,6 +117,7 @@ def editar_usuario(request, user_id):
         user_obj.telefono = request.POST.get('telefono') or None
         user_obj.puesto = request.POST.get('puesto') or None
         
+        # Permisos booleanos
         user_obj.can_create_client = request.POST.get('can_create_client') == 'on'
         user_obj.can_edit_client = request.POST.get('can_edit_client') == 'on'
         user_obj.can_delete_client = request.POST.get('can_delete_client') == 'on'
@@ -124,6 +125,7 @@ def editar_usuario(request, user_id):
         user_obj.can_view_documents = request.POST.get('can_view_documents') == 'on'
         user_obj.can_manage_users = request.POST.get('can_manage_users') == 'on'
 
+        # Accesos a módulos
         user_obj.access_finanzas = request.POST.get('access_finanzas') == 'on'
         user_obj.access_cotizaciones = request.POST.get('access_cotizaciones') == 'on'
         user_obj.access_contratos = request.POST.get('access_contratos') == 'on'
@@ -296,7 +298,7 @@ def editar_cliente(request, cliente_id):
     })
 
 # ==========================================
-# 4. CAMPOS CLIENTE Y DRIVE
+# 4. CONFIGURACIÓN Y DRIVE
 # ==========================================
 
 @login_required
@@ -472,7 +474,7 @@ def eliminar_tarea(request, tarea_id):
     return redirect('detalle_cliente', cliente_id=c_id)
 
 # ==========================================
-# 6. CONTRATOS (GENERADOR)
+# 6. CONTRATOS Y DISEÑADOR
 # ==========================================
 
 @login_required
@@ -565,10 +567,6 @@ def subir_plantilla(request):
         Plantilla.objects.create(nombre=request.POST.get('nombre'), archivo=request.FILES.get('archivo'))
     return redirect('dashboard')
 
-# ==========================================
-# 7. HERRAMIENTAS Y DISEÑADOR
-# ==========================================
-
 @login_required
 def diseñador_plantillas(request):
     if not request.user.access_disenador: return redirect('dashboard')
@@ -652,7 +650,7 @@ def api_convertir_html(request):
     return JsonResponse({'status': 'error', 'message': 'Only POST allowed'}, status=405)
 
 # ==========================================
-# 8. COTIZACIONES Y SERVICIOS
+# 7. COTIZACIONES Y SERVICIOS
 # ==========================================
 
 @login_required
@@ -671,7 +669,8 @@ def guardar_servicio(request):
         s.descripcion = request.POST.get('descripcion')
         s.precio_base = request.POST.get('precio')
         
-        # Procesar lista de campos dinámicos
+        # Procesamos la "Receta" de campos dinámicos
+        # Recogemos las listas de nombres y tipos que envió el modal
         nombres = request.POST.getlist('campo_nombre[]')
         tipos = request.POST.getlist('campo_tipo[]')
         
@@ -682,7 +681,7 @@ def guardar_servicio(request):
         
         s.campos_dinamicos = estructura
         s.save()
-        messages.success(request, "Servicio actualizado.")
+        messages.success(request, "Servicio actualizado correctamente.")
     return redirect('gestion_servicios')
 
 @login_required
@@ -707,12 +706,13 @@ def nueva_cotizacion(request):
             validez_hasta=request.POST.get('validez') or None,
             creado_por=request.user
         )
+        
         s_ids = request.POST.getlist('servicio_id')
         cants = request.POST.getlist('cantidad')
         precios = request.POST.getlist('precio')
         descs = request.POST.getlist('descripcion')
         
-        # Procesar respuestas JSON de cada item
+        # Recogemos las respuestas llenadas por el abogado
         extras_json = request.POST.getlist('valores_adicionales_json[]')
 
         for i in range(len(s_ids)):
@@ -769,7 +769,7 @@ def enviar_cotizacion_email(request, cotizacion_id):
     return redirect('detalle_cotizacion', cotizacion_id=cotizacion_id)
 
 # ==========================================
-# 9. FINANZAS
+# 8. FINANZAS
 # ==========================================
 
 @login_required
@@ -797,7 +797,7 @@ def recibo_pago_pdf(request, pago_id):
     return response
 
 # ==========================================
-# 10. AGENDA INTELIGENTE
+# 9. AGENDA
 # ==========================================
 
 @login_required
