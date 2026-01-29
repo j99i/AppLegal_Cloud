@@ -77,7 +77,7 @@
                 <h3 class="font-black text-green-800 flex items-center gap-2 mb-2 relative z-10">
                     <i class="fab fa-whatsapp text-2xl"></i> Enviar Cotización
                 </h3>
-                <p class="text-xs text-green-700 mb-4 relative z-10">El sistema descargará el PDF y abrirá WhatsApp listo para enviar.</p>
+                <p class="text-xs text-green-700 mb-4 relative z-10">Si la app está en la nube se envía el LINK. En local se descarga el archivo.</p>
 
                 <label class="text-[10px] font-bold text-green-800 uppercase relative z-10">Plantilla de Mensaje</label>
                 <select id="ws-template" class="w-full p-2 rounded-lg border-0 bg-white/80 mb-3 text-sm font-bold text-gray-600 relative z-10 shadow-sm outline-none">
@@ -86,7 +86,7 @@
                 </select>
 
                 <button onclick="procesarEnvioWhatsApp()" class="w-full bg-[#25D366] text-white font-bold py-3 rounded-xl shadow-lg hover:bg-[#20bd5a] transition-all relative z-10 flex justify-center items-center gap-2">
-                    <span>DESCARGAR Y ABRIR WA</span> <i class="fas fa-external-link-alt"></i>
+                    <span>ENVIAR WHATSAPP</span> <i class="fas fa-external-link-alt"></i>
                 </button>
             </div>
 
@@ -110,40 +110,53 @@
 
 <script>
     function procesarEnvioWhatsApp() {
-        // 1. Datos del Cliente y Cotización
+        // Datos
         const telefono = "{{ c.prospecto_telefono }}".replace(/[^0-9]/g, '');
         const nombre = "{{ c.prospecto_nombre }}";
         const total = "{{ c.total|floatformat:2 }}";
         const folio = "{{ c.id|stringformat:'04d' }}";
         
-        // 2. Definir Plantillas de Texto (Usando saltos de línea codificados)
+        // Detectamos si estamos en producción o en local
+        const esProduccion = window.location.hostname !== '127.0.0.1' && window.location.hostname !== 'localhost';
+        
+        // Generamos la URL del PDF (usando el dominio actual)
+        const urlPdf = window.location.origin + "{% url 'pdf_cotizacion' c.id %}";
+
         const tipo = document.getElementById('ws-template').value;
         let mensaje = "";
 
-        if (tipo === 'default') {
-            mensaje = `👋 Hola *${nombre}*, te saluda el equipo de AppLegal.\n\n` +
-                      `📎 Adjunto encontrarás la propuesta formal *#${folio}* solicitada, por un valor total de *$${total}*.\n\n` +
-                      `Quedamos atentos a tus comentarios para proceder con el servicio.\n\n` +
-                      `Saludos cordiales.`;
-        } else {
-            mensaje = `Hola *${nombre}*, aquí tienes la cotización pendiente (*Folio #${folio}*).\n\n` +
-                      `El total es de *$${total}*. Avísame si tienes dudas.`;
-        }
-
-        // 3. PASO A: Descargar el PDF automáticamente
-        // Creamos un link invisible y le damos clic
-        const linkDescarga = document.createElement('a');
-        linkDescarga.href = "{% url 'pdf_cotizacion' c.id %}";
-        linkDescarga.download = `Cotizacion_${folio}_${nombre}.pdf`; // Nombre sugerido
-        document.body.appendChild(linkDescarga);
-        linkDescarga.click();
-        document.body.removeChild(linkDescarga);
-
-        // 4. PASO B: Abrir WhatsApp con el texto listo (Pequeño delay para que inicie la descarga primero)
-        setTimeout(() => {
+        if (esProduccion) {
+            // ESTRATEGIA A: Enviar LINK (Rápido y Automático)
+            if (tipo === 'default') {
+                mensaje = `👋 Hola *${nombre}*, te comparto la cotización *#${folio}* por un valor de *$${total}*.\n\n` +
+                          `📄 *Puedes verla aquí:* ${urlPdf}\n\n` +
+                          `Quedo atento.`;
+            } else {
+                mensaje = `Hola *${nombre}*, aquí tienes la cotización: ${urlPdf} ($${total}).`;
+            }
+            
+            // Abrimos WhatsApp Directamente
             const url = `https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`;
             window.open(url, '_blank');
-        }, 800);
+
+        } else {
+            // ESTRATEGIA B: Descargar Archivo (Solo Localhost)
+            alert("⚠️ Al estar en modo local, descargaremos el PDF para que lo adjuntes manualmente.");
+            
+            mensaje = `Hola *${nombre}*, te adjunto la cotización *#${folio}*.`;
+            
+            const linkDescarga = document.createElement('a');
+            linkDescarga.href = "{% url 'pdf_cotizacion' c.id %}";
+            linkDescarga.download = `Cotizacion_${folio}.pdf`;
+            document.body.appendChild(linkDescarga);
+            linkDescarga.click();
+            document.body.removeChild(linkDescarga);
+
+            setTimeout(() => {
+                const url = `https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`;
+                window.open(url, '_blank');
+            }, 1000);
+        }
     }
 </script>
 {% endblock %}

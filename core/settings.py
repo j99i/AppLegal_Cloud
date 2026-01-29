@@ -150,10 +150,19 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
 # ==========================================
-# 9. SISTEMA DE CORREO
+# 9. SISTEMA DE CORREO (Configuración Real SMTP)
 # ==========================================
-# En desarrollo: imprime en consola. 
-# En producción: deberás configurar SMTP (Gmail/Outlook/Sendgrid) más adelante.
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# Configuración para GMAIL (Ejemplo)
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+
+# --- CAMBIA ESTOS DATOS POR LOS TUYOS ---
+# Tu correo real de Gmail
+EMAIL_HOST_USER = 'tu_correo@gmail.com' 
+# OJO: Usa una "Contraseña de Aplicación" generada en Google Security, NO tu clave normal.
+EMAIL_HOST_PASSWORD = 'tu_contraseña_de_aplicacion' 
+DEFAULT_FROM_EMAIL = 'AppLegal Notificaciones <tu_correo@gmail.com>'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

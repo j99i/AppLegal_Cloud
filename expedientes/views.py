@@ -761,12 +761,55 @@ def convertir_a_cliente(request, cotizacion_id):
     c.save()
     return redirect('panel_finanzas')
 
+# ----------------------------------------------------
+# AQUI ESTÁ EL CAMBIO IMPORTANTE: CORREO REAL CON PDF
+# ----------------------------------------------------
 @login_required
 def enviar_cotizacion_email(request, cotizacion_id):
+    import weasyprint # Importación local
     if request.method == 'POST':
         c = get_object_or_404(Cotizacion, id=cotizacion_id)
-        c.estado = 'enviada'; c.save()
-        messages.success(request, "Enviado.")
+        
+        # 1. Obtener datos
+        asunto = request.POST.get('asunto', f"Cotización #{c.id}")
+        mensaje = request.POST.get('mensaje', 'Adjunto cotización.')
+        email_destino = c.prospecto_email
+
+        if not email_destino:
+            messages.error(request, "El cliente no tiene email registrado.")
+            return redirect('detalle_cotizacion', cotizacion_id=cotizacion_id)
+
+        try:
+            # 2. Generar el PDF en memoria
+            html = render_to_string('cotizaciones/pdf_template.html', {
+                'c': c, 
+                'base_url': request.build_absolute_uri('/')
+            })
+            pdf_file = weasyprint.HTML(string=html, base_url=request.build_absolute_uri('/')).write_pdf()
+
+            # 3. Preparar el Correo
+            email = EmailMultiAlternatives(
+                subject=asunto,
+                body=mensaje,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to=[email_destino]
+            )
+            
+            # 4. Adjuntar el PDF
+            filename = f"Cotizacion_{c.id}.pdf"
+            email.attach(filename, pdf_file, 'application/pdf')
+            
+            # 5. Enviar
+            email.send()
+
+            # 6. Actualizar Estado
+            c.estado = 'enviada'
+            c.save()
+            messages.success(request, f"Correo enviado exitosamente a {email_destino}")
+
+        except Exception as e:
+            messages.error(request, f"Error al enviar correo: {e}")
+
     return redirect('detalle_cotizacion', cotizacion_id=cotizacion_id)
 
 # ==========================================
