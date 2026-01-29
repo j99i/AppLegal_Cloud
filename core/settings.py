@@ -149,27 +149,26 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
+# core/settings.py
+
 # ==========================================
-# 9. SISTEMA DE CORREO (Configuración Estándar TLS)
+# 9. SISTEMA DE CORREO (Configuración SSL Final)
 # ==========================================
-# Esta configuración es la más compatible para evitar timeouts en Railway
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 
-# Usamos Puerto 587 con TLS (Mejor negociación que SSL directo)
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_USE_SSL = False
-EMAIL_TIMEOUT = 15  # Timeout de seguridad para no colgar el servidor
+# VOLVEMOS A PUERTO 465 (SSL DIRECTO)
+# Al arreglar el bug del PDF en views.py, este puerto ya no se bloqueará.
+EMAIL_PORT = 465
+EMAIL_USE_SSL = True
+EMAIL_USE_TLS = False
+EMAIL_TIMEOUT = 20  # Tiempo de espera prudente
 
-# Variables de entorno con valor por defecto para que no falle el "Build"
+# Variables de entorno
 EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
 
-# Configuración del remitente
 if EMAIL_HOST_USER:
     DEFAULT_FROM_EMAIL = f'AppLegal <{EMAIL_HOST_USER}>'
 else:
     DEFAULT_FROM_EMAIL = 'AppLegal <noreply@applegal.com>'
-
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
