@@ -663,9 +663,24 @@ def gestion_servicios(request):
 @login_required
 def guardar_servicio(request):
     if request.method == 'POST':
-        s = get_object_or_404(Servicio, id=request.POST.get('servicio_id')) if request.POST.get('servicio_id') else Servicio()
-        s.nombre = request.POST.get('nombre'); s.descripcion = request.POST.get('descripcion'); s.precio_base = request.POST.get('precio')
+        s_id = request.POST.get('servicio_id')
+        s = get_object_or_404(Servicio, id=s_id) if s_id else Servicio()
+        
+        s.nombre = request.POST.get('nombre')
+        s.descripcion = request.POST.get('descripcion')
+        s.precio_base = request.POST.get('precio')
+        
+        nombres = request.POST.getlist('campo_nombre[]')
+        tipos = request.POST.getlist('campo_tipo[]')
+        
+        estructura = []
+        for nombre, tipo in zip(nombres, tipos):
+            if nombre.strip():
+                estructura.append({'nombre': nombre.strip(), 'tipo': tipo})
+        
+        s.campos_dinamicos = estructura
         s.save()
+        messages.success(request, "Servicio actualizado.")
     return redirect('gestion_servicios')
 
 @login_required
@@ -687,13 +702,23 @@ def nueva_cotizacion(request):
             prospecto_telefono=request.POST.get('telefono'), prospecto_empresa=request.POST.get('empresa'),
             validez_hasta=request.POST.get('validez') or None, creado_por=request.user
         )
-        s_ids, cants, precios, descs = request.POST.getlist('servicio_id'), request.POST.getlist('cantidad'), request.POST.getlist('precio'), request.POST.getlist('descripcion')
+        s_ids = request.POST.getlist('servicio_id')
+        cants = request.POST.getlist('cantidad')
+        precios = request.POST.getlist('precio')
+        descs = request.POST.getlist('descripcion')
+        extras_json = request.POST.getlist('valores_adicionales_json[]')
+
         for i in range(len(s_ids)):
             if s_ids[i]:
-                ItemCotizacion.objects.create(
+                item = ItemCotizacion.objects.create(
                     cotizacion=c, servicio_id=s_ids[i], cantidad=int(cants[i] or 1),
                     precio_unitario=Decimal(precios[i] or 0), descripcion_personalizada=descs[i]
                 )
+                if i < len(extras_json) and extras_json[i]:
+                    try:
+                        item.valores_adicionales = json.loads(extras_json[i])
+                        item.save()
+                    except: pass
         c.calcular_totales()
         return redirect('detalle_cotizacion', cotizacion_id=c.id)
     return render(request, 'cotizaciones/crear.html', {'servicios': Servicio.objects.all()})

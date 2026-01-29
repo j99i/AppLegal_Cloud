@@ -10,18 +10,14 @@ from django.utils import timezone
 # ==========================================
 class Usuario(AbstractUser):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    
-    # Perfil (Con null=True para evitar errores de base de datos)
     avatar = models.ImageField(upload_to='avatares/', null=True, blank=True)
     telefono = models.CharField(max_length=20, blank=True, null=True)
     puesto = models.CharField(max_length=100, blank=True, null=True)
 
-    # Roles
     CHOICES_ROL = (('admin', 'Administrador Master'), ('analista_sr', 'Abogado Senior'), ('analista_jr', 'Abogado Junior'))
     rol = models.CharField(max_length=20, choices=CHOICES_ROL, default='analista_jr', db_index=True)
     area = models.CharField(max_length=100, blank=True, null=True)
     
-    # Permisos Operativos
     can_create_client = models.BooleanField(default=False, verbose_name="Crear Clientes")
     can_edit_client = models.BooleanField(default=False, verbose_name="Editar Clientes")
     can_delete_client = models.BooleanField(default=False, verbose_name="Eliminar Clientes")
@@ -29,21 +25,18 @@ class Usuario(AbstractUser):
     can_upload_files = models.BooleanField(default=False, verbose_name="Subir Archivos")
     can_manage_users = models.BooleanField(default=False, verbose_name="Gestionar Usuarios")
 
-    # Permisos de Módulos (Switches)
     access_finanzas = models.BooleanField(default=False, verbose_name="Acceso Finanzas")
     access_cotizaciones = models.BooleanField(default=False, verbose_name="Acceso Cotizaciones")
     access_contratos = models.BooleanField(default=False, verbose_name="Acceso Contratos")
     access_disenador = models.BooleanField(default=False, verbose_name="Acceso Diseñador")
     access_agenda = models.BooleanField(default=False, verbose_name="Acceso Agenda")
 
-    # Seguridad Granular
     clientes_asignados = models.ManyToManyField('Cliente', blank=True, related_name='abogados_asignados')
 
     def save(self, *args, **kwargs):
         if self.rol == 'admin':
             self.is_staff = True
             self.is_superuser = True
-            # Admin tiene TODO
             self.can_create_client = True
             self.can_edit_client = True
             self.can_delete_client = True
@@ -61,7 +54,7 @@ class Usuario(AbstractUser):
 # ==========================================
 class Cliente(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    nombre_empresa = models.CharField(max_length=200, unique=True, db_index=True) # Optimizado
+    nombre_empresa = models.CharField(max_length=200, unique=True, db_index=True)
     nombre_contacto = models.CharField(max_length=200)
     telefono = models.CharField(max_length=20, blank=True)
     email = models.EmailField()
@@ -113,7 +106,7 @@ class Documento(models.Model):
 class Tarea(models.Model):
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='tareas')
     titulo = models.CharField(max_length=255)
-    fecha_limite = models.DateField(db_index=True) # CLAVE PARA RECORDATORIOS
+    fecha_limite = models.DateField(db_index=True)
     completada = models.BooleanField(default=False, db_index=True)
     prioridad = models.CharField(max_length=10, default='media')
     creada_el = models.DateTimeField(auto_now_add=True)
@@ -144,6 +137,11 @@ class Servicio(models.Model):
     nombre = models.CharField(max_length=200)
     descripcion = models.TextField(blank=True)
     precio_base = models.DecimalField(max_digits=10, decimal_places=2)
+    # NUEVO: Guarda la estructura de campos adicionales
+    campos_dinamicos = models.JSONField(default=list, blank=True) 
+
+    def __str__(self):
+        return self.nombre
 
 class PlantillaMensaje(models.Model):
     TIPOS = (('email', 'Correo'), ('whatsapp', 'WhatsApp'))
@@ -180,6 +178,8 @@ class ItemCotizacion(models.Model):
     cantidad = models.IntegerField(default=1)
     precio_unitario = models.DecimalField(max_digits=10, decimal_places=2)
     total = models.DecimalField(max_digits=10, decimal_places=2)
+    # NUEVO: Guarda los valores específicos para esta cotización
+    valores_adicionales = models.JSONField(default=dict, blank=True) 
 
     def save(self, *args, **kwargs):
         self.total = self.cantidad * self.precio_unitario
@@ -198,7 +198,7 @@ class CuentaPorCobrar(models.Model):
     monto_pagado = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     saldo_pendiente = models.DecimalField(max_digits=12, decimal_places=2)
     fecha_emision = models.DateTimeField(auto_now_add=True)
-    fecha_vencimiento = models.DateField(null=True, blank=True, db_index=True) # CLAVE PARA RECORDATORIOS
+    fecha_vencimiento = models.DateField(null=True, blank=True, db_index=True)
     estado = models.CharField(max_length=20, choices=ESTADOS, default='pendiente', db_index=True)
 
     def save(self, *args, **kwargs):
@@ -229,7 +229,7 @@ class Evento(models.Model):
     usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, null=True, blank=True, related_name='eventos')
     titulo = models.CharField(max_length=200)
-    inicio = models.DateTimeField(db_index=True) # CLAVE PARA RECORDATORIOS
+    inicio = models.DateTimeField(db_index=True)
     fin = models.DateTimeField(null=True, blank=True)
     tipo = models.CharField(max_length=20, choices=TIPOS, default='reunion')
     descripcion = models.TextField(blank=True)

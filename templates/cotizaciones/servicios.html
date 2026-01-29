@@ -21,15 +21,13 @@
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {% for s in servicios %}
         <div class="bg-white rounded-[2rem] p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all group relative overflow-hidden">
-            
             <div class="absolute left-0 top-0 bottom-0 w-2 bg-[#C0A062] opacity-0 group-hover:opacity-100 transition-opacity"></div>
-
             <div class="flex justify-between items-start mb-4">
                 <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-[#1A2238]">
                     <i class="fas fa-balance-scale text-xl"></i>
                 </div>
                 <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onclick="editarServicio('{{ s.id }}', '{{ s.nombre|escapejs }}', '{{ s.precio_base }}', '{{ s.descripcion|escapejs }}')" class="text-gray-400 hover:text-[#1A2238] p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Editar">
+                    <button onclick="editarServicio('{{ s.id }}', '{{ s.nombre|escapejs }}', '{{ s.precio_base }}', '{{ s.descripcion|escapejs }}', '{{ s.campos_dinamicos|safe|escapejs }}')" class="text-gray-400 hover:text-[#1A2238] p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Editar">
                         <i class="fas fa-pen"></i>
                     </button>
                     <a href="{% url 'eliminar_servicio' s.id %}" onclick="return confirm('¿Eliminar este servicio del catálogo?')" class="text-gray-400 hover:text-red-500 p-2 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar">
@@ -37,10 +35,8 @@
                     </a>
                 </div>
             </div>
-
             <h3 class="font-black text-lg text-[#1A2238] mb-2">{{ s.nombre }}</h3>
             <p class="text-xs text-gray-500 mb-6 h-12 overflow-hidden leading-relaxed">{{ s.descripcion|truncatechars:90 }}</p>
-            
             <div class="flex items-center justify-between border-t border-gray-50 pt-4">
                 <span class="text-[10px] font-bold text-gray-400 uppercase">Honorarios Base</span>
                 <span class="text-xl font-black text-[#C0A062]">${{ s.precio_base|floatformat:2 }}</span>
@@ -52,7 +48,6 @@
                 <i class="fas fa-box-open text-3xl text-gray-300"></i>
             </div>
             <h3 class="text-lg font-bold text-gray-400">Tu catálogo está vacío</h3>
-            <p class="text-sm text-gray-300 mb-6">Registra tus servicios para empezar a cotizar.</p>
             <button onclick="abrirModal()" class="text-[#C0A062] font-bold text-sm hover:underline">Registrar el primero</button>
         </div>
         {% endfor %}
@@ -60,74 +55,74 @@
 </div>
 
 <div id="modal-servicio" class="fixed inset-0 bg-[#1A2238]/80 hidden items-center justify-center z-50 backdrop-blur-sm animate__animated animate__fadeIn">
-    <div class="bg-white p-8 rounded-[2rem] w-full max-w-lg m-4 shadow-2xl relative animate__animated animate__zoomIn">
-        
-        <button onclick="cerrarModal()" class="absolute top-6 right-6 text-gray-400 hover:text-red-500 transition-colors">
-            <i class="fas fa-times text-xl"></i>
-        </button>
-
-        <h3 id="modal-titulo" class="text-2xl font-black text-[#1A2238] mb-1">Nuevo Servicio</h3>
-        <p class="text-sm text-gray-400 mb-6">Completa la información del servicio legal.</p>
-        
-        <form action="{% url 'guardar_servicio' %}" method="POST" class="space-y-5">
+    <div class="bg-white p-8 rounded-[2rem] w-full max-w-2xl m-4 shadow-2xl relative overflow-y-auto max-h-[90vh]">
+        <button onclick="cerrarModal()" class="absolute top-6 right-6 text-gray-400 hover:text-red-500 transition-colors"><i class="fas fa-times text-xl"></i></button>
+        <h3 id="modal-titulo" class="text-2xl font-black text-[#1A2238] mb-6">Configurar Servicio</h3>
+        <form action="{% url 'guardar_servicio' %}" method="POST">
             {% csrf_token %}
             <input type="hidden" name="servicio_id" id="input-id">
-            
-            <div>
-                <label class="block text-xs font-black text-gray-400 uppercase mb-2 ml-1">Nombre del Servicio</label>
-                <input type="text" name="nombre" id="input-nombre" placeholder="Ej. Divorcio Voluntario" class="w-full p-4 bg-gray-50 rounded-xl font-bold text-[#1A2238] border-2 border-transparent focus:border-[#C0A062] outline-none transition-all" required>
-            </div>
-
-            <div>
-                <label class="block text-xs font-black text-gray-400 uppercase mb-2 ml-1">Descripción (Para el Cliente)</label>
-                <textarea name="descripcion" id="input-descripcion" rows="3" placeholder="Incluye redacción de demanda, audiencias y sentencia..." class="w-full p-4 bg-gray-50 rounded-xl text-sm font-medium text-gray-600 border-2 border-transparent focus:border-[#C0A062] outline-none transition-all"></textarea>
-            </div>
-
-            <div>
-                <label class="block text-xs font-black text-gray-400 uppercase mb-2 ml-1">Precio Base (Sugerido)</label>
-                <div class="relative">
-                    <span class="absolute left-4 top-4 text-gray-400 font-bold">$</span>
-                    <input type="number" name="precio" id="input-precio" step="0.01" placeholder="0.00" class="w-full pl-8 p-4 bg-gray-50 rounded-xl font-bold text-[#1A2238] border-2 border-transparent focus:border-[#C0A062] outline-none transition-all" required>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div>
+                    <label class="block text-xs font-black text-gray-400 uppercase mb-2">Nombre</label>
+                    <input type="text" name="nombre" id="input-nombre" class="w-full p-3 bg-gray-50 rounded-xl font-bold border-2 border-transparent focus:border-[#C0A062] outline-none" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-black text-gray-400 uppercase mb-2">Precio Base</label>
+                    <input type="number" name="precio" id="input-precio" step="0.01" class="w-full p-3 bg-gray-50 rounded-xl font-bold border-2 border-transparent focus:border-[#C0A062] outline-none" required>
                 </div>
             </div>
-
-            <div class="pt-2">
-                <button type="submit" class="w-full bg-[#1A2238] text-white py-4 rounded-xl font-black text-sm tracking-widest hover:bg-[#2C3E50] shadow-lg transition-all">
-                    GUARDAR SERVICIO
-                </button>
+            <div class="mb-6">
+                <label class="block text-xs font-black text-gray-400 uppercase mb-2">Descripción</label>
+                <textarea name="descripcion" id="input-descripcion" rows="2" class="w-full p-3 bg-gray-50 rounded-xl text-sm border-2 border-transparent focus:border-[#C0A062] outline-none"></textarea>
             </div>
+            <div class="bg-gray-50 p-6 rounded-2xl mb-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h4 class="text-xs font-black text-[#1A2238] uppercase">Campos Dinámicos (Datos Extra)</h4>
+                    <button type="button" onclick="agregarCampoEditor()" class="text-[#C0A062] text-xs font-bold">+ AÑADIR CAMPO</button>
+                </div>
+                <div id="contenedor-campos-editor" class="space-y-3"></div>
+            </div>
+            <button type="submit" class="w-full bg-[#1A2238] text-white py-4 rounded-xl font-black text-sm hover:bg-black transition-all shadow-lg">GUARDAR CAMBIOS</button>
         </form>
     </div>
 </div>
 
 <script>
+    function agregarCampoEditor(nombre = '', tipo = 'text') {
+        const container = document.getElementById('contenedor-campos-editor');
+        const div = document.createElement('div');
+        div.className = "flex gap-2 items-center animate__animated animate__fadeInUp";
+        div.innerHTML = `
+            <input type="text" name="campo_nombre[]" value="${nombre}" placeholder="Nombre del dato" class="flex-1 p-2 rounded-lg border text-xs font-bold">
+            <select name="campo_tipo[]" class="p-2 rounded-lg border text-xs font-bold">
+                <option value="text" ${tipo === 'text' ? 'selected' : ''}>Texto</option>
+                <option value="number" ${tipo === 'number' ? 'selected' : ''}>Número</option>
+                <option value="date" ${tipo === 'date' ? 'selected' : ''}>Fecha</option>
+            </select>
+            <button type="button" onclick="this.parentElement.remove()" class="text-red-400 p-2"><i class="fas fa-times"></i></button>
+        `;
+        container.appendChild(div);
+    }
     function abrirModal() {
-        // Modo Crear: Limpiamos el form
         document.getElementById('modal-titulo').innerText = 'Nuevo Servicio';
         document.getElementById('input-id').value = '';
         document.getElementById('input-nombre').value = '';
         document.getElementById('input-descripcion').value = '';
         document.getElementById('input-precio').value = '';
-        
-        document.getElementById('modal-servicio').classList.remove('hidden');
-        document.getElementById('modal-servicio').classList.add('flex');
+        document.getElementById('contenedor-campos-editor').innerHTML = '';
+        document.getElementById('modal-servicio').classList.replace('hidden', 'flex');
     }
-
-    function editarServicio(id, nombre, precio, descripcion) {
-        // Modo Editar: Llenamos el form
+    function editarServicio(id, nombre, precio, descripcion, camposJson) {
+        abrirModal();
         document.getElementById('modal-titulo').innerText = 'Editar Servicio';
         document.getElementById('input-id').value = id;
         document.getElementById('input-nombre').value = nombre;
+        document.getElementById('input-precio').value = precio;
         document.getElementById('input-descripcion').value = descripcion;
-        document.getElementById('input-precio').value = precio; // Asegúrate de que el formato sea correcto (ej. 1500.00)
-        
-        document.getElementById('modal-servicio').classList.remove('hidden');
-        document.getElementById('modal-servicio').classList.add('flex');
+        if(camposJson) {
+            try { JSON.parse(camposJson).forEach(c => agregarCampoEditor(c.nombre, c.tipo)); } catch(e){}
+        }
     }
-
-    function cerrarModal() {
-        document.getElementById('modal-servicio').classList.add('hidden');
-        document.getElementById('modal-servicio').classList.remove('flex');
-    }
+    function cerrarModal() { document.getElementById('modal-servicio').classList.replace('flex', 'hidden'); }
 </script>
 {% endblock %}
