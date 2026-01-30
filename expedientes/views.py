@@ -928,3 +928,22 @@ def eliminar_evento(request, evento_id):
     if request.user.rol == 'admin' or evento.usuario == request.user:
         evento.delete(); return JsonResponse({'status': 'ok'})
     return JsonResponse({'status': 'error'}, status=403)
+# En expedientes/views.py
+
+@login_required
+def eliminar_plantilla(request, plantilla_id):
+    if request.user.rol != 'admin':
+        messages.error(request, "No tienes permisos.")
+        return redirect('dashboard')
+        
+    plantilla = get_object_or_404(Plantilla, id=plantilla_id)
+    nombre = plantilla.nombre
+    
+    # Borrar archivo físico y registro
+    plantilla.archivo.delete() 
+    plantilla.delete()
+    
+    messages.success(request, f"Plantilla '{nombre}' eliminada.")
+    
+    # Intentar volver a la página anterior
+    return redirect(request.META.get('HTTP_REFERER', 'dashboard'))
