@@ -44,7 +44,8 @@
     <div id="popup-header" class="bg-gray-50 p-4 border-b border-gray-100 cursor-move select-none active:bg-gray-100 transition-colors">
         <div class="flex justify-between items-center mb-1">
             <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Texto Seleccionado</h4>
-            <i class="fas fa-arrows-alt text-gray-300 text-xs"></i> </div>
+            <i class="fas fa-arrows-alt text-gray-300 text-xs"></i>
+        </div>
         <p id="texto-seleccionado" class="text-sm font-bold text-[#2D1B4B] truncate bg-white p-2 rounded border border-gray-200 select-text">...</p>
     </div>
 
@@ -56,12 +57,18 @@
     <div class="p-4">
         <div id="panel-existente">
             <label class="text-[10px] font-bold text-gray-500 mb-1 block">BUSCAR EN GLOSARIO:</label>
-            <select id="select-glosario" class="w-full p-2 bg-gray-50 rounded-lg border border-gray-200 text-sm mb-4 text-[#2D1B4B] focus:border-[#A855F7] outline-none">
-                <option value="">-- Seleccionar --</option>
+            
+            <div class="relative mb-2">
+                <i class="fas fa-search absolute left-3 top-2.5 text-gray-400 text-xs"></i>
+                <input type="text" id="filtro-glosario" placeholder="Filtrar variables..." class="w-full pl-8 p-2 bg-gray-50 rounded-lg border border-gray-200 text-sm font-bold text-[#2D1B4B] focus:border-[#A855F7] outline-none">
+            </div>
+
+            <select id="select-glosario" size="5" class="w-full p-2 bg-white rounded-lg border border-gray-200 text-xs mb-4 text-[#2D1B4B] focus:border-[#A855F7] outline-none custom-scrollbar shadow-inner">
                 {% for v in glosario %}
-                <option value="{{ v.clave }}">{{ v.descripcion }} ({{ v.clave }})</option>
+                <option value="{{ v.clave }}" class="p-2 border-b border-gray-50 hover:bg-purple-50 cursor-pointer rounded">{{ v.descripcion }} ({{ v.clave }})</option>
                 {% endfor %}
             </select>
+
             <button onclick="confirmarReemplazo('existente')" class="w-full py-3 bg-[#2D1B4B] rounded-xl text-xs font-bold text-white hover:bg-opacity-90 shadow-lg">APLICAR VARIABLE</button>
         </div>
 
@@ -104,11 +111,42 @@
         if(modo === 'existente'){
             tabEx.className = "flex-1 py-3 text-xs font-bold text-[#2D1B4B] border-b-2 border-[#2D1B4B] bg-white";
             tabNu.className = "flex-1 py-3 text-xs font-bold text-gray-400 bg-gray-50 hover:bg-gray-100";
+            // Enfocar buscador al cambiar
+            setTimeout(() => document.getElementById('filtro-glosario').focus(), 100);
         } else {
             tabNu.className = "flex-1 py-3 text-xs font-bold text-[#A855F7] border-b-2 border-[#A855F7] bg-white";
             tabEx.className = "flex-1 py-3 text-xs font-bold text-gray-400 bg-gray-50 hover:bg-gray-100";
         }
     }
+
+    // ==========================================
+    // NUEVA LÓGICA: FILTRADO DE VARIABLES
+    // ==========================================
+    document.getElementById('filtro-glosario').addEventListener('input', function(e) {
+        const busqueda = e.target.value.toLowerCase();
+        const opciones = document.getElementById('select-glosario').options;
+        let found = false;
+        
+        for (let i = 0; i < opciones.length; i++) {
+            const texto = opciones[i].text.toLowerCase();
+            if (texto.includes(busqueda)) {
+                opciones[i].style.display = ""; // Mostrar
+                if (!found && busqueda.length > 0) {
+                    opciones[i].selected = true; // Auto-seleccionar primer match
+                    found = true;
+                }
+            } else {
+                opciones[i].style.display = "none"; // Ocultar
+            }
+        }
+    });
+
+    // Permitir aplicar con Enter desde el buscador
+    document.getElementById('filtro-glosario').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            confirmarReemplazo('existente');
+        }
+    });
 
     async function cargarDocumento(input) {
         if (input.files && input.files[0]) {
@@ -142,7 +180,6 @@
         const sel = window.getSelection(); 
         const text = sel.toString().trim();
         
-        // Evitamos que se active si seleccionamos dentro del mismo popup
         if (text.length > 0 && !document.getElementById('popup-variable').contains(sel.anchorNode)) {
             seleccionActual = text;
             const range = sel.getRangeAt(0); 
@@ -150,7 +187,6 @@
             const popup = document.getElementById('popup-variable');
             document.getElementById('texto-seleccionado').innerText = text;
             
-            // Posición inicial cerca de la selección
             let top = rect.bottom + window.scrollY + 10;
             let left = rect.left + window.scrollX;
             if(left + 320 > window.innerWidth) left = window.innerWidth - 340; 
@@ -158,9 +194,13 @@
             popup.style.top = top + 'px'; 
             popup.style.left = left + 'px';
             
-            // Reiniciamos animación para que se note que apareció
             popup.classList.remove('hidden');
             popup.classList.add('animate__zoomIn');
+            
+            // Limpiar filtro anterior
+            document.getElementById('filtro-glosario').value = '';
+            const opts = document.getElementById('select-glosario').options;
+            for(let i=0; i<opts.length; i++) opts[i].style.display = "";
             
             cambiarTab('existente'); 
         }
@@ -249,48 +289,31 @@
         document.getElementById('form-final').submit();
     }
 
-    // ==========================================
-    // NUEVA LÓGICA: HACER LA VENTANA DRAGGABLE
-    // ==========================================
+    // DRAGGABLE LOGIC
     document.addEventListener('DOMContentLoaded', () => {
         const popup = document.getElementById('popup-variable');
         const header = document.getElementById('popup-header');
-        
-        let isDragging = false;
-        let dragOffsetX = 0;
-        let dragOffsetY = 0;
+        let isDragging = false, dragOffsetX = 0, dragOffsetY = 0;
 
         header.addEventListener('mousedown', (e) => {
             isDragging = true;
-            
-            // Calculamos la distancia entre el mouse y la esquina superior izquierda del popup
             const rect = popup.getBoundingClientRect();
             dragOffsetX = e.clientX - rect.left;
             dragOffsetY = e.clientY - rect.top;
-            
-            // Cambiamos cursor y quitamos animación para evitar "saltos" raros
             header.style.cursor = 'grabbing';
             popup.classList.remove('animate__zoomIn'); 
         });
 
         document.addEventListener('mousemove', (e) => {
             if (isDragging) {
-                e.preventDefault(); // Evita seleccionar texto mientras arrastras
-                
-                // Nueva posición
-                const x = e.clientX - dragOffsetX;
-                const y = e.clientY - dragOffsetY;
-                
-                popup.style.left = `${x}px`;
-                popup.style.top = `${y}px`;
+                e.preventDefault();
+                popup.style.left = `${e.clientX - dragOffsetX}px`;
+                popup.style.top = `${e.clientY - dragOffsetY}px`;
             }
         });
 
         document.addEventListener('mouseup', () => {
-            if(isDragging) {
-                isDragging = false;
-                header.style.cursor = 'move';
-            }
+            if(isDragging) { isDragging = false; header.style.cursor = 'move'; }
         });
     });
 </script>
