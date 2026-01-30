@@ -36,8 +36,13 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'django.contrib.staticfiles',
     
+    # --- CLOUDINARY (Importante: cloudinary_storage antes de staticfiles) ---
+    'cloudinary_storage',
+    'django.contrib.staticfiles',
+    'cloudinary',
+    # -----------------------------------------------------------------------
+
     # Librerías de Terceros
     'whitenoise.runserver_nostatic', 
     'anymail',  # Para Resend
@@ -133,7 +138,7 @@ USE_TZ = True
 
 
 # ==========================================
-# 8. ARCHIVOS ESTÁTICOS Y MEDIA (Whitenoise)
+# 8. ARCHIVOS ESTÁTICOS Y MEDIA (Whitenoise + Cloudinary)
 # ==========================================
 STATIC_URL = 'static/'
 
@@ -146,9 +151,22 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 # Motor de almacenamiento para producción (Comprime y optimiza)
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# Archivos subidos por el usuario (Media)
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+# --- CONFIGURACIÓN DE MEDIA (CLOUDINARY) ---
+# Leemos las credenciales del entorno
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': env('CLOUDINARY_CLOUD_NAME', default=''),
+    'API_KEY':    env('CLOUDINARY_API_KEY', default=''),
+    'API_SECRET': env('CLOUDINARY_API_SECRET', default=''),
+}
+
+# Si hay credenciales, usamos Cloudinary. Si no, seguimos en local.
+if CLOUDINARY_STORAGE['CLOUD_NAME']:
+    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+    MEDIA_URL = '/media/'  # Cloudinary manejará la URL real automáticamente
+else:
+    # Configuración Local Clásica
+    MEDIA_URL = '/media/'
+    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
 # ==========================================
