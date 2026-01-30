@@ -3,8 +3,8 @@
 <div class="max-w-5xl mx-auto animate__animated animate__fadeIn">
     
     <div class="flex justify-between items-center mb-6">
-        <h2 class="text-3xl font-black text-[#1A2238]">Editar Cliente: <span class="text-[#C0A062]">{{ c.nombre_empresa }}</span></h2>
-        <a href="{% url 'detalle_cliente' c.id %}" class="text-gray-500 font-bold hover:text-[#1A2238]">Cancelar</a>
+        <h2 class="text-3xl font-black text-[#2D1B4B]">Editar Cliente: <span class="text-[#A855F7]">{{ c.nombre_empresa }}</span></h2>
+        <a href="{% url 'detalle_cliente' c.id %}" class="text-gray-500 font-bold hover:text-[#2D1B4B]">Cancelar</a>
     </div>
 
     <form method="POST" enctype="multipart/form-data" class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
@@ -13,7 +13,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
             
             <div class="space-y-6">
-                <h3 class="text-lg font-bold text-[#1A2238] border-b pb-2">Datos Generales</h3>
+                <h3 class="text-lg font-bold text-[#2D1B4B] border-b pb-2">Datos Generales</h3>
                 
                 <div class="flex items-center gap-4">
                     <div class="w-20 h-20 rounded-xl bg-gray-100 overflow-hidden border flex items-center justify-center">
@@ -25,7 +25,7 @@
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-gray-400 mb-1">Cambiar Logo</label>
-                        <input type="file" name="logo" class="text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#1A2238] file:text-white hover:file:bg-[#2C3E50]">
+                        <input type="file" name="logo" class="text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#2D1B4B] file:text-white hover:file:bg-[#A855F7] transition-all">
                     </div>
                 </div>
 
@@ -51,7 +51,7 @@
 
             <div class="space-y-6">
                 <div class="flex justify-between items-center border-b pb-2">
-                    <h3 class="text-lg font-bold text-[#C0A062]">Información Adicional</h3>
+                    <h3 class="text-lg font-bold text-[#A855F7]">Información Adicional</h3>
                     {% if user.rol == 'admin' %}
                     <a href="{% url 'configurar_campos' %}" class="text-[10px] bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded text-gray-500 font-bold">
                         <i class="fas fa-cog"></i> Configurar Campos
@@ -75,7 +75,7 @@
                     <div class="text-center py-10 bg-gray-50 rounded-xl">
                         <p class="text-gray-400 text-sm">No hay campos extra configurados.</p>
                         {% if user.rol == 'admin' %}
-                        <a href="{% url 'configurar_campos' %}" class="text-[#C0A062] font-bold text-xs hover:underline">Agregar RFC, CURP, etc.</a>
+                        <a href="{% url 'configurar_campos' %}" class="text-[#A855F7] font-bold text-xs hover:underline">Agregar RFC, CURP, etc.</a>
                         {% endif %}
                     </div>
                 {% endif %}
@@ -90,7 +90,7 @@
             </a>
             {% endif %}
             
-            <button type="submit" class="bg-[#1A2238] text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:bg-[#2C3E50]">
+            <button type="submit" class="bg-[#2D1B4B] text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:bg-[#A855F7] transition-all">
                 GUARDAR CAMBIOS
             </button>
         </div>
@@ -100,6 +100,6 @@
 <style>
     .label-form { display: block; font-size: 0.75rem; font-weight: 700; color: #9CA3AF; text-transform: uppercase; margin-bottom: 0.5rem; }
     .input-form { width: 100%; padding: 0.75rem; background-color: #F9FAFB; border-radius: 0.75rem; font-weight: 700; color: #1F2937; border: 1px solid transparent; outline: none; transition: all 0.2s; }
-    .input-form:focus { border-color: #C0A062; background-color: #fff; box-shadow: 0 0 0 4px rgba(192, 160, 98, 0.1); }
+    .input-form:focus { border-color: #A855F7; background-color: #fff; box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.1); }
 </style>
 {% endblock %}

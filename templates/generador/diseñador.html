@@ -4,12 +4,12 @@
     
     <div class="flex justify-between items-center mb-4">
         <div>
-            <h2 class="text-2xl font-black text-[#1A2238]">Diseñador de Plantillas</h2>
+            <h2 class="text-2xl font-black text-[#2D1B4B]">Diseñador de Plantillas</h2>
             <p class="text-sm text-gray-500">Selecciona texto y asígnalo a una variable del glosario o crea una nueva.</p>
         </div>
         <div class="flex gap-3">
-            <input type="text" id="nombre-plantilla" placeholder="Nombre de la Plantilla Final" class="border-2 border-gray-300 p-2 rounded-xl text-sm font-bold w-64 focus:border-[#C0A062] outline-none text-[#1A2238]">
-            <button onclick="guardarPlantilla()" class="bg-[#1A2238] text-white px-6 py-2 rounded-xl font-bold text-xs shadow-lg hover:bg-[#2C3E50]">
+            <input type="text" id="nombre-plantilla" placeholder="Nombre de la Plantilla Final" class="border-2 border-gray-300 p-2 rounded-xl text-sm font-bold w-64 focus:border-[#A855F7] outline-none text-[#2D1B4B]">
+            <button onclick="guardarPlantilla()" class="bg-[#2D1B4B] text-white px-6 py-2 rounded-xl font-bold text-xs shadow-lg hover:bg-[#A855F7] transition-colors">
                 <i class="fas fa-save mr-2"></i> GUARDAR MAESTRA
             </button>
         </div>
@@ -18,7 +18,7 @@
     <div class="flex-1 flex gap-6 overflow-hidden">
         
         <div class="flex-1 bg-white rounded-[2rem] shadow-xl border border-gray-200 flex flex-col relative overflow-hidden">
-            <div id="drop-zone" class="absolute inset-0 bg-gray-50 z-20 flex flex-col items-center justify-center border-4 border-dashed border-gray-300 m-4 rounded-3xl hover:bg-blue-50 hover:border-blue-300 transition-colors cursor-pointer" onclick="document.getElementById('input-word-upload').click()">
+            <div id="drop-zone" class="absolute inset-0 bg-gray-50 z-20 flex flex-col items-center justify-center border-4 border-dashed border-gray-300 m-4 rounded-3xl hover:bg-purple-50 hover:border-purple-300 transition-colors cursor-pointer" onclick="document.getElementById('input-word-upload').click()">
                 <i class="fas fa-file-word text-6xl text-gray-300 mb-4"></i>
                 <h3 class="text-xl font-bold text-gray-500">Sube tu documento "Ejemplo" aquí</h3>
                 <p class="text-sm text-gray-400">Puede tener datos reales (Ej. Juan Pérez).</p>
@@ -29,8 +29,8 @@
         </div>
 
         <div class="w-80 bg-white rounded-[2rem] shadow-lg border border-gray-100 flex flex-col">
-            <div class="p-5 bg-[#1A2238] text-white rounded-t-[2rem]">
-                <h3 class="font-bold text-sm"><i class="fas fa-list-ul mr-2 text-[#C0A062]"></i> Reemplazos Activos</h3>
+            <div class="p-5 bg-[#2D1B4B] text-white rounded-t-[2rem]">
+                <h3 class="font-bold text-sm"><i class="fas fa-list-ul mr-2 text-[#A855F7]"></i> Reemplazos Activos</h3>
             </div>
             <div id="lista-reemplazos" class="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
                 <p class="text-xs text-center text-gray-400 mt-10">Selecciona texto para comenzar.</p>
@@ -43,36 +43,36 @@
     
     <div class="bg-gray-50 p-4 border-b border-gray-100">
         <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Texto Seleccionado</h4>
-        <p id="texto-seleccionado" class="text-sm font-bold text-[#1A2238] truncate bg-white p-2 rounded border border-gray-200">...</p>
+        <p id="texto-seleccionado" class="text-sm font-bold text-[#2D1B4B] truncate bg-white p-2 rounded border border-gray-200">...</p>
     </div>
 
     <div class="flex border-b border-gray-200">
-        <button onclick="cambiarTab('existente')" id="tab-existente" class="flex-1 py-3 text-xs font-bold text-[#1A2238] border-b-2 border-[#1A2238] bg-white">Existente</button>
+        <button onclick="cambiarTab('existente')" id="tab-existente" class="flex-1 py-3 text-xs font-bold text-[#2D1B4B] border-b-2 border-[#2D1B4B] bg-white">Existente</button>
         <button onclick="cambiarTab('nueva')" id="tab-nueva" class="flex-1 py-3 text-xs font-bold text-gray-400 bg-gray-50 hover:bg-gray-100">Crear Nueva</button>
     </div>
 
     <div class="p-4">
         <div id="panel-existente">
             <label class="text-[10px] font-bold text-gray-500 mb-1 block">BUSCAR EN GLOSARIO:</label>
-            <select id="select-glosario" class="w-full p-2 bg-gray-50 rounded-lg border border-gray-200 text-sm mb-4 text-[#1A2238] focus:border-[#C0A062] outline-none">
+            <select id="select-glosario" class="w-full p-2 bg-gray-50 rounded-lg border border-gray-200 text-sm mb-4 text-[#2D1B4B] focus:border-[#A855F7] outline-none">
                 <option value="">-- Seleccionar --</option>
                 {% for v in glosario %}
                 <option value="{{ v.clave }}">{{ v.descripcion }} ({{ v.clave }})</option>
                 {% endfor %}
             </select>
-            <button onclick="confirmarReemplazo('existente')" class="w-full py-3 bg-[#1A2238] rounded-xl text-xs font-bold text-white hover:bg-opacity-90 shadow-lg">APLICAR VARIABLE</button>
+            <button onclick="confirmarReemplazo('existente')" class="w-full py-3 bg-[#2D1B4B] rounded-xl text-xs font-bold text-white hover:bg-opacity-90 shadow-lg">APLICAR VARIABLE</button>
         </div>
 
         <div id="panel-nueva" class="hidden space-y-3">
             <div>
                 <label class="text-[10px] font-bold text-gray-500 block mb-1">NOMBRE CLAVE (Sin espacios)</label>
-                <input type="text" id="nueva-clave" placeholder="Ej. nombre_aval" class="w-full p-2 bg-white border-2 border-gray-200 rounded-lg text-sm font-bold text-[#1A2238] focus:border-[#C0A062] outline-none">
+                <input type="text" id="nueva-clave" placeholder="Ej. nombre_aval" class="w-full p-2 bg-white border-2 border-gray-200 rounded-lg text-sm font-bold text-[#2D1B4B] focus:border-[#A855F7] outline-none">
             </div>
             <div>
                 <label class="text-[10px] font-bold text-gray-500 block mb-1">DESCRIPCIÓN (Para el usuario)</label>
-                <input type="text" id="nueva-desc" placeholder="Ej. Nombre Completo del Aval" class="w-full p-2 bg-white border-2 border-gray-200 rounded-lg text-sm text-gray-600 focus:border-[#C0A062] outline-none">
+                <input type="text" id="nueva-desc" placeholder="Ej. Nombre Completo del Aval" class="w-full p-2 bg-white border-2 border-gray-200 rounded-lg text-sm text-gray-600 focus:border-[#A855F7] outline-none">
             </div>
-            <button onclick="crearYAsignar()" id="btn-crear" class="w-full py-3 bg-[#C0A062] rounded-xl text-xs font-bold text-white hover:bg-[#a3864d] shadow-lg flex justify-center items-center">
+            <button onclick="crearYAsignar()" id="btn-crear" class="w-full py-3 bg-[#A855F7] rounded-xl text-xs font-bold text-white hover:bg-[#9333ea] shadow-lg flex justify-center items-center">
                 <span>GUARDAR Y APLICAR</span>
             </button>
         </div>
@@ -100,10 +100,10 @@
         const tabEx = document.getElementById('tab-existente');
         const tabNu = document.getElementById('tab-nueva');
         if(modo === 'existente'){
-            tabEx.className = "flex-1 py-3 text-xs font-bold text-[#1A2238] border-b-2 border-[#1A2238] bg-white";
+            tabEx.className = "flex-1 py-3 text-xs font-bold text-[#2D1B4B] border-b-2 border-[#2D1B4B] bg-white";
             tabNu.className = "flex-1 py-3 text-xs font-bold text-gray-400 bg-gray-50 hover:bg-gray-100";
         } else {
-            tabNu.className = "flex-1 py-3 text-xs font-bold text-[#C0A062] border-b-2 border-[#C0A062] bg-white";
+            tabNu.className = "flex-1 py-3 text-xs font-bold text-[#A855F7] border-b-2 border-[#A855F7] bg-white";
             tabEx.className = "flex-1 py-3 text-xs font-bold text-gray-400 bg-gray-50 hover:bg-gray-100";
         }
     }
@@ -114,13 +114,12 @@
             archivoActual = input.files[0];
             
             // Mostrar Spinner de carga
-            document.getElementById('drop-zone').innerHTML = '<i class="fas fa-spinner fa-spin text-4xl text-[#C0A062]"></i><p class="mt-4 text-gray-500 font-bold">Procesando Word...</p>';
+            document.getElementById('drop-zone').innerHTML = '<i class="fas fa-spinner fa-spin text-4xl text-[#A855F7]"></i><p class="mt-4 text-gray-500 font-bold">Procesando Word...</p>';
             
             const formData = new FormData(); 
             formData.append('archivo', archivoActual);
             
             try {
-                // 👇 AQUÍ ESTABA EL ERROR: Cambiamos a la URL correcta 'previsualizar_word_raw'
                 const res = await fetch("{% url 'previsualizar_word_raw' %}", {
                     method: 'POST',
                     body: formData
@@ -134,7 +133,6 @@
                     document.getElementById('drop-zone').classList.add('hidden');
                 } else {
                     alert("Error: No se pudo leer el contenido del Word.");
-                    // Restaurar zona de carga si falla
                     location.reload(); 
                 }
             } catch(e) { 
@@ -172,7 +170,7 @@
         listaReemplazos.push({ texto_original: seleccionActual, variable: variable });
         actualizarListaVisual();
         const editor = document.getElementById('editor-canvas');
-        const etiqueta = `<span class="bg-yellow-200 border-b-2 border-[#C0A062] px-1 font-mono text-xs text-black">${LLAVE_ABRE} ${variable} ${LLAVE_CIERRA}</span>`;
+        const etiqueta = `<span class="bg-yellow-200 border-b-2 border-[#A855F7] px-1 font-mono text-xs text-black">${LLAVE_ABRE} ${variable} ${LLAVE_CIERRA}</span>`;
         editor.innerHTML = editor.innerHTML.replace(seleccionActual, etiqueta);
         cancelarSeleccion();
     }
@@ -196,7 +194,6 @@
         btn.disabled = true;
 
         try {
-            // Asegúrate que esta URL coincida con tu urls.py (api_crear_variable)
             const response = await fetch("{% url 'api_crear_variable' %}", {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -229,7 +226,7 @@
     function actualizarListaVisual() {
         const cont = document.getElementById('lista-reemplazos'); cont.innerHTML = '';
         listaReemplazos.forEach((item, i) => {
-            cont.innerHTML += `<div class="bg-white p-3 rounded-xl border border-gray-200 shadow-sm flex justify-between items-center group animate__animated animate__fadeIn"><div class="truncate mr-2"><p class="text-[10px] text-gray-400 line-through truncate">${item.texto_original}</p><p class="text-xs font-black text-[#1A2238]">${LLAVE_ABRE} ${item.variable} ${LLAVE_CIERRA}</p></div><button onclick="eliminarReemplazo(${i})" class="text-red-400 hover:text-red-600"><i class="fas fa-times"></i></button></div>`;
+            cont.innerHTML += `<div class="bg-white p-3 rounded-xl border border-gray-200 shadow-sm flex justify-between items-center group animate__animated animate__fadeIn"><div class="truncate mr-2"><p class="text-[10px] text-gray-400 line-through truncate">${item.texto_original}</p><p class="text-xs font-black text-[#2D1B4B]">${LLAVE_ABRE} ${item.variable} ${LLAVE_CIERRA}</p></div><button onclick="eliminarReemplazo(${i})" class="text-red-400 hover:text-red-600"><i class="fas fa-times"></i></button></div>`;
         });
     }
     
@@ -248,7 +245,6 @@
         
         document.getElementById('input-reemplazos-final').value = JSON.stringify(listaReemplazos);
         
-        // Enviar formulario (Asegúrate que la vista 'diseñador_plantillas' maneje POST o cambia la action)
         document.getElementById('form-final').submit();
     }
 </script>

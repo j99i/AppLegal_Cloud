@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -9,8 +10,6 @@
             margin: 0cm;
         }
         body {
-            /* Usamos fuentes estándar para asegurar compatibilidad en PDF, 
-               pero intentamos acercarnos al estilo Lato */
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
             color: #333;
             margin: 0;
@@ -19,11 +18,11 @@
             font-size: 14px;
         }
 
-        /* --- COLORES CORPORATIVOS NUEVOS --- */
+        /* --- COLORES CORPORATIVOS --- */
         :root {
-            --corp-dark: #2D1B4B;    /* Tu Morado Oscuro */
-            --corp-accent: #A855F7;  /* Tu Morado Brillante */
-            --corp-light: #F3F4F6;   /* Gris claro de fondo */
+            --corp-dark: #2D1B4B;    /* Morado Oscuro */
+            --corp-accent: #A855F7;  /* Morado Brillante */
+            --corp-light: #F3F4F6;
         }
 
         /* --- ESTILOS GENERALES --- */
@@ -32,44 +31,45 @@
             left: 0;
             top: 0;
             bottom: 0;
-            width: 12px; /* Un poco más ancho para que luzca el morado */
-            background: linear-gradient(180deg, #2D1B4B 0%, #1E1233 100%); /* Degradado como en tu sidebar */
+            width: 12px;
+            background: linear-gradient(180deg, #2D1B4B 0%, #1E1233 100%);
         }
         .container {
             padding: 40px 40px 40px 60px;
         }
 
-        /* --- HEADER --- */
+        /* --- HEADER CON LOGO --- */
         .header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: center; /* Centrado verticalmente */
             border-bottom: 2px solid #f3f4f6;
-            padding-bottom: 20px;
+            padding-bottom: 25px; /* Un poco más de aire */
             margin-bottom: 30px;
         }
-        .logo-text {
-            font-size: 24px;
-            font-weight: 900;
-            color: #2D1B4B; /* Morado Oscuro */
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            font-family: 'Times New Roman', serif; /* Simulando Playfair Display */
+        
+        /* Estilo para el Logo */
+        .logo-container img {
+            max-height: 85px; /* Tamaño controlado para que se vea elegante */
+            width: auto;
+            object-fit: contain;
+            display: block;
         }
+
         .invoice-title {
             text-align: right;
         }
         .invoice-title h1 {
             margin: 0;
             font-size: 32px;
-            color: #2D1B4B; /* Morado Oscuro en lugar de dorado */
+            color: #2D1B4B; 
             font-weight: 900;
             letter-spacing: 1px;
             font-family: 'Times New Roman', serif;
         }
         .meta-data {
             font-size: 12px;
-            color: #A855F7; /* Acento Morado */
+            color: #A855F7; 
             margin-top: 5px;
             font-weight: bold;
             text-transform: uppercase;
@@ -97,7 +97,7 @@
         .info-content {
             font-size: 15px;
             font-weight: 700;
-            color: #2D1B4B; /* Morado Oscuro */
+            color: #2D1B4B; 
             margin-bottom: 4px;
         }
         .info-sub {
@@ -116,7 +116,7 @@
         th {
             text-align: left;
             padding: 15px 10px;
-            background-color: #2D1B4B; /* Morado Oscuro */
+            background-color: #2D1B4B; 
             color: #ffffff;
             text-transform: uppercase;
             font-size: 10px;
@@ -129,7 +129,6 @@
             vertical-align: top;
         }
         
-        /* --- ESTILOS MEJORADOS PARA CAMPOS DINÁMICOS --- */
         .item-main-title {
             font-size: 15px;
             color: #2D1B4B;
@@ -143,10 +142,10 @@
             line-height: 1.4;
         }
         
-        /* Caja para Especificaciones Fijas (Catálogo) */
+        /* Specs Box */
         .specs-box {
-            background-color: #faf5ff; /* Fondo morado muy claro */
-            border-left: 3px solid #A855F7; /* Borde Acento Morado */
+            background-color: #faf5ff; 
+            border-left: 3px solid #A855F7; 
             padding: 8px 12px;
             border-radius: 0 4px 4px 0;
             margin-bottom: 8px;
@@ -154,7 +153,7 @@
         .specs-title {
             font-size: 9px;
             font-weight: 800;
-            color: #A855F7; /* Texto Acento Morado */
+            color: #A855F7;
             text-transform: uppercase;
             margin-bottom: 4px;
             letter-spacing: 0.5px;
@@ -165,7 +164,7 @@
             margin-bottom: 3px;
         }
 
-        /* Caja para Valores Personalizados (Cotización) */
+        /* Custom Box */
         .custom-box {
             background-color: #f3f4f6;
             border: 1px solid #e5e7eb;
@@ -208,7 +207,7 @@
         .total-final td {
             font-size: 22px;
             font-weight: 900;
-            color: #2D1B4B; /* Morado Oscuro */
+            color: #2D1B4B; 
             border-top: 3px solid #2D1B4B !important;
             padding-top: 15px !important;
             font-family: 'Times New Roman', serif;
@@ -235,7 +234,10 @@
     
     <div class="container">
         <div class="header">
-            <div class="logo-text">GESTIONES CORPAD</div>
+            <div class="logo-container">
+                <img src="{% static 'img/logo.png' %}" alt="Gestiones Corpad">
+            </div>
+            
             <div class="invoice-title">
                 <h1>COTIZACIÓN</h1>
                 <div class="meta-data">FOLIO #{{ c.id|stringformat:"04d" }}</div>

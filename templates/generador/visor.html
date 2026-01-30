@@ -2,10 +2,10 @@
 {% block content %}
 <div class="max-w-5xl mx-auto h-[calc(100vh-100px)] flex flex-col">
     <div class="flex justify-between items-center mb-4">
-        <div><h2 class="text-xl font-black text-[#1A2238] flex items-center gap-2"><i class="fas fa-check-circle text-green-500"></i> Documento Creado</h2><p class="text-xs text-gray-500">{{ doc.nombre_archivo }}</p></div>
+        <div><h2 class="text-xl font-black text-[#2D1B4B] flex items-center gap-2"><i class="fas fa-check-circle text-green-500"></i> Documento Creado</h2><p class="text-xs text-gray-500">{{ doc.nombre_archivo }}</p></div>
         <div class="flex gap-3">
             <a href="{% url 'detalle_cliente' doc.cliente.id %}" class="bg-white border border-gray-200 text-gray-600 px-4 py-2 rounded-xl font-bold text-xs hover:bg-gray-50">Cerrar</a>
-            <a href="{{ doc.archivo.url }}" download="{{ doc.nombre_archivo }}" class="bg-[#1A2238] text-white px-6 py-2 rounded-xl font-bold text-xs shadow-lg hover:bg-opacity-90 flex items-center gap-2"><i class="fas fa-download"></i> DESCARGAR WORD</a>
+            <a href="{{ doc.archivo.url }}" download="{{ doc.nombre_archivo }}" class="bg-[#2D1B4B] text-white px-6 py-2 rounded-xl font-bold text-xs shadow-lg hover:bg-[#A855F7] flex items-center gap-2 transition-all"><i class="fas fa-download"></i> DESCARGAR WORD</a>
         </div>
     </div>
     <div class="flex-1 bg-gray-100 rounded-[2rem] border border-gray-200 overflow-hidden shadow-inner relative">

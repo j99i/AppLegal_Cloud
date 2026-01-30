@@ -6,8 +6,8 @@
     
     <div class="w-80 flex-shrink-0 flex flex-col gap-6">
         
-        <button onclick="abrirModalCrear()" class="bg-[#1A2238] text-white p-4 rounded-2xl shadow-lg hover:bg-[#2C3E50] transition-all flex items-center justify-center gap-3 w-full group">
-            <div class="bg-[#C0A062] w-8 h-8 rounded-full flex items-center justify-center text-[#1A2238] group-hover:scale-110 transition-transform">
+        <button onclick="abrirModalCrear()" class="bg-[#2D1B4B] text-white p-4 rounded-2xl shadow-lg hover:bg-[#A855F7] transition-all flex items-center justify-center gap-3 w-full group">
+            <div class="bg-[#A855F7] w-8 h-8 rounded-full flex items-center justify-center text-white group-hover:scale-110 transition-transform">
                 <i class="fas fa-plus"></i>
             </div>
             <span class="font-bold tracking-widest text-sm">AGENDAR EVENTO</span>
@@ -22,7 +22,7 @@
                 {% for aud in proximas_audiencias %}
                 <div class="relative pl-4 border-l-2 border-red-500">
                     <p class="text-xs font-bold text-red-500 mb-1">{{ aud.inicio|date:"d M - H:i" }}</p>
-                    <p class="text-sm font-black text-[#1A2238] leading-tight">{{ aud.titulo }}</p>
+                    <p class="text-sm font-black text-[#2D1B4B] leading-tight">{{ aud.titulo }}</p>
                     <p class="text-[10px] text-gray-400 mt-1">{{ aud.cliente.nombre_empresa }}</p>
                 </div>
                 {% empty %}
@@ -48,11 +48,11 @@
 
 </div>
 
-<div id="modal-evento" class="fixed inset-0 bg-[#1A2238]/90 hidden items-center justify-center z-50 backdrop-blur-sm animate__animated animate__fadeIn">
+<div id="modal-evento" class="fixed inset-0 bg-[#2D1B4B]/90 hidden items-center justify-center z-50 backdrop-blur-sm animate__animated animate__fadeIn">
     <div class="bg-white p-8 rounded-[2rem] w-full max-w-md m-4 shadow-2xl relative animate__animated animate__zoomIn">
         <button onclick="document.getElementById('modal-evento').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400 hover:text-red-500"><i class="fas fa-times text-xl"></i></button>
         
-        <h3 class="text-2xl font-black text-[#1A2238] mb-1">Nuevo Evento</h3>
+        <h3 class="text-2xl font-black text-[#2D1B4B] mb-1">Nuevo Evento</h3>
         <p class="text-xs text-gray-400 mb-6 uppercase tracking-widest">Agenda Inteligente</p>
         
         <form action="{% url 'crear_evento' %}" method="POST" class="space-y-4">
@@ -60,24 +60,24 @@
             
             <div>
                 <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Título</label>
-                <input type="text" name="titulo" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-[#1A2238] border-none outline-none focus:ring-2 focus:ring-[#C0A062]" placeholder="Ej. Audiencia Inicial..." required>
+                <input type="text" name="titulo" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-[#2D1B4B] border-none outline-none focus:ring-2 focus:ring-[#A855F7]" placeholder="Ej. Audiencia Inicial..." required>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Fecha</label>
-                    <input type="date" name="fecha" id="input-fecha" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-[#1A2238] border-none outline-none" required>
+                    <input type="date" name="fecha" id="input-fecha" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-[#2D1B4B] border-none outline-none" required>
                 </div>
                 <div>
                     <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Hora</label>
-                    <input type="time" name="hora" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-[#1A2238] border-none outline-none" required>
+                    <input type="time" name="hora" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-[#2D1B4B] border-none outline-none" required>
                 </div>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Tipo</label>
-                    <select name="tipo" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-[#1A2238] border-none outline-none">
+                    <select name="tipo" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-[#2D1B4B] border-none outline-none">
                         <option value="audiencia">🔴 Audiencia</option>
                         <option value="vencimiento">🟠 Vencimiento</option>
                         <option value="reunion" selected>🔵 Reunión</option>
@@ -87,7 +87,7 @@
                 </div>
                 <div>
                     <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Cliente</label>
-                    <select name="cliente_id" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-[#1A2238] border-none outline-none">
+                    <select name="cliente_id" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-[#2D1B4B] border-none outline-none">
                         <option value="">-- Personal --</option>
                         {% for c in clientes %}
                         <option value="{{ c.id }}">{{ c.nombre_empresa }}</option>
@@ -98,10 +98,10 @@
 
             <div>
                 <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Notas Adicionales</label>
-                <textarea name="descripcion" rows="2" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-[#1A2238] border-none outline-none resize-none"></textarea>
+                <textarea name="descripcion" rows="2" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-[#2D1B4B] border-none outline-none resize-none"></textarea>
             </div>
 
-            <button type="submit" class="w-full bg-[#1A2238] text-white py-4 rounded-xl font-bold hover:bg-[#2C3E50] shadow-lg transition-all mt-2">
+            <button type="submit" class="w-full bg-[#2D1B4B] text-white py-4 rounded-xl font-bold hover:bg-[#A855F7] shadow-lg transition-all mt-2">
                 AGENDAR AHORA
             </button>
         </form>
@@ -114,7 +114,7 @@
         
         <div id="detalle-header" class="mb-4 border-l-4 border-gray-300 pl-4">
             <p id="det-tipo" class="text-[10px] font-black uppercase tracking-widest text-gray-400">TIPO</p>
-            <h3 id="det-titulo" class="text-xl font-black text-[#1A2238]">Título</h3>
+            <h3 id="det-titulo" class="text-xl font-black text-[#2D1B4B]">Título</h3>
         </div>
 
         <div class="space-y-3 mb-6">
@@ -229,12 +229,12 @@
 </script>
 
 <style>
-    /* Personalización FullCalendar estilo AppLegal */
-    .fc-toolbar-title { font-family: 'Playfair Display', serif; font-weight: 900; color: #1A2238; }
-    .fc-button-primary { background-color: #1A2238 !important; border-color: #1A2238 !important; font-weight: bold; border-radius: 0.5rem !important; }
-    .fc-button-primary:hover { background-color: #2C3E50 !important; }
-    .fc-daygrid-day-number { color: #1A2238; font-weight: bold; }
-    .fc-col-header-cell-cushion { color: #C0A062; font-weight: 900; text-transform: uppercase; font-size: 0.75rem; }
+    /* Personalización FullCalendar estilo Corpad Morado */
+    .fc-toolbar-title { font-family: 'Playfair Display', serif; font-weight: 900; color: #2D1B4B; }
+    .fc-button-primary { background-color: #2D1B4B !important; border-color: #2D1B4B !important; font-weight: bold; border-radius: 0.5rem !important; }
+    .fc-button-primary:hover { background-color: #A855F7 !important; border-color: #A855F7 !important; }
+    .fc-daygrid-day-number { color: #2D1B4B; font-weight: bold; }
+    .fc-col-header-cell-cushion { color: #A855F7; font-weight: 900; text-transform: uppercase; font-size: 0.75rem; }
     .fc-event { border: none; border-radius: 4px; font-size: 0.75rem; font-weight: bold; padding: 2px; cursor: pointer; transition: transform 0.1s; }
     .fc-event:hover { transform: scale(1.02); }
     .fc-day-today { background-color: #F3F4F6 !important; }

@@ -3,7 +3,7 @@
 <div class="max-w-7xl mx-auto animate__animated animate__fadeIn">
     
     <div class="flex justify-between items-center mb-8">
-        <h2 class="text-3xl font-black text-[#1A2238]">Finanzas y Cobranza</h2>
+        <h2 class="text-3xl font-black text-[#2D1B4B]">Finanzas y Cobranza</h2>
         <div class="text-right">
             <p class="text-xs font-bold text-gray-400 uppercase">Total por Cobrar</p>
             <p class="text-2xl font-black text-red-500">${{ total_por_cobrar|floatformat:2 }}</p>
@@ -15,19 +15,19 @@
             <table class="w-full text-left">
                 <thead class="bg-gray-50 text-xs text-gray-400 uppercase">
                     <tr>
-                        <th class="p-6 font-black">Cliente / Concepto</th>
-                        <th class="p-6 font-black text-center">Estado</th>
-                        <th class="p-6 font-black text-right">Total</th>
-                        <th class="p-6 font-black text-right">Pagado</th>
+                        <th class="p-6 font-black text-[#2D1B4B]">Cliente / Concepto</th>
+                        <th class="p-6 font-black text-center text-[#2D1B4B]">Estado</th>
+                        <th class="p-6 font-black text-right text-[#2D1B4B]">Total</th>
+                        <th class="p-6 font-black text-right text-[#2D1B4B]">Pagado</th>
                         <th class="p-6 font-black text-right text-red-500">Saldo</th>
-                        <th class="p-6 font-black text-center">Acciones</th>
+                        <th class="p-6 font-black text-center text-[#2D1B4B]">Acciones</th>
                     </tr>
                 </thead>
                 <tbody class="text-sm">
                     {% for c in cuentas %}
                     <tr class="border-b border-gray-50 hover:bg-gray-50 transition-colors">
                         <td class="p-6">
-                            <p class="font-bold text-[#1A2238]">{{ c.cliente.nombre_empresa }}</p>
+                            <p class="font-bold text-[#2D1B4B]">{{ c.cliente.nombre_empresa }}</p>
                             <p class="text-xs text-gray-400">{{ c.concepto }}</p>
                             <p class="text-[10px] text-gray-400 mt-1">Vence: {{ c.fecha_vencimiento|default:"--/--/--" }}</p>
                         </td>
@@ -44,7 +44,7 @@
                         <td class="p-6 text-right font-black text-red-500">${{ c.saldo_pendiente|floatformat:2 }}</td>
                         <td class="p-6 text-center">
                             {% if c.estado != 'pagado' %}
-                            <button onclick="abrirPago('{{ c.id }}', '{{ c.cliente.nombre_empresa }}', '{{ c.saldo_pendiente }}')" class="bg-[#1A2238] text-white px-4 py-2 rounded-lg font-bold text-xs hover:bg-[#2C3E50] shadow-md transition-all">
+                            <button onclick="abrirPago('{{ c.id }}', '{{ c.cliente.nombre_empresa }}', '{{ c.saldo_pendiente }}')" class="bg-[#2D1B4B] text-white px-4 py-2 rounded-lg font-bold text-xs hover:bg-[#A855F7] shadow-md transition-all">
                                 <i class="fas fa-hand-holding-usd mr-1"></i> PAGAR
                             </button>
                             {% else %}
@@ -71,12 +71,12 @@
     </div>
 </div>
 
-<div id="modal-pago" class="fixed inset-0 bg-[#1A2238]/90 hidden items-center justify-center z-50 backdrop-blur-sm animate__animated animate__fadeIn">
+<div id="modal-pago" class="fixed inset-0 bg-[#2D1B4B]/90 hidden items-center justify-center z-50 backdrop-blur-sm animate__animated animate__fadeIn">
     <div class="bg-white p-8 rounded-[2rem] w-full max-w-md m-4 shadow-2xl relative animate__animated animate__zoomIn">
         <button onclick="document.getElementById('modal-pago').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400 hover:text-red-500"><i class="fas fa-times text-xl"></i></button>
         
-        <h3 class="text-xl font-black text-[#1A2238] mb-1">Registrar Pago</h3>
-        <p class="text-sm text-gray-400 mb-6">Cliente: <span id="pago-cliente" class="font-bold text-[#C0A062]"></span></p>
+        <h3 class="text-xl font-black text-[#2D1B4B] mb-1">Registrar Pago</h3>
+        <p class="text-sm text-gray-400 mb-6">Cliente: <span id="pago-cliente" class="font-bold text-[#A855F7]"></span></p>
         
         <form action="{% url 'registrar_pago' %}" method="POST" class="space-y-4">
             {% csrf_token %}
@@ -84,12 +84,12 @@
             
             <div>
                 <label class="block text-xs font-bold text-gray-400 mb-1">Monto a Pagar (Máx: $<span id="max-saldo"></span>)</label>
-                <input type="number" name="monto" id="input-monto" step="0.01" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-[#1A2238] text-lg border-2 border-transparent focus:border-[#C0A062] outline-none" required>
+                <input type="number" name="monto" id="input-monto" step="0.01" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-[#2D1B4B] text-lg border-2 border-transparent focus:border-[#A855F7] outline-none" required>
             </div>
             
             <div>
                 <label class="block text-xs font-bold text-gray-400 mb-1">Método de Pago</label>
-                <select name="metodo" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-[#1A2238] border-none outline-none">
+                <select name="metodo" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-[#2D1B4B] border-none outline-none">
                     <option value="transferencia">Transferencia Electrónica</option>
                     <option value="efectivo">Efectivo</option>
                     <option value="cheque">Cheque</option>
@@ -98,10 +98,10 @@
 
             <div>
                 <label class="block text-xs font-bold text-gray-400 mb-1">Referencia / Folio</label>
-                <input type="text" name="referencia" placeholder="Ej. SPEI-12345" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-[#1A2238] text-sm border-none outline-none">
+                <input type="text" name="referencia" placeholder="Ej. SPEI-12345" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-[#2D1B4B] text-sm border-none outline-none">
             </div>
 
-            <button type="submit" class="w-full bg-[#1A2238] text-white py-4 rounded-xl font-black shadow-lg hover:bg-[#2C3E50] mt-2">
+            <button type="submit" class="w-full bg-[#2D1B4B] text-white py-4 rounded-xl font-black shadow-lg hover:bg-[#A855F7] mt-2 transition-colors">
                 CONFIRMAR PAGO
             </button>
         </form>

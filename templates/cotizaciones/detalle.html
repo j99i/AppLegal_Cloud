@@ -5,7 +5,7 @@
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
             <div class="flex items-center gap-3">
-                <h2 class="text-3xl font-black text-[#1A2238]">Cotización #{{ c.id|stringformat:"04d" }}</h2>
+                <h2 class="text-3xl font-black text-[#2D1B4B]">Cotización #{{ c.id|stringformat:"04d" }}</h2>
                 <span class="px-3 py-1 rounded-full text-xs font-bold uppercase 
                     {% if c.estado == 'borrador' %}bg-gray-200 text-gray-600{% elif c.estado == 'aceptada' %}bg-green-100 text-green-700{% else %}bg-blue-100 text-blue-700{% endif %}">
                     {{ c.get_estado_display }}
@@ -20,7 +20,7 @@
                 <i class="fas fa-user-check"></i> CONVERTIR A CLIENTE
             </a>
             {% else %}
-            <a href="{% url 'detalle_cliente' c.cliente_convertido.id %}" class="bg-[#1A2238] text-white px-6 py-3 rounded-xl font-bold text-xs shadow-lg flex items-center gap-2">
+            <a href="{% url 'detalle_cliente' c.cliente_convertido.id %}" class="bg-[#2D1B4B] text-white px-6 py-3 rounded-xl font-bold text-xs shadow-lg flex items-center gap-2 hover:bg-[#A855F7] transition-all">
                 <i class="fas fa-folder-open"></i> VER EXPEDIENTE
             </a>
             {% endif %}
@@ -34,7 +34,7 @@
             <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex justify-between items-center">
                 <div>
                     <p class="text-xs font-bold text-gray-400 uppercase">Total Estimado</p>
-                    <p class="text-3xl font-black text-[#1A2238]">${{ c.total|floatformat:2 }}</p>
+                    <p class="text-3xl font-black text-[#2D1B4B]">${{ c.total|floatformat:2 }}</p>
                 </div>
                 <a href="{% url 'pdf_cotizacion' c.id %}" target="_blank" class="bg-red-50 text-red-500 px-5 py-3 rounded-xl font-bold text-xs hover:bg-red-100 transition-colors border border-red-100">
                     <i class="fas fa-file-pdf mr-2"></i> VER PDF OFICIAL
@@ -42,7 +42,7 @@
             </div>
 
             <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
-                <h3 class="font-bold text-[#1A2238] mb-4">Detalle de Servicios</h3>
+                <h3 class="font-bold text-[#2D1B4B] mb-4">Detalle de Servicios</h3>
                 <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="text-xs text-gray-400 border-b">
@@ -55,11 +55,11 @@
                         {% for item in c.items.all %}
                         <tr class="border-b border-gray-50 last:border-0">
                             <td class="py-4">
-                                <p class="font-bold text-[#1A2238]">{{ item.servicio.nombre }}</p>
+                                <p class="font-bold text-[#2D1B4B]">{{ item.servicio.nombre }}</p>
                                 <p class="text-xs text-gray-500">{{ item.descripcion_personalizada }}</p>
                             </td>
                             <td class="py-4 text-center font-bold text-gray-600">{{ item.cantidad }}</td>
-                            <td class="py-4 text-right font-bold text-[#1A2238]">${{ item.total|floatformat:2 }}</td>
+                            <td class="py-4 text-right font-bold text-[#2D1B4B]">${{ item.total|floatformat:2 }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -91,14 +91,14 @@
             </div>
 
             <div class="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm">
-                <h3 class="font-black text-[#1A2238] flex items-center gap-2 mb-4">
-                    <i class="fas fa-envelope text-xl text-[#C0A062]"></i> Enviar por Correo
+                <h3 class="font-black text-[#2D1B4B] flex items-center gap-2 mb-4">
+                    <i class="fas fa-envelope text-xl text-[#A855F7]"></i> Enviar por Correo
                 </h3>
                 <form action="{% url 'enviar_cotizacion_email' c.id %}" method="POST" class="space-y-3">
                     {% csrf_token %}
-                    <input type="text" name="asunto" placeholder="Asunto del Correo" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-sm border border-gray-200" value="Propuesta de Servicios Legales - AppLegal" required>
-                    <textarea name="mensaje" rows="4" class="w-full p-3 bg-gray-50 rounded-xl text-sm font-medium border border-gray-200" placeholder="Escribe el mensaje...">Estimado/a {{ c.prospecto_nombre }},&#10;&#10;Adjunto a este correo encontrará la cotización detallada de los servicios solicitados.&#10;&#10;Quedo atento a cualquier duda.</textarea>
-                    <button type="submit" class="w-full bg-[#1A2238] text-white font-bold py-3 rounded-xl shadow-lg hover:bg-opacity-90">
+                    <input type="text" name="asunto" placeholder="Asunto del Correo" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-sm border border-gray-200 focus:border-[#A855F7] outline-none" value="Propuesta de Servicios Legales - AppLegal" required>
+                    <textarea name="mensaje" rows="4" class="w-full p-3 bg-gray-50 rounded-xl text-sm font-medium border border-gray-200 focus:border-[#A855F7] outline-none" placeholder="Escribe el mensaje...">Estimado/a {{ c.prospecto_nombre }},&#10;&#10;Adjunto a este correo encontrará la cotización detallada de los servicios solicitados.&#10;&#10;Quedo atento a cualquier duda.</textarea>
+                    <button type="submit" class="w-full bg-[#2D1B4B] text-white font-bold py-3 rounded-xl shadow-lg hover:bg-[#A855F7] transition-all">
                         ENVIAR PDF ADJUNTO
                     </button>
                 </form>

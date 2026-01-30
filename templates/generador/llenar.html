@@ -3,12 +3,12 @@
 <div class="max-w-5xl mx-auto animate__animated animate__fadeInUp">
     <div class="bg-white rounded-[2.5rem] shadow-xl overflow-hidden border border-gray-100">
         
-        <div class="bg-[#1A2238] p-8 text-white flex justify-between items-center">
+        <div class="bg-[#2D1B4B] p-8 text-white flex justify-between items-center">
             <div>
                 <h2 class="text-2xl font-black">Homologación de Datos</h2>
                 <p class="text-white/60 text-sm">Plantilla: <b>{{ plantilla.nombre }}</b></p>
             </div>
-            <button onclick="document.getElementById('modal-guia').classList.remove('hidden')" class="text-[#C0A062] border border-[#C0A062] px-4 py-2 rounded-xl text-xs font-bold hover:bg-[#C0A062] hover:text-[#1A2238] transition-colors">
+            <button onclick="document.getElementById('modal-guia').classList.remove('hidden')" class="text-[#A855F7] border border-[#A855F7] px-4 py-2 rounded-xl text-xs font-bold hover:bg-[#A855F7] hover:text-white transition-colors">
                 <i class="fas fa-book mr-2"></i> VER GLOSARIO
             </button>
         </div>
@@ -18,15 +18,15 @@
             <input type="hidden" name="plantilla_id" value="{{ plantilla.id }}">
 
             <div class="mb-8 bg-gray-50 p-6 rounded-2xl border border-gray-200">
-                <label class="block text-xs font-black text-[#1A2238] uppercase mb-2 ml-1">Nombre Final</label>
+                <label class="block text-xs font-black text-[#2D1B4B] uppercase mb-2 ml-1">Nombre Final</label>
                 <div class="flex items-center">
-                    <input type="text" name="nombre_archivo_salida" value="{{ nombre_sugerido }}" class="w-full p-3 bg-white border-2 border-gray-200 rounded-l-xl font-bold text-gray-700 outline-none focus:border-[#C0A062]" required>
+                    <input type="text" name="nombre_archivo_salida" value="{{ nombre_sugerido }}" class="w-full p-3 bg-white border-2 border-gray-200 rounded-l-xl font-bold text-gray-700 outline-none focus:border-[#A855F7]" required>
                     <span class="bg-gray-200 text-gray-500 font-bold p-3 rounded-r-xl border-y-2 border-r-2 border-gray-200">.docx</span>
                 </div>
             </div>
 
             <div class="space-y-6">
-                <h3 class="font-black text-[#1A2238] text-lg border-b pb-2">Variables Detectadas</h3>
+                <h3 class="font-black text-[#2D1B4B] text-lg border-b pb-2">Variables Detectadas</h3>
                 
                 <div class="grid grid-cols-1 gap-4">
                     {% for var in variables %}
@@ -56,7 +56,7 @@
                             {% else %}
                                 <div class="relative">
                                     <input type="{{ var.tipo }}" name="{{ var.clave }}" value="{{ var.valor }}" 
-                                           class="w-full p-3 bg-white border-2 border-transparent focus:border-[#C0A062] rounded-xl outline-none font-bold text-[#1A2238] shadow-sm" required>
+                                           class="w-full p-3 bg-white border-2 border-transparent focus:border-[#A855F7] rounded-xl outline-none font-bold text-[#2D1B4B] shadow-sm" required>
                                     {% if var.valor %}
                                     <i class="fas fa-history text-green-500 absolute right-3 top-3.5" title="Recuperado de memoria"></i>
                                     {% endif %}
@@ -69,8 +69,8 @@
             </div>
 
             <div class="mt-10 flex justify-end pt-6 border-t border-gray-100">
-                <button type="submit" class="bg-[#1A2238] hover:bg-[#2C3E50] text-white px-8 py-4 rounded-2xl font-black shadow-lg transition-all flex items-center gap-3">
-                    <span>GENERAR DOCUMENTO</span> <i class="fas fa-file-export text-[#C0A062]"></i>
+                <button type="submit" class="bg-[#2D1B4B] hover:bg-[#A855F7] text-white px-8 py-4 rounded-2xl font-black shadow-lg transition-all flex items-center gap-3">
+                    <span>GENERAR DOCUMENTO</span> <i class="fas fa-file-export text-[#A855F7]"></i>
                 </button>
             </div>
         </form>
@@ -79,19 +79,19 @@
 
 <div id="modal-guia" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl p-8 max-w-lg w-full animate__animated animate__zoomIn">
-        <h3 class="font-bold text-xl mb-4 text-[#1A2238]">Glosario de Variables</h3>
+        <h3 class="font-bold text-xl mb-4 text-[#2D1B4B]">Glosario de Variables</h3>
         <p class="text-sm text-gray-500 mb-4">Usa estas llaves en tus Word para que el sistema funcione automático:</p>
         <div class="h-64 overflow-y-auto bg-gray-50 p-4 rounded-xl border space-y-2 custom-scrollbar">
             <div class="flex justify-between text-xs border-b pb-1">
-                <span class="font-mono font-bold text-[#1A2238]">&#123;&#123; nombre_empresa &#125;&#125;</span>
+                <span class="font-mono font-bold text-[#2D1B4B]">&#123;&#123; nombre_empresa &#125;&#125;</span>
                 <span class="text-gray-500">Nombre del Cliente</span>
             </div>
             <div class="flex justify-between text-xs border-b pb-1">
-                <span class="font-mono font-bold text-[#1A2238]">&#123;&#123; fecha_actual &#125;&#125;</span>
+                <span class="font-mono font-bold text-[#2D1B4B]">&#123;&#123; fecha_actual &#125;&#125;</span>
                 <span class="text-gray-500">Fecha de Hoy</span>
             </div>
              <div class="flex justify-between text-xs border-b pb-1">
-                <span class="font-mono font-bold text-[#1A2238]">&#123;&#123; telefono &#125;&#125;</span>
+                <span class="font-mono font-bold text-[#2D1B4B]">&#123;&#123; telefono &#125;&#125;</span>
                 <span class="text-gray-500">Teléfono Contacto</span>
             </div>
         </div>

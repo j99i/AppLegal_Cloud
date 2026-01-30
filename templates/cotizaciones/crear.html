@@ -8,10 +8,10 @@
 
     <div class="flex justify-between items-center mb-8">
         <div>
-            <h1 class="text-3xl font-black text-[#1A2238] font-serif mb-1">Nueva Cotización</h1>
+            <h1 class="text-3xl font-black text-[#2D1B4B] font-serif mb-1">Nueva Cotización</h1>
             <p class="text-gray-500 font-medium text-sm">Crea una propuesta comercial para un prospecto.</p>
         </div>
-        <a href="{% url 'lista_cotizaciones' %}" class="text-gray-400 hover:text-[#1A2238] transition-colors">
+        <a href="{% url 'lista_cotizaciones' %}" class="text-gray-400 hover:text-[#2D1B4B] transition-colors">
             <i class="fas fa-times text-xl"></i>
         </a>
     </div>
@@ -20,39 +20,39 @@
         {% csrf_token %}
         
         <div class="bg-white rounded-[2rem] p-8 shadow-sm border border-gray-100 mb-6">
-            <h3 class="text-lg font-black text-[#1A2238] mb-6 flex items-center gap-2">
-                <i class="fas fa-user-circle text-[#C0A062]"></i> Datos del Prospecto
+            <h3 class="text-lg font-black text-[#2D1B4B] mb-6 flex items-center gap-2">
+                <i class="fas fa-user-circle text-[#A855F7]"></i> Datos del Prospecto
             </h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                     <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Nombre Completo</label>
-                    <input type="text" name="nombre" class="w-full p-3 bg-white rounded-xl font-bold text-[#1A2238] outline-none border border-gray-200 focus:border-[#C0A062] focus:ring-1 focus:ring-[#C0A062] transition-all" placeholder="Ej. Juan Pérez" required>
+                    <input type="text" name="nombre" class="w-full p-3 bg-white rounded-xl font-bold text-[#2D1B4B] outline-none border border-gray-200 focus:border-[#A855F7] focus:ring-1 focus:ring-[#A855F7] transition-all" placeholder="Ej. Juan Pérez" required>
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Empresa (Opcional)</label>
-                    <input type="text" name="empresa" class="w-full p-3 bg-white rounded-xl font-bold text-[#1A2238] outline-none border border-gray-200 focus:border-[#C0A062] focus:ring-1 focus:ring-[#C0A062] transition-all" placeholder="Ej. Coca-Cola FEMSA">
+                    <input type="text" name="empresa" class="w-full p-3 bg-white rounded-xl font-bold text-[#2D1B4B] outline-none border border-gray-200 focus:border-[#A855F7] focus:ring-1 focus:ring-[#A855F7] transition-all" placeholder="Ej. Coca-Cola FEMSA">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Email</label>
-                    <input type="email" name="email" class="w-full p-3 bg-white rounded-xl font-bold text-[#1A2238] outline-none border border-gray-200 focus:border-[#C0A062] focus:ring-1 focus:ring-[#C0A062] transition-all" placeholder="cliente@empresa.com" required>
+                    <input type="email" name="email" class="w-full p-3 bg-white rounded-xl font-bold text-[#2D1B4B] outline-none border border-gray-200 focus:border-[#A855F7] focus:ring-1 focus:ring-[#A855F7] transition-all" placeholder="cliente@empresa.com" required>
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Teléfono</label>
-                    <input type="text" name="telefono" class="w-full p-3 bg-white rounded-xl font-bold text-[#1A2238] outline-none border border-gray-200 focus:border-[#C0A062] focus:ring-1 focus:ring-[#C0A062] transition-all" placeholder="55 1234 5678" required>
+                    <input type="text" name="telefono" class="w-full p-3 bg-white rounded-xl font-bold text-[#2D1B4B] outline-none border border-gray-200 focus:border-[#A855F7] focus:ring-1 focus:ring-[#A855F7] transition-all" placeholder="55 1234 5678" required>
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Validez de la Oferta</label>
-                    <input type="date" name="validez" class="w-full p-3 bg-white rounded-xl font-bold text-[#1A2238] outline-none border border-gray-200 focus:border-[#C0A062] focus:ring-1 focus:ring-[#C0A062] transition-all">
+                    <input type="date" name="validez" class="w-full p-3 bg-white rounded-xl font-bold text-[#2D1B4B] outline-none border border-gray-200 focus:border-[#A855F7] focus:ring-1 focus:ring-[#A855F7] transition-all">
                 </div>
             </div>
         </div>
 
         <div class="bg-white rounded-[2rem] p-8 shadow-sm border border-gray-100 mb-8">
             <div class="flex justify-between items-center mb-6">
-                <h3 class="text-lg font-black text-[#1A2238] flex items-center gap-2">
-                    <i class="fas fa-list-ul text-[#C0A062]"></i> Servicios a Cotizar
+                <h3 class="text-lg font-black text-[#2D1B4B] flex items-center gap-2">
+                    <i class="fas fa-list-ul text-[#A855F7]"></i> Servicios a Cotizar
                 </h3>
-                <button type="button" onclick="agregarFila()" class="text-[#C0A062] font-bold text-xs uppercase hover:text-[#1A2238] transition-colors flex items-center gap-1">
+                <button type="button" onclick="agregarFila()" class="text-[#A855F7] font-bold text-xs uppercase hover:text-[#2D1B4B] transition-colors flex items-center gap-1">
                     <i class="fas fa-plus-circle"></i> Agregar Fila
                 </button>
             </div>
@@ -77,7 +77,7 @@
             <a href="{% url 'lista_cotizaciones' %}" class="px-8 py-4 rounded-xl font-bold text-xs text-gray-500 hover:bg-gray-100 transition-all uppercase tracking-widest">
                 Cancelar
             </a>
-            <button type="submit" class="bg-[#1A2238] text-white px-8 py-4 rounded-xl font-black text-xs shadow-xl hover:bg-[#C0A062] hover:text-[#1A2238] transition-all uppercase tracking-widest flex items-center gap-2">
+            <button type="submit" class="bg-[#2D1B4B] text-white px-8 py-4 rounded-xl font-black text-xs shadow-xl hover:bg-[#A855F7] hover:text-white transition-all uppercase tracking-widest flex items-center gap-2">
                 <i class="fas fa-paper-plane"></i> Crear Cotización
             </button>
         </div>
@@ -106,7 +106,7 @@
         tr.innerHTML = `
             <td class="py-4 pr-4 align-top">
                 <div class="relative">
-                    <select name="servicio_id" onchange="actualizarPrecio(this)" class="w-full p-3 bg-white rounded-xl font-bold text-sm text-[#1A2238] border border-gray-200 focus:border-[#C0A062] outline-none appearance-none cursor-pointer focus:ring-1 focus:ring-[#C0A062] transition-all">
+                    <select name="servicio_id" onchange="actualizarPrecio(this)" class="w-full p-3 bg-white rounded-xl font-bold text-sm text-[#2D1B4B] border border-gray-200 focus:border-[#A855F7] outline-none appearance-none cursor-pointer focus:ring-1 focus:ring-[#A855F7] transition-all">
                         ${options}
                     </select>
                     <div class="absolute right-3 top-3 pointer-events-none text-gray-400">
@@ -117,13 +117,13 @@
             </td>
             
             <td class="py-4 px-2 align-top">
-                <input type="number" name="cantidad" value="1" min="1" class="w-full p-3 bg-white rounded-xl font-bold text-center text-[#1A2238] outline-none focus:border-[#C0A062] border border-gray-200 focus:ring-1 focus:ring-[#C0A062] transition-all">
+                <input type="number" name="cantidad" value="1" min="1" class="w-full p-3 bg-white rounded-xl font-bold text-center text-[#2D1B4B] outline-none focus:border-[#A855F7] border border-gray-200 focus:ring-1 focus:ring-[#A855F7] transition-all">
             </td>
             
             <td class="py-4 px-2 align-top">
                 <div class="relative">
                     <span class="absolute left-3 top-3 text-gray-400 font-bold pointer-events-none">$</span>
-                    <input type="number" name="precio" step="0.01" class="w-full p-3 pl-6 bg-white rounded-xl font-bold text-right text-[#1A2238] outline-none focus:border-[#C0A062] border border-gray-200 focus:ring-1 focus:ring-[#C0A062] transition-all">
+                    <input type="number" name="precio" step="0.01" class="w-full p-3 pl-6 bg-white rounded-xl font-bold text-right text-[#2D1B4B] outline-none focus:border-[#A855F7] border border-gray-200 focus:ring-1 focus:ring-[#A855F7] transition-all">
                 </div>
             </td>
 
@@ -144,9 +144,9 @@
         
         if(precio) {
             inputPrecio.value = precio;
-            // Efecto visual de "actualizado"
-            inputPrecio.classList.add('bg-yellow-50');
-            setTimeout(() => inputPrecio.classList.remove('bg-yellow-50'), 500);
+            // Efecto visual de "actualizado" (Lila suave)
+            inputPrecio.classList.add('bg-purple-50');
+            setTimeout(() => inputPrecio.classList.remove('bg-purple-50'), 500);
         }
     }
 
