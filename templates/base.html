@@ -10,45 +10,52 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
     <style>
+        /* Definicion de colores morados */
+        :root {
+            --sidebar-dark: #2D1B4B; /* Morado oscuro principal */
+            --sidebar-darker: #1E1233; /* Morado mas oscuro para gradiente */
+            --sidebar-header: #37225A; /* Encabezado sidebar ligeramente mas claro */
+            --accent-purple: #A855F7; /* Morado brillante acento */
+            --accent-purple-light: #C084FC; /* Morado claro secundario */
+        }
         body { font-family: 'Lato', sans-serif; background-color: #F3F4F6; }
         h1, h2, h3, h4, .brand-font { font-family: 'Playfair Display', serif; }
         .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #C0A062; border-radius: 10px; }
+        /* Scrollbar morado */
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--accent-purple); border-radius: 10px; }
         
-        /* Animación y comportamiento del Sidebar */
         #sidebar { width: 4.5rem; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden; }
         #sidebar:hover { width: 16rem; }
         
-        /* Textos del menú */
         .nav-text { opacity: 0; transform: translateX(-10px); transition: all 0.3s ease; white-space: nowrap; pointer-events: none; }
         #sidebar:hover .nav-text { opacity: 1; transform: translateX(0); pointer-events: auto; transition-delay: 0.1s; }
         
-        /* Logo comportamiento */
         .logo-collapsed { display: block; }
         .logo-expanded { display: none; }
         #sidebar:hover .logo-collapsed { display: none; }
         #sidebar:hover .logo-expanded { display: flex; animation: fadeIn 0.5s; }
         
-        /* Gradiente sutil para el sidebar */
-        .sidebar-gradient { background: linear-gradient(180deg, #1A2238 0%, #0F172A 100%); }
+        /* Gradiente morado para el sidebar */
+        .sidebar-gradient { background: linear-gradient(180deg, var(--sidebar-dark) 0%, var(--sidebar-darker) 100%); }
+        .bg-sidebar-header { background-color: var(--sidebar-header); }
     </style>
 </head>
 <body class="flex h-screen overflow-hidden">
 
     <aside id="sidebar" class="fixed inset-y-0 left-0 sidebar-gradient text-white shadow-2xl z-50 flex flex-col group border-r border-white/5">
         
-        <div class="h-20 flex items-center justify-center border-b border-white/10 shrink-0 bg-[#151b2d]">
+        <div class="h-20 flex items-center justify-center border-b border-white/10 shrink-0 bg-sidebar-header">
             <div class="w-full px-2 flex items-center justify-center overflow-hidden relative">
                 
                 <div class="logo-collapsed">
-                    <img src="{% static 'img/logo.png' %}" class="w-8 h-8 object-contain bg-white rounded-full p-0.5 shadow-lg" alt="Logo">
+                    <img src="{% static 'img/logo.png' %}" class="w-8 h-8 object-cover bg-white rounded-full p-0.5 shadow-lg" alt="Logo">
                 </div>
 
                 <div class="logo-expanded items-center gap-3 absolute left-4">
-                    <img src="{% static 'img/logo.png' %}" class="w-10 h-10 object-contain bg-white rounded-full p-0.5 shadow-md" alt="Logo">
+                    <img src="{% static 'img/logo.png' %}" class="w-10 h-10 object-cover bg-white rounded-full p-0.5 shadow-md" alt="Logo">
                     <div class="flex flex-col">
-                        <span class="text-xs font-black tracking-widest text-[#C0A062] brand-font whitespace-nowrap leading-tight">GESTIONES</span>
+                        <span class="text-xs font-black tracking-widest text-[#A855F7] brand-font whitespace-nowrap leading-tight">GESTIONES</span>
                         <span class="text-[9px] font-bold text-white tracking-[0.2em] whitespace-nowrap">CORPAD S.A.S.</span>
                     </div>
                 </div>
@@ -57,41 +64,41 @@
 
         <nav class="flex-1 overflow-y-auto custom-scrollbar py-6 space-y-1">
             
-            <a href="{% url 'dashboard' %}" class="flex items-center px-5 py-3.5 hover:bg-white/10 transition-colors relative group/item {% if request.path == '/' %}text-[#C0A062] bg-white/5{% else %}text-gray-400{% endif %}">
-                <i class="fas fa-th-large text-lg w-6 text-center shrink-0 group-hover/item:text-[#C0A062] transition-colors"></i>
+            <a href="{% url 'dashboard' %}" class="flex items-center px-5 py-3.5 hover:bg-white/10 transition-colors relative group/item {% if request.path == '/' %}text-[#A855F7] bg-white/5{% else %}text-gray-400{% endif %}">
+                <i class="fas fa-th-large text-lg w-6 text-center shrink-0 group-hover/item:text-[#A855F7] transition-colors"></i>
                 <span class="nav-text ml-4 text-xs font-bold tracking-widest uppercase">Panel General</span>
-                {% if request.path == '/' %}<div class="absolute left-0 top-0 bottom-0 w-1 bg-[#C0A062] shadow-[0_0_10px_#C0A062]"></div>{% endif %}
+                {% if request.path == '/' %}<div class="absolute left-0 top-0 bottom-0 w-1 bg-[#A855F7] shadow-[0_0_10px_#A855F7]"></div>{% endif %}
             </a>
 
             {% if user.access_agenda %}
-            <a href="{% url 'agenda_legal' %}" class="flex items-center px-5 py-3.5 hover:bg-white/10 transition-colors relative group/item {% if 'agenda' in request.path %}text-[#C0A062] bg-white/5{% else %}text-gray-400{% endif %}">
-                <i class="fas fa-calendar-alt text-lg w-6 text-center shrink-0 group-hover/item:text-[#C0A062] transition-colors"></i>
+            <a href="{% url 'agenda_legal' %}" class="flex items-center px-5 py-3.5 hover:bg-white/10 transition-colors relative group/item {% if 'agenda' in request.path %}text-[#A855F7] bg-white/5{% else %}text-gray-400{% endif %}">
+                <i class="fas fa-calendar-alt text-lg w-6 text-center shrink-0 group-hover/item:text-[#A855F7] transition-colors"></i>
                 <span class="nav-text ml-4 text-xs font-bold tracking-widest uppercase">Agenda</span>
-                {% if 'agenda' in request.path %}<div class="absolute left-0 top-0 bottom-0 w-1 bg-[#C0A062] shadow-[0_0_10px_#C0A062]"></div>{% endif %}
+                {% if 'agenda' in request.path %}<div class="absolute left-0 top-0 bottom-0 w-1 bg-[#A855F7] shadow-[0_0_10px_#A855F7]"></div>{% endif %}
             </a>
             {% endif %}
 
             {% if user.access_cotizaciones %}
-            <a href="{% url 'lista_cotizaciones' %}" class="flex items-center px-5 py-3.5 hover:bg-white/10 transition-colors relative group/item {% if 'cotizaciones' in request.path %}text-[#C0A062] bg-white/5{% else %}text-gray-400{% endif %}">
-                <i class="fas fa-file-invoice-dollar text-lg w-6 text-center shrink-0 group-hover/item:text-[#C0A062] transition-colors"></i>
+            <a href="{% url 'lista_cotizaciones' %}" class="flex items-center px-5 py-3.5 hover:bg-white/10 transition-colors relative group/item {% if 'cotizaciones' in request.path %}text-[#A855F7] bg-white/5{% else %}text-gray-400{% endif %}">
+                <i class="fas fa-file-invoice-dollar text-lg w-6 text-center shrink-0 group-hover/item:text-[#A855F7] transition-colors"></i>
                 <span class="nav-text ml-4 text-xs font-bold tracking-widest uppercase">Cotizaciones</span>
-                {% if 'cotizaciones' in request.path %}<div class="absolute left-0 top-0 bottom-0 w-1 bg-[#C0A062] shadow-[0_0_10px_#C0A062]"></div>{% endif %}
+                {% if 'cotizaciones' in request.path %}<div class="absolute left-0 top-0 bottom-0 w-1 bg-[#A855F7] shadow-[0_0_10px_#A855F7]"></div>{% endif %}
             </a>
             {% endif %}
 
             {% if user.access_finanzas %}
-            <a href="{% url 'panel_finanzas' %}" class="flex items-center px-5 py-3.5 hover:bg-white/10 transition-colors relative group/item {% if 'finanzas' in request.path %}text-[#C0A062] bg-white/5{% else %}text-gray-400{% endif %}">
-                <i class="fas fa-wallet text-lg w-6 text-center shrink-0 group-hover/item:text-[#C0A062] transition-colors"></i>
+            <a href="{% url 'panel_finanzas' %}" class="flex items-center px-5 py-3.5 hover:bg-white/10 transition-colors relative group/item {% if 'finanzas' in request.path %}text-[#A855F7] bg-white/5{% else %}text-gray-400{% endif %}">
+                <i class="fas fa-wallet text-lg w-6 text-center shrink-0 group-hover/item:text-[#A855F7] transition-colors"></i>
                 <span class="nav-text ml-4 text-xs font-bold tracking-widest uppercase">Finanzas</span>
-                {% if 'finanzas' in request.path %}<div class="absolute left-0 top-0 bottom-0 w-1 bg-[#C0A062] shadow-[0_0_10px_#C0A062]"></div>{% endif %}
+                {% if 'finanzas' in request.path %}<div class="absolute left-0 top-0 bottom-0 w-1 bg-[#A855F7] shadow-[0_0_10px_#A855F7]"></div>{% endif %}
             </a>
             {% endif %}
 
             {% if user.access_disenador %}
-            <a href="{% url 'diseñador_plantillas' %}" class="flex items-center px-5 py-3.5 hover:bg-white/10 transition-colors relative group/item {% if 'herramientas' in request.path %}text-[#C0A062] bg-white/5{% else %}text-gray-400{% endif %}">
-                <i class="fas fa-pen-nib text-lg w-6 text-center shrink-0 group-hover/item:text-[#C0A062] transition-colors"></i>
+            <a href="{% url 'diseñador_plantillas' %}" class="flex items-center px-5 py-3.5 hover:bg-white/10 transition-colors relative group/item {% if 'herramientas' in request.path %}text-[#A855F7] bg-white/5{% else %}text-gray-400{% endif %}">
+                <i class="fas fa-pen-nib text-lg w-6 text-center shrink-0 group-hover/item:text-[#A855F7] transition-colors"></i>
                 <span class="nav-text ml-4 text-xs font-bold tracking-widest uppercase">Diseñador</span>
-                {% if 'herramientas' in request.path %}<div class="absolute left-0 top-0 bottom-0 w-1 bg-[#C0A062] shadow-[0_0_10px_#C0A062]"></div>{% endif %}
+                {% if 'herramientas' in request.path %}<div class="absolute left-0 top-0 bottom-0 w-1 bg-[#A855F7] shadow-[0_0_10px_#A855F7]"></div>{% endif %}
             </a>
             {% endif %}
 
@@ -104,7 +111,7 @@
                     <span class="nav-text ml-4 text-xs font-bold tracking-widest uppercase">Catálogo</span>
                 </a>
                 
-                <a href="{% url 'nueva_cotizacion' %}" class="mx-3 mt-2 flex items-center justify-center px-2 py-3 rounded-lg bg-gradient-to-r from-[#C0A062] to-[#D4B679] text-[#1A2238] shadow-lg hover:shadow-[#C0A062]/20 hover:scale-[1.02] transition-all group/btn">
+                <a href="{% url 'nueva_cotizacion' %}" class="mx-3 mt-2 flex items-center justify-center px-2 py-3 rounded-lg bg-gradient-to-r from-[#A855F7] to-[#C084FC] text-white shadow-lg hover:shadow-[#A855F7]/20 hover:scale-[1.02] transition-all group/btn">
                     <i class="fas fa-plus-circle text-lg shrink-0"></i>
                     <span class="nav-text ml-3 text-xs font-black tracking-widest uppercase">Nueva Cotización</span>
                 </a>
@@ -121,9 +128,9 @@
             {% endif %}
         </nav>
         
-        <div class="p-4 border-t border-white/5 bg-[#151b2d]">
+        <div class="p-4 border-t border-white/5 bg-sidebar-header">
              <div class="flex items-center justify-center">
-                <span class="text-[9px] text-gray-500 nav-text">v2.0 Corpad System</span>
+                <span class="text-[9px] text-gray-500 nav-text">v2.1 Corpad System</span>
              </div>
         </div>
     </aside>
@@ -132,7 +139,7 @@
         
         <header class="h-16 bg-white shadow-sm flex items-center justify-between px-8 relative z-40 shrink-0">
             <div>
-                <h2 class="text-xl font-black text-[#1A2238] brand-font tracking-wide">{% block titulo_pagina %}Panel de Control{% endblock %}</h2>
+                <h2 class="text-xl font-black text-[#2D1B4B] brand-font tracking-wide">{% block titulo_pagina %}Panel de Control{% endblock %}</h2>
                 <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest flex items-center gap-2">
                     <span class="w-2 h-2 rounded-full bg-green-500"></span>
                     {{ now|date:"l, d F Y" }}
@@ -142,7 +149,7 @@
             <div class="flex items-center gap-6">
                 
                 <div class="relative">
-                    <button onclick="toggleNotificaciones()" class="relative p-2 text-gray-400 hover:text-[#C0A062] transition-colors focus:outline-none group">
+                    <button onclick="toggleNotificaciones()" class="relative p-2 text-gray-400 hover:text-[#A855F7] transition-colors focus:outline-none group">
                         <i class="fas fa-bell text-xl group-hover:animate-swing"></i>
                         {% if total_notif > 0 %}
                         <span class="absolute top-0 right-0 w-4 h-4 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center animate-bounce border border-white">
@@ -152,9 +159,9 @@
                     </button>
 
                     <div id="panel-notificaciones" class="hidden absolute right-0 mt-3 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden animate__animated animate__fadeInUp z-50">
-                        <div class="bg-[#1A2238] p-3 border-b border-gray-100 flex justify-between items-center">
+                        <div class="bg-[#2D1B4B] p-3 border-b border-gray-100 flex justify-between items-center">
                             <h3 class="text-xs font-bold text-white uppercase tracking-widest">Recordatorios</h3>
-                            <span class="text-[10px] text-[#C0A062]">Hoy y Urgentes</span>
+                            <span class="text-[10px] text-[#A855F7]">Hoy y Urgentes</span>
                         </div>
                         
                         <div class="max-h-80 overflow-y-auto custom-scrollbar">
@@ -164,14 +171,13 @@
                                     <p class="text-xs font-bold">Todo al día.</p>
                                 </div>
                             {% else %}
-                                
                                 {% if notif_tareas %}
                                 <div class="p-2 bg-red-50/50">
                                     <p class="text-[10px] font-black text-red-400 uppercase px-2 mb-1">Tareas Críticas</p>
                                     {% for t in notif_tareas %}
                                     <a href="{% url 'detalle_cliente' t.cliente.id %}" class="block p-2 hover:bg-white rounded-lg transition-colors mb-1 shadow-sm">
                                         <div class="flex justify-between items-start">
-                                            <span class="text-xs font-bold text-[#1A2238]">{{ t.titulo }}</span>
+                                            <span class="text-xs font-bold text-[#2D1B4B]">{{ t.titulo }}</span>
                                             <span class="text-[9px] font-bold text-red-500 bg-red-100 px-1 rounded">Vence Hoy</span>
                                         </div>
                                         <p class="text-[9px] text-gray-500 truncate">{{ t.cliente.nombre_empresa }}</p>
@@ -186,7 +192,7 @@
                                     {% for e in notif_eventos %}
                                     <div class="p-2 hover:bg-white rounded-lg transition-colors mb-1 cursor-default shadow-sm">
                                         <div class="flex justify-between items-center">
-                                            <span class="text-xs font-bold text-[#1A2238]">{{ e.titulo }}</span>
+                                            <span class="text-xs font-bold text-[#2D1B4B]">{{ e.titulo }}</span>
                                             <span class="text-[9px] font-bold text-blue-500">{{ e.inicio|date:"H:i" }}</span>
                                         </div>
                                         <p class="text-[9px] text-gray-500">{{ e.cliente.nombre_empresa|default:"Evento Personal" }}</p>
@@ -201,7 +207,7 @@
                                     {% for c in notif_cobros %}
                                     <div class="p-2 hover:bg-white rounded-lg transition-colors mb-1 shadow-sm">
                                         <div class="flex justify-between items-center">
-                                            <span class="text-xs font-bold text-[#1A2238]">{{ c.cliente.nombre_empresa }}</span>
+                                            <span class="text-xs font-bold text-[#2D1B4B]">{{ c.cliente.nombre_empresa }}</span>
                                             <span class="text-xs font-black text-amber-600">${{ c.saldo_pendiente }}</span>
                                         </div>
                                     </div>
@@ -216,15 +222,15 @@
 
                 <a href="{% url 'mi_perfil' %}" class="flex items-center gap-4 group cursor-pointer border-l border-gray-200 pl-6">
                     <div class="text-right hidden md:block">
-                        <p class="text-xs font-bold text-[#1A2238] group-hover:text-[#C0A062] transition-colors">{{ user.get_full_name|default:user.username }}</p>
+                        <p class="text-xs font-bold text-[#2D1B4B] group-hover:text-[#A855F7] transition-colors">{{ user.get_full_name|default:user.username }}</p>
                         <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{{ user.get_rol_display }}</p>
                     </div>
-                    <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-[#C0A062] to-amber-200 p-[2px] shadow-md overflow-hidden group-hover:scale-105 transition-transform">
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-[#A855F7] to-[#C084FC] p-[2px] shadow-md overflow-hidden group-hover:scale-105 transition-transform">
                         <div class="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden">
                             {% if user.avatar %}
                             <img src="{{ user.avatar.url }}" class="w-full h-full object-cover">
                             {% else %}
-                            <span class="text-[#1A2238] font-black text-xs">{{ user.username|slice:":2"|upper }}</span>
+                            <span class="text-[#2D1B4B] font-black text-xs">{{ user.username|slice:":2"|upper }}</span>
                             {% endif %}
                         </div>
                     </div>
@@ -238,7 +244,7 @@
 
         <main class="flex-1 overflow-x-hidden overflow-y-auto custom-scrollbar p-6 md:p-10 relative">
             <div class="absolute top-10 right-10 opacity-[0.03] pointer-events-none">
-                 <img src="{% static 'img/logo.png' %}" class="w-96 grayscale">
+                 <img src="{% static 'img/logo.png' %}" class="w-96 grayscale rounded-full">
             </div>
 
             {% if messages %}

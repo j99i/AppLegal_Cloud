@@ -14,14 +14,20 @@
         body { font-family: 'Lato', sans-serif; }
         .font-serif { font-family: 'Playfair Display', serif; }
         
+        /* Nueva paleta morada */
+        :root {
+            --primary-purple: #2D1B4B; /* Morado oscuro corporativo */
+            --accent-purple: #A855F7;  /* Morado brillante para acentos */
+        }
+
         .bg-pattern {
-            background-image: radial-gradient(#C0A062 1px, transparent 1px);
+            background-image: radial-gradient(var(--accent-purple) 1px, transparent 1px);
             background-size: 40px 40px;
             opacity: 0.05;
         }
 
-        .input-group:focus-within i { color: #C0A062; transform: scale(1.1); }
-        .input-group:focus-within div.border-b-2 { width: 100%; border-color: #C0A062; }
+        .input-group:focus-within i { color: var(--accent-purple); transform: scale(1.1); }
+        .input-group:focus-within div.border-b-2 { width: 100%; border-color: var(--accent-purple); }
         .smooth-transition { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
     </style>
 </head>
@@ -29,18 +35,18 @@
 
     <div class="bg-white w-full max-w-5xl h-full md:h-[85vh] md:rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col md:flex-row animate__animated animate__fadeInUp">
         
-        <div class="hidden md:flex md:w-1/2 bg-[#1A2238] relative items-center justify-center p-12 overflow-hidden group">
+        <div class="hidden md:flex md:w-1/2 bg-[#2D1B4B] relative items-center justify-center p-12 overflow-hidden group">
             <div class="absolute inset-0 bg-pattern"></div>
-            <div class="absolute -top-20 -left-20 w-80 h-80 bg-[#C0A062] rounded-full mix-blend-overlay filter blur-[80px] opacity-20 animate-pulse"></div>
+            <div class="absolute -top-20 -left-20 w-80 h-80 bg-[#A855F7] rounded-full mix-blend-overlay filter blur-[80px] opacity-20 animate-pulse"></div>
             
             <div class="relative z-10 text-center text-white">
                 <div class="mb-8 transform group-hover:scale-105 transition-transform duration-700">
-                    <div class="w-32 h-32 rounded-full bg-white flex items-center justify-center mx-auto shadow-xl p-2">
-                        <img src="{% static 'img/logo.png' %}" alt="Logo Corpad" class="w-full h-full object-contain">
+                    <div class="w-32 h-32 rounded-full bg-white flex items-center justify-center mx-auto shadow-xl p-1 overflow-hidden">
+                        <img src="{% static 'img/logo.png' %}" alt="Logo Corpad" class="w-full h-full object-cover rounded-full">
                     </div>
                 </div>
-                <h2 class="text-3xl font-black font-serif mb-2 tracking-wide">GESTIONES CORPAD <br><span class="text-[#C0A062] text-2xl">S.A.S.</span></h2>
-                <div class="w-16 h-1 bg-[#C0A062] mx-auto rounded-full my-6"></div>
+                <h2 class="text-3xl font-black font-serif mb-2 tracking-wide">GESTIONES CORPAD <br><span class="text-[#A855F7] text-2xl">S.A.S.</span></h2>
+                <div class="w-16 h-1 bg-[#A855F7] mx-auto rounded-full my-6"></div>
                 <p class="text-gray-300 text-sm font-light tracking-widest uppercase">
                     Servicios Profesionales
                 </p>
@@ -50,13 +56,13 @@
         <div class="w-full md:w-1/2 bg-white p-8 md:p-16 flex flex-col justify-center relative">
             
             <div class="md:hidden text-center mb-8">
-                <img src="{% static 'img/logo.png' %}" alt="Logo" class="h-16 mx-auto mb-2">
-                <h1 class="text-xl font-black text-[#1A2238] font-serif">GESTIONES CORPAD</h1>
+                <img src="{% static 'img/logo.png' %}" alt="Logo" class="h-16 w-16 mx-auto mb-2 rounded-full object-cover shadow-md">
+                <h1 class="text-xl font-black text-[#2D1B4B] font-serif">GESTIONES CORPAD</h1>
             </div>
 
             <div class="max-w-sm mx-auto w-full">
                 <div class="mb-10">
-                    <h3 class="text-2xl font-black text-[#1A2238] mb-2 font-serif">Bienvenido</h3>
+                    <h3 class="text-2xl font-black text-[#2D1B4B] mb-2 font-serif">Bienvenido</h3>
                     <p class="text-gray-400 text-sm">Ingresa tus credenciales para acceder.</p>
                 </div>
 
@@ -73,27 +79,27 @@
                         <label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 block">Usuario</label>
                         <div class="relative flex items-center">
                             <i class="fas fa-user text-gray-300 absolute left-0 text-lg smooth-transition"></i>
-                            <input type="text" name="username" class="w-full pl-8 pr-4 py-3 bg-transparent border-b border-gray-200 text-[#1A2238] font-bold focus:outline-none placeholder-gray-300 smooth-transition" placeholder="Tu usuario" required>
+                            <input type="text" name="username" class="w-full pl-8 pr-4 py-3 bg-transparent border-b border-gray-200 text-[#2D1B4B] font-bold focus:outline-none placeholder-gray-300 smooth-transition" placeholder="Tu usuario" required>
                         </div>
-                        <div class="absolute bottom-0 left-0 h-[2px] w-0 bg-[#C0A062] smooth-transition group-focus-within:w-full"></div>
+                        <div class="absolute bottom-0 left-0 h-[2px] w-0 bg-[#A855F7] smooth-transition group-focus-within:w-full"></div>
                     </div>
 
                     <div class="input-group relative group">
                         <label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 block">Contraseña</label>
                         <div class="relative flex items-center">
                             <i class="fas fa-lock text-gray-300 absolute left-0 text-lg smooth-transition"></i>
-                            <input type="password" name="password" class="w-full pl-8 pr-4 py-3 bg-transparent border-b border-gray-200 text-[#1A2238] font-bold focus:outline-none placeholder-gray-300 smooth-transition" placeholder="••••••••" required>
+                            <input type="password" name="password" class="w-full pl-8 pr-4 py-3 bg-transparent border-b border-gray-200 text-[#2D1B4B] font-bold focus:outline-none placeholder-gray-300 smooth-transition" placeholder="••••••••" required>
                         </div>
-                        <div class="absolute bottom-0 left-0 h-[2px] w-0 bg-[#C0A062] smooth-transition group-focus-within:w-full"></div>
+                        <div class="absolute bottom-0 left-0 h-[2px] w-0 bg-[#A855F7] smooth-transition group-focus-within:w-full"></div>
                     </div>
 
-                    <button type="submit" class="w-full bg-[#1A2238] text-white py-4 rounded-xl font-black text-xs tracking-[0.2em] uppercase shadow-lg hover:bg-[#C0A062] hover:text-[#1A2238] transition-all duration-300 group">
+                    <button type="submit" class="w-full bg-[#2D1B4B] text-white py-4 rounded-xl font-black text-xs tracking-[0.2em] uppercase shadow-lg hover:bg-[#A855F7] hover:text-white transition-all duration-300 group">
                         Ingresar <i class="fas fa-arrow-right ml-2 opacity-0 group-hover:opacity-100 transition-all"></i>
                     </button>
                 </form>
 
                 <div class="mt-10 text-center">
-                     <a href="{% url 'registro' %}" class="text-xs font-bold text-gray-400 hover:text-[#1A2238]">Solicitar acceso administrativo</a>
+                     <a href="{% url 'registro' %}" class="text-xs font-bold text-gray-400 hover:text-[#2D1B4B]">Solicitar acceso administrativo</a>
                 </div>
             </div>
 
