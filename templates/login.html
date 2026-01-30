@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Iniciar Sesión | AppLegal Cloud</title>
+    <title>Acceso | GESTIONES CORPAD S.A.S.</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
@@ -14,24 +14,14 @@
         body { font-family: 'Lato', sans-serif; }
         .font-serif { font-family: 'Playfair Display', serif; }
         
-        /* Animación de fondo suave */
         .bg-pattern {
             background-image: radial-gradient(#C0A062 1px, transparent 1px);
             background-size: 40px 40px;
             opacity: 0.05;
         }
 
-        /* Estilo personalizado para inputs */
-        .input-group:focus-within i {
-            color: #C0A062;
-            transform: scale(1.1);
-        }
-        .input-group:focus-within div.border-b-2 {
-            width: 100%;
-            border-color: #C0A062;
-        }
-        
-        /* Transiciones suaves */
+        .input-group:focus-within i { color: #C0A062; transform: scale(1.1); }
+        .input-group:focus-within div.border-b-2 { width: 100%; border-color: #C0A062; }
         .smooth-transition { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
     </style>
 </head>
@@ -42,19 +32,17 @@
         <div class="hidden md:flex md:w-1/2 bg-[#1A2238] relative items-center justify-center p-12 overflow-hidden group">
             <div class="absolute inset-0 bg-pattern"></div>
             <div class="absolute -top-20 -left-20 w-80 h-80 bg-[#C0A062] rounded-full mix-blend-overlay filter blur-[80px] opacity-20 animate-pulse"></div>
-            <div class="absolute -bottom-20 -right-20 w-80 h-80 bg-blue-500 rounded-full mix-blend-overlay filter blur-[80px] opacity-20 animation-delay-2000"></div>
             
             <div class="relative z-10 text-center text-white">
                 <div class="mb-8 transform group-hover:scale-105 transition-transform duration-700">
-                    <div class="w-24 h-24 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center mx-auto border border-white/20 shadow-xl">
-                        <i class="fas fa-balance-scale text-5xl text-[#C0A062]"></i>
+                    <div class="w-32 h-32 rounded-full bg-white flex items-center justify-center mx-auto shadow-xl p-2">
+                        <img src="{% static 'img/logo.png' %}" alt="Logo Corpad" class="w-full h-full object-contain">
                     </div>
                 </div>
-                <h2 class="text-4xl font-black font-serif mb-4 tracking-wide">AppLegal <span class="text-[#C0A062]">Cloud</span></h2>
-                <p class="text-gray-300 text-sm font-light tracking-widest uppercase mb-8">Gestión Jurídica Inteligente</p>
-                <div class="w-16 h-1 bg-[#C0A062] mx-auto rounded-full"></div>
-                <p class="mt-8 text-gray-400 text-xs italic opacity-0 group-hover:opacity-100 transition-opacity duration-700">
-                    "La justicia es la constante y perpetua voluntad de dar a cada uno su derecho."
+                <h2 class="text-3xl font-black font-serif mb-2 tracking-wide">GESTIONES CORPAD <br><span class="text-[#C0A062] text-2xl">S.A.S.</span></h2>
+                <div class="w-16 h-1 bg-[#C0A062] mx-auto rounded-full my-6"></div>
+                <p class="text-gray-300 text-sm font-light tracking-widest uppercase">
+                    Servicios Profesionales
                 </p>
             </div>
         </div>
@@ -62,25 +50,19 @@
         <div class="w-full md:w-1/2 bg-white p-8 md:p-16 flex flex-col justify-center relative">
             
             <div class="md:hidden text-center mb-8">
-                <i class="fas fa-balance-scale text-4xl text-[#C0A062]"></i>
-                <h1 class="text-2xl font-black text-[#1A2238] font-serif mt-2">AppLegal Cloud</h1>
+                <img src="{% static 'img/logo.png' %}" alt="Logo" class="h-16 mx-auto mb-2">
+                <h1 class="text-xl font-black text-[#1A2238] font-serif">GESTIONES CORPAD</h1>
             </div>
 
             <div class="max-w-sm mx-auto w-full">
                 <div class="mb-10">
-                    <h3 class="text-2xl font-black text-[#1A2238] mb-2 font-serif">Bienvenido de nuevo</h3>
-                    <p class="text-gray-400 text-sm">Ingresa tus credenciales para acceder al panel.</p>
+                    <h3 class="text-2xl font-black text-[#1A2238] mb-2 font-serif">Bienvenido</h3>
+                    <p class="text-gray-400 text-sm">Ingresa tus credenciales para acceder.</p>
                 </div>
 
                 {% if form.errors %}
                 <div class="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg shadow-sm animate__animated animate__shakeX">
-                    <div class="flex items-center gap-3">
-                        <i class="fas fa-exclamation-circle text-red-500"></i>
-                        <div>
-                            <p class="font-bold text-red-700 text-sm">Error de acceso</p>
-                            <p class="text-red-600 text-xs">Usuario o contraseña incorrectos.</p>
-                        </div>
-                    </div>
+                    <p class="font-bold text-red-700 text-sm">Credenciales incorrectas</p>
                 </div>
                 {% endif %}
 
@@ -91,7 +73,7 @@
                         <label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 block">Usuario</label>
                         <div class="relative flex items-center">
                             <i class="fas fa-user text-gray-300 absolute left-0 text-lg smooth-transition"></i>
-                            <input type="text" name="username" class="w-full pl-8 pr-4 py-3 bg-transparent border-b border-gray-200 text-[#1A2238] font-bold focus:outline-none placeholder-gray-300 smooth-transition" placeholder="Ingresa tu usuario" required>
+                            <input type="text" name="username" class="w-full pl-8 pr-4 py-3 bg-transparent border-b border-gray-200 text-[#1A2238] font-bold focus:outline-none placeholder-gray-300 smooth-transition" placeholder="Tu usuario" required>
                         </div>
                         <div class="absolute bottom-0 left-0 h-[2px] w-0 bg-[#C0A062] smooth-transition group-focus-within:w-full"></div>
                     </div>
@@ -103,29 +85,22 @@
                             <input type="password" name="password" class="w-full pl-8 pr-4 py-3 bg-transparent border-b border-gray-200 text-[#1A2238] font-bold focus:outline-none placeholder-gray-300 smooth-transition" placeholder="••••••••" required>
                         </div>
                         <div class="absolute bottom-0 left-0 h-[2px] w-0 bg-[#C0A062] smooth-transition group-focus-within:w-full"></div>
-                        <div class="text-right mt-2">
-                            <a href="{% url 'password_reset' %}" class="text-xs text-gray-400 hover:text-[#C0A062] font-semibold transition-colors">¿Olvidaste tu contraseña?</a>
-                        </div>
                     </div>
 
-                    <button type="submit" class="w-full bg-[#1A2238] text-white py-4 rounded-xl font-black text-xs tracking-[0.2em] uppercase shadow-lg hover:bg-[#C0A062] hover:text-[#1A2238] hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 group">
-                        Ingresar al Sistema <i class="fas fa-arrow-right ml-2 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all"></i>
+                    <button type="submit" class="w-full bg-[#1A2238] text-white py-4 rounded-xl font-black text-xs tracking-[0.2em] uppercase shadow-lg hover:bg-[#C0A062] hover:text-[#1A2238] transition-all duration-300 group">
+                        Ingresar <i class="fas fa-arrow-right ml-2 opacity-0 group-hover:opacity-100 transition-all"></i>
                     </button>
                 </form>
 
                 <div class="mt-10 text-center">
-                    <p class="text-xs text-gray-400">¿No tienes una cuenta?</p>
-                    <a href="{% url 'registro' %}" class="inline-block mt-2 text-sm font-black text-[#1A2238] border-b-2 border-transparent hover:border-[#C0A062] transition-all">
-                        Solicitar Acceso
-                    </a>
+                     <a href="{% url 'registro' %}" class="text-xs font-bold text-gray-400 hover:text-[#1A2238]">Solicitar acceso administrativo</a>
                 </div>
             </div>
 
             <div class="absolute bottom-6 left-0 right-0 text-center">
-                <p class="text-[10px] text-gray-300 font-bold uppercase tracking-widest">© {% now "Y" %} AppLegal Cloud</p>
+                <p class="text-[10px] text-gray-300 font-bold uppercase tracking-widest">© {% now "Y" %} GESTIONES CORPAD S.A.S.</p>
             </div>
         </div>
     </div>
-
 </body>
 </html>
