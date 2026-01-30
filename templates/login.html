@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Acceso | GESTIONES CORPAD</title>
+    <title>Acceso | GESTIONES CORPAD S.A.S.</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
@@ -91,6 +91,10 @@
                             <input type="password" name="password" class="w-full pl-8 pr-4 py-3 bg-transparent border-b border-gray-200 text-[#2D1B4B] font-bold focus:outline-none placeholder-gray-300 smooth-transition" placeholder="••••••••" required>
                         </div>
                         <div class="absolute bottom-0 left-0 h-[2px] w-0 bg-[#A855F7] smooth-transition group-focus-within:w-full"></div>
+                        
+                        <div class="text-right mt-2">
+                            <a href="{% url 'password_reset' %}" class="text-xs text-gray-400 hover:text-[#A855F7] font-semibold transition-colors">¿Olvidaste tu contraseña?</a>
+                        </div>
                     </div>
 
                     <button type="submit" class="w-full bg-[#2D1B4B] text-white py-4 rounded-xl font-black text-xs tracking-[0.2em] uppercase shadow-lg hover:bg-[#A855F7] hover:text-white transition-all duration-300 group">
