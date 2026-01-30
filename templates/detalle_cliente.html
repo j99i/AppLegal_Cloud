@@ -12,12 +12,12 @@
                 {% endif %}
             </div>
             <div>
-                <h2 class="text-2xl font-black text-[#1A2238] leading-none">{{ cliente.nombre_empresa }}</h2>
+                <h2 class="text-2xl font-black text-[#2D1B4B] leading-none">{{ cliente.nombre_empresa }}</h2>
                 <p class="text-xs text-gray-400 mt-1">{{ cliente.nombre_contacto }} | {{ cliente.telefono }}</p>
                 
                 {% if not carpeta_actual %}
                     {% if user.can_edit_client or user.rol == 'admin' %}
-                    <a href="{% url 'editar_cliente' cliente.id %}" class="inline-flex items-center gap-1 text-[10px] font-bold text-[#C0A062] hover:underline mt-1 bg-amber-50 px-2 py-1 rounded-md">
+                    <a href="{% url 'editar_cliente' cliente.id %}" class="inline-flex items-center gap-1 text-[10px] font-bold text-[#A855F7] hover:underline mt-1 bg-purple-50 px-2 py-1 rounded-md">
                         <i class="fas fa-pen"></i> Editar Información
                     </a>
                     {% endif %}
@@ -25,15 +25,15 @@
             </div>
         </div>
         <div class="flex gap-4 text-right">
-            <div><p class="text-[10px] font-bold text-gray-400 uppercase">Archivos</p><p class="text-xl font-black text-[#1A2238]">{{ stats_cliente.total_docs }}</p></div>
-            <div><p class="text-[10px] font-bold text-gray-400 uppercase">Casos</p><p class="text-xl font-black text-[#1A2238]">{{ stats_cliente.expedientes_activos }}</p></div>
+            <div><p class="text-[10px] font-bold text-gray-400 uppercase">Archivos</p><p class="text-xl font-black text-[#2D1B4B]">{{ stats_cliente.total_docs }}</p></div>
+            <div><p class="text-[10px] font-bold text-gray-400 uppercase">Casos</p><p class="text-xl font-black text-[#2D1B4B]">{{ stats_cliente.expedientes_activos }}</p></div>
         </div>
     </div>
 
     <div class="mb-6 border-b border-gray-200">
         <ul class="flex flex-wrap -mb-px text-sm font-medium text-center">
             <li class="mr-2">
-                <button class="inline-block p-4 border-b-2 rounded-t-lg border-[#1A2238] text-[#1A2238] font-bold" id="drive-tab" onclick="switchTab('drive')">
+                <button class="inline-block p-4 border-b-2 rounded-t-lg border-[#A855F7] text-[#2D1B4B] font-bold" id="drive-tab" onclick="switchTab('drive')">
                     <i class="fas fa-folder-open mr-2"></i> Expediente
                 </button>
             </li>
@@ -54,16 +54,16 @@
         <div class="flex justify-between items-center mb-4">
             <nav class="flex text-sm font-bold text-gray-400">
                 {% if carpeta_actual %}
-                <a href="{% url 'detalle_cliente' cliente.id %}" class="hover:text-[#1A2238]"><i class="fas fa-home"></i></a>
+                <a href="{% url 'detalle_cliente' cliente.id %}" class="hover:text-[#2D1B4B]"><i class="fas fa-home"></i></a>
                 {% for crumb in breadcrumbs %}
-                <span class="mx-2">/</span> <a href="{% url 'detalle_carpeta' cliente.id crumb.id %}" class="hover:text-[#1A2238]">{{ crumb.nombre }}</a>
+                <span class="mx-2">/</span> <a href="{% url 'detalle_carpeta' cliente.id crumb.id %}" class="hover:text-[#2D1B4B]">{{ crumb.nombre }}</a>
                 {% endfor %}
-                <span class="mx-2">/</span> <span class="text-[#1A2238]">{{ carpeta_actual.nombre }}</span>
-                {% else %} <span class="text-[#1A2238]">Carpeta Raíz</span> {% endif %}
+                <span class="mx-2">/</span> <span class="text-[#2D1B4B]">{{ carpeta_actual.nombre }}</span>
+                {% else %} <span class="text-[#2D1B4B]">Carpeta Raíz</span> {% endif %}
             </nav>
             <div class="flex gap-2">
                 {% if user.access_contratos or user.rol == 'admin' %}
-                <a href="{% url 'generador_contratos' cliente.id %}" class="bg-[#C0A062] text-white px-4 py-2 rounded-xl font-bold text-xs hover:bg-[#a3864d] shadow-md flex items-center gap-2">
+                <a href="{% url 'generador_contratos' cliente.id %}" class="bg-[#A855F7] text-white px-4 py-2 rounded-xl font-bold text-xs hover:bg-[#9333EA] shadow-md flex items-center gap-2">
                     <i class="fas fa-file-signature"></i> CONTRATO
                 </a>
                 {% endif %}
@@ -74,7 +74,7 @@
                 <button onclick="modalCrearCarpeta()" class="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-xl font-bold text-xs hover:bg-gray-50"><i class="fas fa-folder-plus"></i></button>
                 {% endif %}
                 {% if user.can_upload_files or user.rol == 'admin' %}
-                <button onclick="modalSubirArchivo()" class="bg-[#1A2238] text-white px-4 py-2 rounded-xl font-bold text-xs hover:bg-[#2C3E50] shadow-lg"><i class="fas fa-cloud-upload-alt"></i> SUBIR</button>
+                <button onclick="modalSubirArchivo()" class="bg-[#2D1B4B] text-white px-4 py-2 rounded-xl font-bold text-xs hover:bg-[#1E1233] shadow-lg"><i class="fas fa-cloud-upload-alt"></i> SUBIR</button>
                 {% endif %}
             </div>
         </div>
@@ -84,9 +84,9 @@
             <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-8">
                 {% for carpeta in carpetas %}
                 <div class="group relative">
-                    <a href="{% url 'detalle_carpeta' cliente.id carpeta.id %}" class="block bg-blue-50 p-4 rounded-xl text-center hover:bg-blue-100 transition-all">
-                        <i class="fas fa-folder text-4xl text-blue-300 group-hover:text-blue-500 mb-2"></i>
-                        <p class="text-xs font-bold text-[#1A2238] truncate">{{ carpeta.nombre }}</p>
+                    <a href="{% url 'detalle_carpeta' cliente.id carpeta.id %}" class="block bg-purple-50 p-4 rounded-xl text-center hover:bg-purple-100 transition-all">
+                        <i class="fas fa-folder text-4xl text-purple-300 group-hover:text-purple-500 mb-2"></i>
+                        <p class="text-xs font-bold text-[#2D1B4B] truncate">{{ carpeta.nombre }}</p>
                     </a>
                     {% if user.can_delete_client or user.rol == 'admin' %}
                     <a href="{% url 'eliminar_carpeta' carpeta.id %}" onclick="return confirm('¿Borrar?')" class="absolute top-1 right-1 text-red-300 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100"><i class="fas fa-times-circle"></i></a>
@@ -103,7 +103,7 @@
                 <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="text-xs text-gray-400 border-b border-gray-100">
-                            <th class="py-2 pl-2 w-10"><input type="checkbox" onclick="toggleTodos(this)" class="rounded text-[#1A2238]"></th>
+                            <th class="py-2 pl-2 w-10"><input type="checkbox" onclick="toggleTodos(this)" class="rounded text-[#2D1B4B] accent-[#A855F7]"></th>
                             <th class="py-2 font-bold uppercase w-1/2">Nombre</th>
                             <th class="py-2 font-bold uppercase">Fecha</th>
                             <th class="py-2 font-bold uppercase text-right">Acciones</th>
@@ -112,15 +112,15 @@
                     <tbody class="text-sm">
                         {% for doc in documentos %}
                         <tr class="border-b border-gray-50 hover:bg-gray-50 group">
-                            <td class="py-3 pl-2"><input type="checkbox" name="doc_ids" value="{{ doc.id }}" class="doc-check rounded text-[#1A2238]" onchange="verificarSeleccion()"></td>
+                            <td class="py-3 pl-2"><input type="checkbox" name="doc_ids" value="{{ doc.id }}" class="doc-check rounded text-[#2D1B4B] accent-[#A855F7]" onchange="verificarSeleccion()"></td>
                             <td class="py-3 flex items-center gap-3">
                                 <i class="fas fa-file text-gray-400"></i>
-                                <span class="font-bold text-[#1A2238] truncate max-w-xs cursor-pointer hover:underline" onclick="abrirPreview('{{ doc.id }}')">{{ doc.nombre_archivo }}</span>
+                                <span class="font-bold text-[#2D1B4B] truncate max-w-xs cursor-pointer hover:underline" onclick="abrirPreview('{{ doc.id }}')">{{ doc.nombre_archivo }}</span>
                             </td>
                             <td class="py-3 text-gray-500 text-xs">{{ doc.fecha_subida|date:"d/m/y" }}</td>
                             <td class="py-3 text-right">
-                                <button type="button" onclick="abrirPreview('{{ doc.id }}')" class="text-gray-400 hover:text-blue-500 mx-1"><i class="fas fa-eye"></i></button>
-                                <a href="{{ doc.archivo.url }}" download class="text-gray-400 hover:text-[#1A2238] mx-1"><i class="fas fa-download"></i></a>
+                                <button type="button" onclick="abrirPreview('{{ doc.id }}')" class="text-gray-400 hover:text-[#A855F7] mx-1"><i class="fas fa-eye"></i></button>
+                                <a href="{{ doc.archivo.url }}" download class="text-gray-400 hover:text-[#2D1B4B] mx-1"><i class="fas fa-download"></i></a>
                             </td>
                         </tr>
                         {% endfor %}
@@ -140,7 +140,7 @@
             
             <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
                 <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-lg font-bold text-[#1A2238]"><i class="fas fa-tasks mr-2 text-orange-500"></i> Tareas Pendientes</h3>
+                    <h3 class="text-lg font-bold text-[#2D1B4B]"><i class="fas fa-tasks mr-2 text-orange-500"></i> Tareas Pendientes</h3>
                     <button onclick="document.getElementById('modal-tarea').classList.remove('hidden')" class="text-xs bg-orange-100 text-orange-600 px-3 py-1 rounded-full font-bold hover:bg-orange-200">+ Nueva</button>
                 </div>
                 <div class="space-y-3">
@@ -150,7 +150,7 @@
                             <div class="flex items-center gap-3">
                                 <a href="{% url 'toggle_tarea' tarea.id %}" class="w-5 h-5 border-2 border-gray-300 rounded-full hover:border-green-500 hover:bg-green-50"></a>
                                 <div>
-                                    <p class="text-sm font-bold text-[#1A2238]">{{ tarea.titulo }}</p>
+                                    <p class="text-sm font-bold text-[#2D1B4B]">{{ tarea.titulo }}</p>
                                     <p class="text-[10px] text-red-500 font-bold">Vence: {{ tarea.fecha_limite|date:"d M Y" }}</p>
                                 </div>
                             </div>
@@ -164,16 +164,16 @@
             </div>
 
             <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
-                <h3 class="text-lg font-bold text-[#1A2238] mb-6"><i class="fas fa-calendar-alt mr-2 text-blue-500"></i> Eventos Próximos</h3>
+                <h3 class="text-lg font-bold text-[#2D1B4B] mb-6"><i class="fas fa-calendar-alt mr-2 text-blue-500"></i> Eventos Próximos</h3>
                 <div class="space-y-3">
                     {% for evento in cliente.eventos.all %}
                     <div class="flex items-center gap-4 p-3 border-l-4 border-blue-500 bg-blue-50/30 rounded-r-xl">
                         <div class="text-center">
                             <p class="text-xs font-bold text-gray-400 uppercase">{{ evento.inicio|date:"M" }}</p>
-                            <p class="text-xl font-black text-[#1A2238]">{{ evento.inicio|date:"d" }}</p>
+                            <p class="text-xl font-black text-[#2D1B4B]">{{ evento.inicio|date:"d" }}</p>
                         </div>
                         <div>
-                            <p class="text-sm font-bold text-[#1A2238]">{{ evento.titulo }}</p>
+                            <p class="text-sm font-bold text-[#2D1B4B]">{{ evento.titulo }}</p>
                             <p class="text-xs text-gray-500">{{ evento.inicio|date:"H:i" }} hrs - {{ evento.usuario.username }}</p>
                         </div>
                     </div>
@@ -188,14 +188,14 @@
 
     <div id="history-content" class="hidden animate__animated animate__fadeIn">
         <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
-            <h3 class="text-lg font-bold text-[#1A2238] mb-6 border-b pb-4"><i class="fas fa-list-alt mr-2"></i> Auditoría</h3>
+            <h3 class="text-lg font-bold text-[#2D1B4B] mb-6 border-b pb-4"><i class="fas fa-list-alt mr-2"></i> Auditoría</h3>
             <table class="w-full text-left border-collapse">
                 <thead><tr class="text-xs text-gray-400 border-b"><th class="py-2">Fecha</th><th>Usuario</th><th>Acción</th><th>Detalle</th></tr></thead>
                 <tbody class="text-sm">
                     {% for b in historial %}
                     <tr class="border-b hover:bg-gray-50">
                         <td class="py-3 font-bold text-gray-500 text-xs">{{ b.fecha|date:"d M, H:i" }}</td>
-                        <td class="py-3 font-bold text-[#1A2238] text-xs">{{ b.usuario.username }}</td>
+                        <td class="py-3 font-bold text-[#2D1B4B] text-xs">{{ b.usuario.username }}</td>
                         <td class="py-3"><span class="bg-gray-100 px-2 py-1 rounded text-[10px] font-bold">{{ b.accion|upper }}</span></td>
                         <td class="py-3 text-gray-600 text-xs">{{ b.descripcion }}</td>
                     </tr>
@@ -207,7 +207,7 @@
         </div>
     </div>
 
-    <div id="barra-masiva" class="hidden fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-[#1A2238] text-white px-6 py-3 rounded-full shadow-2xl items-center gap-6 z-40">
+    <div id="barra-masiva" class="hidden fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-[#2D1B4B] text-white px-6 py-3 rounded-full shadow-2xl items-center gap-6 z-40">
         <span class="font-bold text-sm"><span id="conteo-sel">0</span> seleccionados</span>
         <div class="flex gap-2">
             <button onclick="ejecutarMasivo('descargar')" class="bg-white/20 hover:bg-white/30 px-4 py-1 rounded-full text-xs font-bold">ZIP</button>
@@ -220,23 +220,25 @@
 
 </div>
 
-<div id="modal-preview" class="fixed inset-0 bg-black/90 hidden items-center justify-center z-50"><div class="bg-white w-full max-w-5xl h-[85vh] rounded-xl overflow-hidden relative flex flex-col shadow-2xl"><div class="bg-[#1A2238] p-4 flex justify-between items-center shrink-0"><h3 id="preview-title" class="text-white font-bold truncate">Vista Previa</h3><div class="flex gap-4"><a id="preview-download" href="#" download class="text-white hover:text-[#C0A062]"><i class="fas fa-download"></i></a><button onclick="cerrarPreview()" class="text-white hover:text-red-500"><i class="fas fa-times text-xl"></i></button></div></div><div id="preview-body" class="flex-1 bg-gray-100 overflow-auto flex items-center justify-center p-4"></div></div></div>
+<div id="modal-preview" class="fixed inset-0 bg-black/90 hidden items-center justify-center z-50"><div class="bg-white w-full max-w-5xl h-[85vh] rounded-xl overflow-hidden relative flex flex-col shadow-2xl"><div class="bg-[#2D1B4B] p-4 flex justify-between items-center shrink-0"><h3 id="preview-title" class="text-white font-bold truncate">Vista Previa</h3><div class="flex gap-4"><a id="preview-download" href="#" download class="text-white hover:text-[#A855F7]"><i class="fas fa-download"></i></a><button onclick="cerrarPreview()" class="text-white hover:text-red-500"><i class="fas fa-times text-xl"></i></button></div></div><div id="preview-body" class="flex-1 bg-gray-100 overflow-auto flex items-center justify-center p-4"></div></div></div>
 
-<div id="modal-carpeta" class="fixed inset-0 bg-[#1A2238]/90 hidden items-center justify-center z-50"><div class="bg-white p-8 rounded-[2rem] w-full max-w-sm m-4 shadow-2xl"><button onclick="document.getElementById('modal-carpeta').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400"><i class="fas fa-times"></i></button><h3 class="text-xl font-black text-[#1A2238] mb-4">Nueva Carpeta</h3><form action="{% url 'crear_carpeta' cliente.id %}" method="POST">{% csrf_token %}{% if carpeta_actual %}<input type="hidden" name="padre_id" value="{{ carpeta_actual.id }}">{% endif %}<input type="text" name="nombre" class="w-full p-3 bg-gray-50 rounded-xl font-bold border-none mb-4" placeholder="Nombre..." required><button type="submit" class="w-full bg-[#1A2238] text-white py-3 rounded-xl font-bold">CREAR</button></form></div></div>
+<div id="modal-carpeta" class="fixed inset-0 bg-[#2D1B4B]/90 hidden items-center justify-center z-50"><div class="bg-white p-8 rounded-[2rem] w-full max-w-sm m-4 shadow-2xl"><button onclick="document.getElementById('modal-carpeta').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400"><i class="fas fa-times"></i></button><h3 class="text-xl font-black text-[#2D1B4B] mb-4">Nueva Carpeta</h3><form action="{% url 'crear_carpeta' cliente.id %}" method="POST">{% csrf_token %}{% if carpeta_actual %}<input type="hidden" name="padre_id" value="{{ carpeta_actual.id }}">{% endif %}<input type="text" name="nombre" class="w-full p-3 bg-gray-50 rounded-xl font-bold border-none mb-4" placeholder="Nombre..." required><button type="submit" class="w-full bg-[#2D1B4B] text-white py-3 rounded-xl font-bold hover:bg-[#A855F7] transition-colors">CREAR</button></form></div></div>
 
-<div id="modal-archivo" class="fixed inset-0 bg-[#1A2238]/90 hidden items-center justify-center z-50"><div class="bg-white p-8 rounded-[2rem] w-full max-w-sm m-4 shadow-2xl"><button onclick="document.getElementById('modal-archivo').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400"><i class="fas fa-times"></i></button><h3 class="text-xl font-black text-[#1A2238] mb-4">Subir Archivos</h3><form action="{% url 'subir_archivo_drive' cliente.id %}" method="POST" enctype="multipart/form-data">{% csrf_token %}{% if carpeta_actual %}<input type="hidden" name="carpeta_id" value="{{ carpeta_actual.id }}">{% endif %}<input type="file" name="archivo" multiple class="w-full p-3 bg-gray-50 rounded-xl mb-4"><button type="submit" class="w-full bg-[#1A2238] text-white py-3 rounded-xl font-bold">SUBIR</button></form></div></div>
+<div id="modal-archivo" class="fixed inset-0 bg-[#2D1B4B]/90 hidden items-center justify-center z-50"><div class="bg-white p-8 rounded-[2rem] w-full max-w-sm m-4 shadow-2xl"><button onclick="document.getElementById('modal-archivo').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400"><i class="fas fa-times"></i></button><h3 class="text-xl font-black text-[#2D1B4B] mb-4">Subir Archivos</h3><form action="{% url 'subir_archivo_drive' cliente.id %}" method="POST" enctype="multipart/form-data">{% csrf_token %}{% if carpeta_actual %}<input type="hidden" name="carpeta_id" value="{{ carpeta_actual.id }}">{% endif %}<input type="file" name="archivo" multiple class="w-full p-3 bg-gray-50 rounded-xl mb-4"><button type="submit" class="w-full bg-[#2D1B4B] text-white py-3 rounded-xl font-bold hover:bg-[#A855F7] transition-colors">SUBIR</button></form></div></div>
 
-<div id="modal-tarea" class="fixed inset-0 bg-[#1A2238]/90 hidden items-center justify-center z-50"><div class="bg-white p-8 rounded-[2rem] w-full max-w-sm m-4 shadow-2xl"><button onclick="document.getElementById('modal-tarea').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400"><i class="fas fa-times"></i></button><h3 class="text-xl font-black text-[#1A2238] mb-4">Nueva Tarea</h3><form action="{% url 'gestionar_tarea' cliente.id %}" method="POST">{% csrf_token %}<input type="text" name="titulo" class="w-full p-3 bg-gray-50 rounded-xl font-bold border-none mb-4" placeholder="Título de la tarea" required><input type="date" name="fecha_limite" class="w-full p-3 bg-gray-50 rounded-xl font-bold border-none mb-4" required><select name="prioridad" class="w-full p-3 bg-gray-50 rounded-xl font-bold border-none mb-4"><option value="alta">Alta Prioridad</option><option value="media" selected>Media</option><option value="baja">Baja</option></select><button type="submit" class="w-full bg-[#1A2238] text-white py-3 rounded-xl font-bold">GUARDAR</button></form></div></div>
+<div id="modal-tarea" class="fixed inset-0 bg-[#2D1B4B]/90 hidden items-center justify-center z-50"><div class="bg-white p-8 rounded-[2rem] w-full max-w-sm m-4 shadow-2xl"><button onclick="document.getElementById('modal-tarea').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400"><i class="fas fa-times"></i></button><h3 class="text-xl font-black text-[#2D1B4B] mb-4">Nueva Tarea</h3><form action="{% url 'gestionar_tarea' cliente.id %}" method="POST">{% csrf_token %}<input type="text" name="titulo" class="w-full p-3 bg-gray-50 rounded-xl font-bold border-none mb-4" placeholder="Título de la tarea" required><input type="date" name="fecha_limite" class="w-full p-3 bg-gray-50 rounded-xl font-bold border-none mb-4" required><select name="prioridad" class="w-full p-3 bg-gray-50 rounded-xl font-bold border-none mb-4"><option value="alta">Alta Prioridad</option><option value="media" selected>Media</option><option value="baja">Baja</option></select><button type="submit" class="w-full bg-[#2D1B4B] text-white py-3 rounded-xl font-bold hover:bg-[#A855F7] transition-colors">GUARDAR</button></form></div></div>
 
 <script>
     function switchTab(id) {
         ['drive', 'rec', 'history'].forEach(t => {
             document.getElementById(t + '-content').classList.add('hidden');
-            document.getElementById(t + '-tab').classList.remove('border-[#1A2238]', 'text-[#1A2238]');
+            // Quitamos clases de color
+            document.getElementById(t + '-tab').classList.remove('border-[#A855F7]', 'text-[#2D1B4B]');
             document.getElementById(t + '-tab').classList.add('text-gray-400', 'border-transparent');
         });
         document.getElementById(id + '-content').classList.remove('hidden');
-        document.getElementById(id + '-tab').classList.add('border-[#1A2238]', 'text-[#1A2238]');
+        // Agregamos clases de color NUEVAS
+        document.getElementById(id + '-tab').classList.add('border-[#A855F7]', 'text-[#2D1B4B]');
         document.getElementById(id + '-tab').classList.remove('text-gray-400', 'border-transparent');
     }
     // Funciones Masivas y Preview (Mantener las previas)
@@ -252,14 +254,14 @@
     function abrirPreview(id) {
         const m=document.getElementById('modal-preview'), b=document.getElementById('preview-body');
         m.classList.remove('hidden'); m.classList.add('flex');
-        b.innerHTML = '<div class="animate-spin text-4xl text-[#1A2238]"><i class="fas fa-circle-notch"></i></div>';
+        b.innerHTML = '<div class="animate-spin text-4xl text-[#2D1B4B]"><i class="fas fa-circle-notch"></i></div>';
         fetch(`/drive/preview/${id}/`).then(r=>r.json()).then(d=>{
             document.getElementById('preview-title').innerText=d.nombre;
             document.getElementById('preview-download').href=d.url;
             if(d.tipo==='imagen') b.innerHTML=`<img src="${d.url}" class="max-w-full max-h-full object-contain">`;
             else if(d.tipo==='pdf') b.innerHTML=`<iframe src="${d.url}" class="w-full h-full border-none bg-white"></iframe>`;
             else if(d.tipo==='docx') b.innerHTML=`<div class="bg-white w-full h-full p-10 overflow-auto prose">${d.html}</div>`;
-            else b.innerHTML=`<div class="text-center mt-10"><p>No disponible</p><a href="${d.url}" class="bg-[#1A2238] text-white px-4 py-2 rounded">Descargar</a></div>`;
+            else b.innerHTML=`<div class="text-center mt-10"><p>No disponible</p><a href="${d.url}" class="bg-[#2D1B4B] text-white px-4 py-2 rounded">Descargar</a></div>`;
         });
     }
     function cerrarPreview() { document.getElementById('modal-preview').classList.add('hidden'); }

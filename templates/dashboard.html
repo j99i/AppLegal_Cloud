@@ -6,30 +6,30 @@
 
     <div class="flex justify-between items-center mb-8">
         <div>
-            <h1 class="text-3xl font-black text-[#1A2238] mb-1">Hola, {{ user.first_name|default:user.username }} 👋</h1>
+            <h1 class="text-3xl font-black text-[#2D1B4B] mb-1">Hola, {{ user.first_name|default:user.username }} 👋</h1>
             <p class="text-gray-500 font-medium">Estado general de la firma.</p>
         </div>
         <div class="bg-white px-6 py-2 rounded-xl shadow-sm border border-gray-100 text-center hidden md:block">
             <p class="text-xs font-bold text-gray-400 uppercase">HOY ES</p>
-            <p class="text-lg font-black text-[#1A2238]">{{ now|date:"d M Y" }}</p>
+            <p class="text-lg font-black text-[#2D1B4B]">{{ now|date:"d M Y" }}</p>
         </div>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
         <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex items-center justify-between group hover:-translate-y-1 transition-transform">
-            <div><p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Mis Clientes</p><p class="text-3xl font-black text-[#1A2238]">{{ stats.total_clientes }}</p></div>
-            <div class="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors"><i class="fas fa-briefcase text-lg"></i></div>
+            <div><p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Mis Clientes</p><p class="text-3xl font-black text-[#2D1B4B]">{{ stats.total_clientes }}</p></div>
+            <div class="w-12 h-12 rounded-full bg-purple-50 flex items-center justify-center text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-colors"><i class="fas fa-briefcase text-lg"></i></div>
         </div>
         <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex items-center justify-between group hover:-translate-y-1 transition-transform">
-            <div><p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Expedientes</p><p class="text-3xl font-black text-[#1A2238]">{{ stats.expedientes_activos }}</p></div>
-            <div class="w-12 h-12 rounded-full bg-purple-50 flex items-center justify-center text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-colors"><i class="fas fa-folder-open text-lg"></i></div>
+            <div><p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Expedientes</p><p class="text-3xl font-black text-[#2D1B4B]">{{ stats.expedientes_activos }}</p></div>
+            <div class="w-12 h-12 rounded-full bg-fuchsia-50 flex items-center justify-center text-fuchsia-600 group-hover:bg-fuchsia-600 group-hover:text-white transition-colors"><i class="fas fa-folder-open text-lg"></i></div>
         </div>
         <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex items-center justify-between group hover:-translate-y-1 transition-transform">
-            <div><p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Pendientes</p><p class="text-3xl font-black text-[#1A2238]">{{ stats.tareas_pendientes }}</p></div>
+            <div><p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Pendientes</p><p class="text-3xl font-black text-[#2D1B4B]">{{ stats.tareas_pendientes }}</p></div>
             <div class="w-12 h-12 rounded-full bg-orange-50 flex items-center justify-center text-orange-600 group-hover:bg-orange-600 group-hover:text-white transition-colors"><i class="fas fa-tasks text-lg"></i></div>
         </div>
         <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex items-center justify-between group hover:-translate-y-1 transition-transform">
-            <div><p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Documentos</p><p class="text-3xl font-black text-[#1A2238]">{{ stats.docs_subidos }}</p></div>
+            <div><p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Documentos</p><p class="text-3xl font-black text-[#2D1B4B]">{{ stats.docs_subidos }}</p></div>
             <div class="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center text-green-600 group-hover:bg-green-600 group-hover:text-white transition-colors"><i class="fas fa-cloud text-lg"></i></div>
         </div>
     </div>
@@ -41,13 +41,13 @@
             <i class="fas fa-user-shield"></i> {{ usuarios_pendientes_conteo }} USUARIOS PENDIENTES
         </a>
         {% endif %}
-        <a href="{% url 'nuevo_cliente' %}" class="bg-[#1A2238] text-white px-6 py-3 rounded-xl font-bold text-xs shadow-lg hover:bg-[#2C3E50] transition-all flex items-center gap-2 whitespace-nowrap">
+        <a href="{% url 'nuevo_cliente' %}" class="bg-[#2D1B4B] text-white px-6 py-3 rounded-xl font-bold text-xs shadow-lg hover:bg-[#A855F7] transition-all flex items-center gap-2 whitespace-nowrap">
             <i class="fas fa-plus"></i> NUEVO CLIENTE
         </a>
     </div>
     {% endif %}
 
-    <h3 class="text-xl font-black text-[#1A2238] mb-6 font-serif">Portafolio de Clientes</h3>
+    <h3 class="text-xl font-black text-[#2D1B4B] mb-6 font-serif">Portafolio de Clientes</h3>
     
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {% for cliente in clientes %}
@@ -67,14 +67,14 @@
                     {% endif %}
                 </div>
                 <div>
-                    <h4 class="text-lg font-black text-[#1A2238] leading-tight">{{ cliente.nombre_empresa }}</h4>
+                    <h4 class="text-lg font-black text-[#2D1B4B] leading-tight">{{ cliente.nombre_empresa }}</h4>
                     <p class="text-xs text-gray-400 mt-1">{{ cliente.nombre_contacto }}</p>
                 </div>
             </div>
 
             <div class="flex justify-between items-center border-t border-gray-50 pt-4">
                 <span class="text-[10px] font-bold text-gray-400 uppercase">{{ cliente.num_expedientes }} Expedientes</span>
-                <a href="{% url 'detalle_cliente' cliente.id %}" class="text-[#C0A062] font-bold text-xs hover:underline flex items-center gap-1">
+                <a href="{% url 'detalle_cliente' cliente.id %}" class="text-[#A855F7] font-bold text-xs hover:underline flex items-center gap-1">
                     VER DETALLES <i class="fas fa-arrow-right"></i>
                 </a>
             </div>
