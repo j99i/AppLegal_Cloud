@@ -162,7 +162,7 @@ ANYMAIL = {
 }
 
 # CONFIGURACIÓN DEL REMITENTE
-DEFAULT_FROM_EMAIL = "AppLegal <onboarding@resend.dev>" 
+DEFAULT_FROM_EMAIL = "GESTIONES CORPAD <onboarding@resend.dev>" 
 SERVER_EMAIL = "onboarding@resend.dev" 
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
