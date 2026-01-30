@@ -23,17 +23,16 @@
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--accent-purple); border-radius: 10px; }
         
-        /* --- CORRECCIÓN LOGO SIDEBAR --- */
-        #sidebar { width: 4.5rem; transition: width 0.3s ease; overflow: hidden; }
-        #sidebar:hover { width: 16rem; }
+        /* --- SIDEBAR --- */
+        #sidebar { width: 4.5rem; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden; }
+        #sidebar:hover { width: 17rem; } /* Un poco más ancho para que CORPAD quepa bien */
         
-        /* Por defecto mostramos el colapsado y ocultamos el expandido */
-        .logo-collapsed { display: block; }
-        .logo-expanded { display: none; }
+        /* Lógica de visualización del Logo */
+        .logo-collapsed { display: flex; }
+        .logo-expanded { display: none; opacity: 0; }
 
-        /* Al hacer hover, invertimos la visibilidad */
         #sidebar:hover .logo-collapsed { display: none; }
-        #sidebar:hover .logo-expanded { display: flex; } /* Se fuerza flex para alinearlo */
+        #sidebar:hover .logo-expanded { display: flex; opacity: 1; transition: opacity 0.3s ease-in; }
 
         .nav-text { opacity: 0; transform: translateX(-10px); transition: all 0.3s ease; white-space: nowrap; pointer-events: none; }
         #sidebar:hover .nav-text { opacity: 1; transform: translateX(0); pointer-events: auto; transition-delay: 0.1s; }
@@ -46,18 +45,19 @@
 
     <aside id="sidebar" class="fixed inset-y-0 left-0 sidebar-gradient text-white shadow-2xl z-50 flex flex-col group border-r border-white/5">
         
-        <div class="h-20 flex items-center justify-center border-b border-white/10 shrink-0 bg-sidebar-header">
-            <div class="w-full px-2 flex items-center justify-center overflow-hidden relative">
+        <div class="h-24 flex items-center justify-center border-b border-white/10 shrink-0 bg-sidebar-header relative">
+            <div class="w-full h-full flex items-center justify-center px-2">
                 
-                <div class="logo-collapsed">
-                    <img src="{% static 'img/logo.png' %}" class="w-8 h-8 object-cover bg-white rounded-full p-0.5 shadow-lg" alt="Logo">
+                <div class="logo-collapsed justify-center items-center w-full">
+                    <img src="{% static 'img/logo.png' %}" class="w-10 h-10 object-cover bg-white rounded-full p-0.5 shadow-lg" alt="Logo">
                 </div>
 
-                <div class="logo-expanded items-center gap-3 absolute left-4 w-full">
-                    <img src="{% static 'img/logo.png' %}" class="w-10 h-10 object-cover bg-white rounded-full p-0.5 shadow-md shrink-0" alt="Logo">
-                    <div class="flex flex-col overflow-hidden">
-                        <span class="text-xs font-black tracking-widest text-[#A855F7] brand-font whitespace-nowrap leading-tight">GESTIONES</span>
-                        <span class="text-[9px] font-bold text-white tracking-[0.2em] whitespace-nowrap">CORPAD S.A.S.</span>
+                <div class="logo-expanded items-center gap-4 absolute left-6 w-full pr-4">
+                    <img src="{% static 'img/logo.png' %}" class="w-12 h-12 object-cover bg-white rounded-full p-0.5 shadow-xl shrink-0" alt="Logo">
+                    
+                    <div class="flex flex-col justify-center">
+                        <span class="text-[9px] font-bold text-[#A855F7] tracking-[0.2em] uppercase leading-tight">GESTIONES</span>
+                        <span class="text-xl font-black text-white brand-font tracking-wide leading-none mt-0.5">CORPAD</span>
                     </div>
                 </div>
 
@@ -66,14 +66,14 @@
 
         <nav class="flex-1 overflow-y-auto custom-scrollbar py-6 space-y-1">
             
-            <a href="{% url 'dashboard' %}" class="flex items-center px-5 py-3.5 hover:bg-white/10 transition-colors relative group/item {% if request.path == '/' %}text-[#A855F7] bg-white/5{% else %}text-gray-400{% endif %}">
+            <a href="{% url 'dashboard' %}" class="flex items-center px-6 py-3.5 hover:bg-white/10 transition-colors relative group/item {% if request.path == '/' %}text-[#A855F7] bg-white/5{% else %}text-gray-400{% endif %}">
                 <i class="fas fa-th-large text-lg w-6 text-center shrink-0 group-hover/item:text-[#A855F7] transition-colors"></i>
                 <span class="nav-text ml-4 text-xs font-bold tracking-widest uppercase">Panel General</span>
                 {% if request.path == '/' %}<div class="absolute left-0 top-0 bottom-0 w-1 bg-[#A855F7]"></div>{% endif %}
             </a>
 
             {% if user.access_agenda %}
-            <a href="{% url 'agenda_legal' %}" class="flex items-center px-5 py-3.5 hover:bg-white/10 transition-colors relative group/item {% if 'agenda' in request.path %}text-[#A855F7] bg-white/5{% else %}text-gray-400{% endif %}">
+            <a href="{% url 'agenda_legal' %}" class="flex items-center px-6 py-3.5 hover:bg-white/10 transition-colors relative group/item {% if 'agenda' in request.path %}text-[#A855F7] bg-white/5{% else %}text-gray-400{% endif %}">
                 <i class="fas fa-calendar-alt text-lg w-6 text-center shrink-0 group-hover/item:text-[#A855F7] transition-colors"></i>
                 <span class="nav-text ml-4 text-xs font-bold tracking-widest uppercase">Agenda</span>
                 {% if 'agenda' in request.path %}<div class="absolute left-0 top-0 bottom-0 w-1 bg-[#A855F7]"></div>{% endif %}
@@ -81,7 +81,7 @@
             {% endif %}
 
             {% if user.access_cotizaciones %}
-            <a href="{% url 'lista_cotizaciones' %}" class="flex items-center px-5 py-3.5 hover:bg-white/10 transition-colors relative group/item {% if 'cotizaciones' in request.path %}text-[#A855F7] bg-white/5{% else %}text-gray-400{% endif %}">
+            <a href="{% url 'lista_cotizaciones' %}" class="flex items-center px-6 py-3.5 hover:bg-white/10 transition-colors relative group/item {% if 'cotizaciones' in request.path %}text-[#A855F7] bg-white/5{% else %}text-gray-400{% endif %}">
                 <i class="fas fa-file-invoice-dollar text-lg w-6 text-center shrink-0 group-hover/item:text-[#A855F7] transition-colors"></i>
                 <span class="nav-text ml-4 text-xs font-bold tracking-widest uppercase">Cotizaciones</span>
                 {% if 'cotizaciones' in request.path %}<div class="absolute left-0 top-0 bottom-0 w-1 bg-[#A855F7]"></div>{% endif %}
@@ -89,7 +89,7 @@
             {% endif %}
 
             {% if user.access_finanzas %}
-            <a href="{% url 'panel_finanzas' %}" class="flex items-center px-5 py-3.5 hover:bg-white/10 transition-colors relative group/item {% if 'finanzas' in request.path %}text-[#A855F7] bg-white/5{% else %}text-gray-400{% endif %}">
+            <a href="{% url 'panel_finanzas' %}" class="flex items-center px-6 py-3.5 hover:bg-white/10 transition-colors relative group/item {% if 'finanzas' in request.path %}text-[#A855F7] bg-white/5{% else %}text-gray-400{% endif %}">
                 <i class="fas fa-wallet text-lg w-6 text-center shrink-0 group-hover/item:text-[#A855F7] transition-colors"></i>
                 <span class="nav-text ml-4 text-xs font-bold tracking-widest uppercase">Finanzas</span>
                 {% if 'finanzas' in request.path %}<div class="absolute left-0 top-0 bottom-0 w-1 bg-[#A855F7]"></div>{% endif %}
@@ -97,7 +97,7 @@
             {% endif %}
 
             {% if user.access_disenador %}
-            <a href="{% url 'diseñador_plantillas' %}" class="flex items-center px-5 py-3.5 hover:bg-white/10 transition-colors relative group/item {% if 'herramientas' in request.path %}text-[#A855F7] bg-white/5{% else %}text-gray-400{% endif %}">
+            <a href="{% url 'diseñador_plantillas' %}" class="flex items-center px-6 py-3.5 hover:bg-white/10 transition-colors relative group/item {% if 'herramientas' in request.path %}text-[#A855F7] bg-white/5{% else %}text-gray-400{% endif %}">
                 <i class="fas fa-pen-nib text-lg w-6 text-center shrink-0 group-hover/item:text-[#A855F7] transition-colors"></i>
                 <span class="nav-text ml-4 text-xs font-bold tracking-widest uppercase">Diseñador</span>
                 {% if 'herramientas' in request.path %}<div class="absolute left-0 top-0 bottom-0 w-1 bg-[#A855F7]"></div>{% endif %}
@@ -106,14 +106,14 @@
 
             {% if user.access_cotizaciones %}
             <div class="mt-8 pt-4 border-t border-white/5 space-y-2">
-                <p class="px-5 text-[9px] font-black text-gray-500 uppercase tracking-widest nav-text mb-2">Acciones Rápidas</p>
+                <p class="px-6 text-[9px] font-black text-gray-500 uppercase tracking-widest nav-text mb-2">Acciones Rápidas</p>
                 
-                <a href="{% url 'gestion_servicios' %}" class="flex items-center px-5 py-3 hover:bg-white/10 transition-colors relative group/btn text-gray-400 hover:text-white">
+                <a href="{% url 'gestion_servicios' %}" class="flex items-center px-6 py-3 hover:bg-white/10 transition-colors relative group/btn text-gray-400 hover:text-white">
                     <i class="fas fa-list-ul text-lg w-6 text-center shrink-0"></i>
                     <span class="nav-text ml-4 text-xs font-bold tracking-widest uppercase">Catálogo</span>
                 </a>
                 
-                <a href="{% url 'nueva_cotizacion' %}" class="mx-3 mt-2 flex items-center justify-center px-2 py-2 rounded-md bg-[#A855F7] hover:bg-[#9333EA] text-white transition-colors group/btn">
+                <a href="{% url 'nueva_cotizacion' %}" class="mx-4 mt-2 flex items-center justify-center px-2 py-2.5 rounded-md bg-[#A855F7] hover:bg-[#9333EA] text-white transition-colors group/btn shadow-sm">
                     <i class="fas fa-plus-circle text-sm shrink-0"></i>
                     <span class="nav-text ml-3 text-[10px] font-black tracking-widest uppercase">Nueva Cotización</span>
                 </a>
@@ -122,7 +122,7 @@
 
             {% if user.rol == 'admin' %}
             <div class="mt-4 pt-4 border-t border-white/5">
-                <a href="{% url 'gestion_usuarios' %}" class="flex items-center px-5 py-3 hover:bg-white/10 transition-colors relative text-gray-400 hover:text-white">
+                <a href="{% url 'gestion_usuarios' %}" class="flex items-center px-6 py-3 hover:bg-white/10 transition-colors relative text-gray-400 hover:text-white">
                     <i class="fas fa-users-cog text-lg w-6 text-center shrink-0"></i>
                     <span class="nav-text ml-4 text-xs font-bold tracking-widest uppercase">Usuarios</span>
                 </a>
@@ -132,7 +132,7 @@
         
         <div class="p-4 border-t border-white/5 bg-sidebar-header">
              <div class="flex items-center justify-center">
-                <span class="text-[9px] text-gray-500 nav-text">v2.2 Corpad System</span>
+                <span class="text-[9px] text-gray-500 nav-text">Gestiones Corpad &copy; 2026</span>
              </div>
         </div>
     </aside>
