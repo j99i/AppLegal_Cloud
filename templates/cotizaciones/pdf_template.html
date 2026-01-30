@@ -9,6 +9,8 @@
             margin: 0cm;
         }
         body {
+            /* Usamos fuentes estándar para asegurar compatibilidad en PDF, 
+               pero intentamos acercarnos al estilo Lato */
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
             color: #333;
             margin: 0;
@@ -17,14 +19,21 @@
             font-size: 14px;
         }
 
+        /* --- COLORES CORPORATIVOS NUEVOS --- */
+        :root {
+            --corp-dark: #2D1B4B;    /* Tu Morado Oscuro */
+            --corp-accent: #A855F7;  /* Tu Morado Brillante */
+            --corp-light: #F3F4F6;   /* Gris claro de fondo */
+        }
+
         /* --- ESTILOS GENERALES --- */
         .sidebar-decor {
             position: fixed;
             left: 0;
             top: 0;
             bottom: 0;
-            width: 8px;
-            background-color: #1A2238; /* Azul Oscuro Corporativo */
+            width: 12px; /* Un poco más ancho para que luzca el morado */
+            background: linear-gradient(180deg, #2D1B4B 0%, #1E1233 100%); /* Degradado como en tu sidebar */
         }
         .container {
             padding: 40px 40px 40px 60px;
@@ -35,16 +44,17 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 2px solid #eee;
+            border-bottom: 2px solid #f3f4f6;
             padding-bottom: 20px;
             margin-bottom: 30px;
         }
         .logo-text {
             font-size: 24px;
             font-weight: 900;
-            color: #1A2238;
+            color: #2D1B4B; /* Morado Oscuro */
             text-transform: uppercase;
             letter-spacing: 2px;
+            font-family: 'Times New Roman', serif; /* Simulando Playfair Display */
         }
         .invoice-title {
             text-align: right;
@@ -52,15 +62,18 @@
         .invoice-title h1 {
             margin: 0;
             font-size: 32px;
-            color: #C0A062; /* Dorado Elegante */
-            font-weight: 300;
+            color: #2D1B4B; /* Morado Oscuro en lugar de dorado */
+            font-weight: 900;
             letter-spacing: 1px;
+            font-family: 'Times New Roman', serif;
         }
         .meta-data {
             font-size: 12px;
-            color: #7f8c8d;
+            color: #A855F7; /* Acento Morado */
             margin-top: 5px;
             font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         /* --- INFO SECTIONS --- */
@@ -76,7 +89,7 @@
         .info-label {
             font-size: 10px;
             text-transform: uppercase;
-            color: #95a5a6;
+            color: #9ca3af;
             letter-spacing: 1px;
             margin-bottom: 8px;
             font-weight: 800;
@@ -84,7 +97,7 @@
         .info-content {
             font-size: 15px;
             font-weight: 700;
-            color: #1A2238;
+            color: #2D1B4B; /* Morado Oscuro */
             margin-bottom: 4px;
         }
         .info-sub {
@@ -103,12 +116,12 @@
         th {
             text-align: left;
             padding: 15px 10px;
-            background-color: #1A2238;
+            background-color: #2D1B4B; /* Morado Oscuro */
             color: #ffffff;
             text-transform: uppercase;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: bold;
-            letter-spacing: 0.5px;
+            letter-spacing: 1px;
         }
         td {
             padding: 18px 10px;
@@ -119,7 +132,8 @@
         /* --- ESTILOS MEJORADOS PARA CAMPOS DINÁMICOS --- */
         .item-main-title {
             font-size: 15px;
-            color: #1A2238;
+            color: #2D1B4B;
+            font-weight: bold;
             margin-bottom: 6px;
         }
         .item-desc {
@@ -131,44 +145,44 @@
         
         /* Caja para Especificaciones Fijas (Catálogo) */
         .specs-box {
-            background-color: #fcfcfc;
-            border-left: 3px solid #C0A062; /* Borde Dorado */
+            background-color: #faf5ff; /* Fondo morado muy claro */
+            border-left: 3px solid #A855F7; /* Borde Acento Morado */
             padding: 8px 12px;
             border-radius: 0 4px 4px 0;
             margin-bottom: 8px;
         }
         .specs-title {
-            font-size: 10px;
+            font-size: 9px;
             font-weight: 800;
-            color: #C0A062;
+            color: #A855F7; /* Texto Acento Morado */
             text-transform: uppercase;
             margin-bottom: 4px;
             letter-spacing: 0.5px;
         }
         .specs-item {
-            font-size: 12px; /* Letra más grande */
+            font-size: 11px;
             color: #444;
             margin-bottom: 3px;
         }
 
         /* Caja para Valores Personalizados (Cotización) */
         .custom-box {
-            background-color: #eff6ff; /* Azul muy pálido */
-            border: 1px solid #dbeafe;
+            background-color: #f3f4f6;
+            border: 1px solid #e5e7eb;
             border-radius: 6px;
             padding: 8px 12px;
         }
         .custom-title {
-            font-size: 10px;
+            font-size: 9px;
             font-weight: 800;
-            color: #1d4ed8;
+            color: #4b5563;
             text-transform: uppercase;
             margin-bottom: 4px;
             letter-spacing: 0.5px;
         }
         .custom-item {
-            font-size: 12px; /* Letra más grande */
-            color: #1e40af;
+            font-size: 11px;
+            color: #374151;
             margin-bottom: 3px;
         }
 
@@ -192,11 +206,12 @@
             color: #555;
         }
         .total-final td {
-            font-size: 20px;
+            font-size: 22px;
             font-weight: 900;
-            color: #1A2238;
-            border-top: 3px solid #1A2238 !important;
+            color: #2D1B4B; /* Morado Oscuro */
+            border-top: 3px solid #2D1B4B !important;
             padding-top: 15px !important;
+            font-family: 'Times New Roman', serif;
         }
 
         /* --- FOOTER --- */
@@ -208,8 +223,10 @@
             padding-top: 20px;
             border-top: 1px solid #eee;
             text-align: center;
-            font-size: 11px;
+            font-size: 10px;
             color: #9ca3af;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
     </style>
 </head>
@@ -218,7 +235,7 @@
     
     <div class="container">
         <div class="header">
-            <div class="logo-text">LEGAL CLOUD</div>
+            <div class="logo-text">GESTIONES CORPAD</div>
             <div class="invoice-title">
                 <h1>COTIZACIÓN</h1>
                 <div class="meta-data">FOLIO #{{ c.id|stringformat:"04d" }}</div>
@@ -247,7 +264,7 @@
                 <div class="info-label">EMITIDO POR:</div>
                 <div class="info-content">{{ c.creado_por.get_full_name|default:c.creado_por.username }}</div>
                 <div class="info-sub">
-                    Servicios Legales Profesionales<br>
+                    Gestiones Corpad S.A.S.<br>
                     {{ c.creado_por.email }}
                 </div>
             </div>
@@ -266,14 +283,14 @@
                 {% for item in c.items.all %}
                 <tr>
                     <td>
-                        <div class="item-main-title"><strong>{{ item.servicio.nombre }}</strong></div>
+                        <div class="item-main-title">{{ item.servicio.nombre }}</div>
                         <div class="item-desc">
                             {{ item.descripcion_personalizada|default:item.servicio.descripcion }}
                         </div>
 
                         {% if item.servicio.campos_dinamicos %}
                             <div class="specs-box">
-                                <div class="specs-title">ESPECIFICACIONES TÉCNICAS</div>
+                                <div class="specs-title">ESPECIFICACIONES</div>
                                 {% for spec in item.servicio.campos_dinamicos %}
                                     <div class="specs-item">
                                         • <strong>{{ spec.nombre }}:</strong> {{ spec.valor }}
@@ -284,7 +301,7 @@
                         
                         {% if item.valores_adicionales %}
                             <div class="custom-box">
-                                <div class="custom-title">DETALLES ADICIONALES</div>
+                                <div class="custom-title">EXTRAS</div>
                                 {% for k, v in item.valores_adicionales.items %}
                                     <div class="custom-item">
                                         • <strong>{{ k }}:</strong> {{ v }}
@@ -295,7 +312,7 @@
                     </td>
                     <td class="text-center" style="font-weight:bold; color:#555;">{{ item.cantidad }}</td>
                     <td class="text-right" style="color:#555;">${{ item.precio_unitario }}</td>
-                    <td class="text-right" style="font-weight:bold; color:#1A2238;">${{ item.subtotal }}</td>
+                    <td class="text-right" style="font-weight:bold; color:#2D1B4B;">${{ item.subtotal }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -316,7 +333,7 @@
 
         <div class="footer">
             <p style="margin-bottom: 5px;"><strong>VIGENCIA DE LA OFERTA:</strong> {{ c.validez_hasta|default:"15 días hábiles" }}</p>
-            <p>Este documento es una propuesta de servicios profesionales. Quedamos a la espera de su confirmación.</p>
+            <p>Gracias por confiar en Gestiones Corpad.</p>
         </div>
     </div>
 </body>
