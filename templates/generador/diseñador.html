@@ -41,9 +41,11 @@
 
 <div id="popup-variable" class="fixed hidden bg-white shadow-2xl rounded-2xl border border-gray-200 z-50 w-80 animate__animated animate__zoomIn overflow-hidden font-sans">
     
-    <div class="bg-gray-50 p-4 border-b border-gray-100">
-        <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Texto Seleccionado</h4>
-        <p id="texto-seleccionado" class="text-sm font-bold text-[#2D1B4B] truncate bg-white p-2 rounded border border-gray-200">...</p>
+    <div id="popup-header" class="bg-gray-50 p-4 border-b border-gray-100 cursor-move select-none active:bg-gray-100 transition-colors">
+        <div class="flex justify-between items-center mb-1">
+            <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Texto Seleccionado</h4>
+            <i class="fas fa-arrows-alt text-gray-300 text-xs"></i> </div>
+        <p id="texto-seleccionado" class="text-sm font-bold text-[#2D1B4B] truncate bg-white p-2 rounded border border-gray-200 select-text">...</p>
     </div>
 
     <div class="flex border-b border-gray-200">
@@ -108,23 +110,16 @@
         }
     }
 
-    // --- FUNCIÓN CORREGIDA: CARGAR DOCUMENTO ---
     async function cargarDocumento(input) {
         if (input.files && input.files[0]) {
             archivoActual = input.files[0];
-            
-            // Mostrar Spinner de carga
             document.getElementById('drop-zone').innerHTML = '<i class="fas fa-spinner fa-spin text-4xl text-[#A855F7]"></i><p class="mt-4 text-gray-500 font-bold">Procesando Word...</p>';
             
             const formData = new FormData(); 
             formData.append('archivo', archivoActual);
             
             try {
-                const res = await fetch("{% url 'previsualizar_word_raw' %}", {
-                    method: 'POST',
-                    body: formData
-                });
-                
+                const res = await fetch("{% url 'previsualizar_word_raw' %}", { method: 'POST', body: formData });
                 const data = await res.json();
                 
                 if(data.html){
@@ -144,19 +139,29 @@
     }
 
     function detectarSeleccion() {
-        const sel = window.getSelection(); const text = sel.toString().trim();
-        if (text.length > 0) {
+        const sel = window.getSelection(); 
+        const text = sel.toString().trim();
+        
+        // Evitamos que se active si seleccionamos dentro del mismo popup
+        if (text.length > 0 && !document.getElementById('popup-variable').contains(sel.anchorNode)) {
             seleccionActual = text;
-            const range = sel.getRangeAt(0); const rect = range.getBoundingClientRect();
+            const range = sel.getRangeAt(0); 
+            const rect = range.getBoundingClientRect();
             const popup = document.getElementById('popup-variable');
             document.getElementById('texto-seleccionado').innerText = text;
             
+            // Posición inicial cerca de la selección
             let top = rect.bottom + window.scrollY + 10;
             let left = rect.left + window.scrollX;
             if(left + 320 > window.innerWidth) left = window.innerWidth - 340; 
             
-            popup.style.top = top + 'px'; popup.style.left = left + 'px';
+            popup.style.top = top + 'px'; 
+            popup.style.left = left + 'px';
+            
+            // Reiniciamos animación para que se note que apareció
             popup.classList.remove('hidden');
+            popup.classList.add('animate__zoomIn');
+            
             cambiarTab('existente'); 
         }
     }
@@ -181,7 +186,6 @@
         aplicarCambioVisual(variable);
     }
 
-    // --- CREAR VARIABLE AL VUELO ---
     async function crearYAsignar() {
         const clave = document.getElementById('nueva-clave').value;
         const desc = document.getElementById('nueva-desc').value;
@@ -209,7 +213,6 @@
                 select.add(option);
                 
                 aplicarCambioVisual(data.clave || clave);
-                
                 document.getElementById('nueva-clave').value = '';
                 document.getElementById('nueva-desc').value = '';
             } else {
@@ -238,14 +241,57 @@
         
         document.getElementById('input-nombre-final').value = nombre;
         
-        // Transferir archivo al input del form
         const dt = new DataTransfer(); 
         dt.items.add(archivoActual);
         document.getElementById('input-archivo-final').files = dt.files;
         
         document.getElementById('input-reemplazos-final').value = JSON.stringify(listaReemplazos);
-        
         document.getElementById('form-final').submit();
     }
+
+    // ==========================================
+    // NUEVA LÓGICA: HACER LA VENTANA DRAGGABLE
+    // ==========================================
+    document.addEventListener('DOMContentLoaded', () => {
+        const popup = document.getElementById('popup-variable');
+        const header = document.getElementById('popup-header');
+        
+        let isDragging = false;
+        let dragOffsetX = 0;
+        let dragOffsetY = 0;
+
+        header.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            
+            // Calculamos la distancia entre el mouse y la esquina superior izquierda del popup
+            const rect = popup.getBoundingClientRect();
+            dragOffsetX = e.clientX - rect.left;
+            dragOffsetY = e.clientY - rect.top;
+            
+            // Cambiamos cursor y quitamos animación para evitar "saltos" raros
+            header.style.cursor = 'grabbing';
+            popup.classList.remove('animate__zoomIn'); 
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                e.preventDefault(); // Evita seleccionar texto mientras arrastras
+                
+                // Nueva posición
+                const x = e.clientX - dragOffsetX;
+                const y = e.clientY - dragOffsetY;
+                
+                popup.style.left = `${x}px`;
+                popup.style.top = `${y}px`;
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            if(isDragging) {
+                isDragging = false;
+                header.style.cursor = 'move';
+            }
+        });
+    });
 </script>
 {% endblock %}

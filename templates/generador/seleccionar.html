@@ -1,15 +1,103 @@
 {% extends 'base.html' %}
 {% block content %}
 <div class="max-w-6xl mx-auto animate__animated animate__fadeIn">
+    
     <div class="flex justify-between items-center mb-8">
-        <div><h2 class="text-3xl font-black text-[#2D1B4B]">Biblioteca de Formatos</h2><p class="text-gray-500">Cliente: <b>{{ cliente.nombre_empresa }}</b></p></div>
+        <div>
+            <h2 class="text-3xl font-black text-[#2D1B4B]">Biblioteca de Formatos</h2>
+            <p class="text-gray-500 text-sm">Cliente actual: <b class="text-[#2D1B4B]">{{ cliente.nombre_empresa }}</b></p>
+        </div>
+        
         {% if user.rol == 'admin' %}
         <div class="flex gap-2">
-            <a href="{% url 'diseñador_plantillas' %}" class="bg-white border border-gray-300 text-gray-700 px-5 py-2 rounded-xl font-bold text-xs shadow-sm hover:bg-gray-50 flex items-center"><i class="fas fa-pen-nib mr-2"></i> DISEÑADOR</a>
-            <button onclick="document.getElementById('modal-plantilla').classList.remove('hidden')" class="bg-[#A855F7] text-white px-5 py-2 rounded-xl font-bold text-xs shadow-lg hover:bg-[#9333ea] transition-all"><i class="fas fa-plus mr-2"></i> SUBIR DOCX</button>
+            <a href="{% url 'diseñador_plantillas' %}" class="bg-white border border-gray-300 text-gray-700 px-5 py-3 rounded-xl font-bold text-xs shadow-sm hover:bg-gray-50 flex items-center transition-all">
+                <i class="fas fa-pen-nib mr-2"></i> DISEÑADOR
+            </a>
+            <button onclick="document.getElementById('modal-plantilla').classList.remove('hidden')" class="bg-[#2D1B4B] text-white px-5 py-3 rounded-xl font-bold text-xs shadow-lg hover:bg-[#A855F7] transition-all flex items-center">
+                <i class="fas fa-cloud-upload-alt mr-2"></i> SUBIR DOCX
+            </button>
         </div>
         {% endif %}
     </div>
-    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">{% for p in plantillas %}<form method="GET" action="" class="group h-full"><input type="hidden" name="plantilla_id" value="{{ p.id }}"><button type="submit" class="w-full text-left bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all h-full flex flex-col justify-between relative overflow-hidden"><div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20"><i class="fas fa-file-contract text-8xl text-[#2D1B4B]"></i></div><div class="relative z-10"><div class="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center mb-4"><i class="fas fa-file-word text-[#2D1B4B] text-xl"></i></div><h3 class="font-bold text-[#2D1B4B] text-lg leading-tight mb-2">{{ p.nombre }}</h3><p class="text-[10px] text-gray-400 uppercase">Subida: {{ p.fecha_subida|date:"d M Y" }}</p></div><div class="mt-6 flex items-center text-[#A855F7] font-black text-xs relative z-10">SELECCIONAR <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i></div></button></form>{% empty %}<div class="col-span-full py-20 text-center text-gray-400"><i class="fas fa-folder-open text-5xl mb-4 opacity-30"></i><p>No hay plantillas disponibles.</p></div>{% endfor %}</div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        {% for p in plantillas %}
+        <div class="relative group h-full">
+            
+            <form method="GET" action="" class="h-full">
+                <input type="hidden" name="plantilla_id" value="{{ p.id }}">
+                <button type="submit" class="w-full text-left bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all h-full flex flex-col justify-between relative overflow-hidden">
+                    
+                    <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                        <i class="fas fa-file-contract text-9xl text-[#2D1B4B]"></i>
+                    </div>
+
+                    <div class="relative z-10">
+                        <div class="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center mb-4 text-[#2D1B4B] group-hover:bg-[#2D1B4B] group-hover:text-white transition-colors">
+                            <i class="fas fa-file-word text-xl"></i>
+                        </div>
+                        
+                        <h3 class="font-bold text-[#2D1B4B] text-lg leading-tight mb-2 group-hover:text-[#A855F7] transition-colors">
+                            {{ p.nombre }}
+                        </h3>
+                        <p class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">
+                            Subida: {{ p.fecha_subida|date:"d M Y" }}
+                        </p>
+                    </div>
+
+                    <div class="mt-6 flex items-center text-[#A855F7] font-black text-xs relative z-10 uppercase tracking-widest group-hover:translate-x-1 transition-transform">
+                        SELECCIONAR <i class="fas fa-arrow-right ml-2"></i>
+                    </div>
+                </button>
+            </form>
+
+            {% if user.rol == 'admin' %}
+            <a href="{% url 'eliminar_plantilla' p.id %}?next={{ request.path }}" 
+               onclick="return confirm('⚠️ ¿Estás seguro de eliminar la plantilla \'{{ p.nombre }}\'? Esta acción no se puede deshacer.');"
+               class="absolute top-4 right-4 z-20 w-8 h-8 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center text-gray-400 hover:bg-red-500 hover:text-white shadow-sm border border-gray-100 transition-all opacity-0 group-hover:opacity-100"
+               title="Eliminar Plantilla">
+                <i class="fas fa-trash-alt text-xs"></i>
+            </a>
+            {% endif %}
+
+        </div>
+        {% empty %}
+        <div class="col-span-full py-20 text-center text-gray-400 bg-gray-50 rounded-[2rem] border-2 border-dashed border-gray-200">
+            <i class="fas fa-folder-open text-5xl mb-4 opacity-30"></i>
+            <p class="font-bold">No hay plantillas disponibles.</p>
+            <p class="text-xs mt-2">Sube un archivo .docx para comenzar.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div id="modal-plantilla" class="fixed inset-0 bg-[#2D1B4B]/90 hidden items-center justify-center z-50 backdrop-blur-sm animate__animated animate__fadeIn">
+        <div class="bg-white p-8 rounded-[2rem] w-full max-w-md m-4 shadow-2xl relative animate__animated animate__zoomIn">
+            <button onclick="document.getElementById('modal-plantilla').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400 hover:text-red-500">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+            
+            <h3 class="text-2xl font-black text-[#2D1B4B] mb-1">Nueva Plantilla</h3>
+            <p class="text-xs text-gray-400 mb-6 uppercase tracking-widest">Sube tu archivo Word base</p>
+            
+            <form action="{% url 'subir_plantilla' %}" method="POST" enctype="multipart/form-data" class="space-y-4">
+                {% csrf_token %}
+                
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Nombre Identificador</label>
+                    <input type="text" name="nombre" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-[#2D1B4B] border-none outline-none focus:ring-2 focus:ring-[#A855F7]" placeholder="Ej. Contrato Laboral" required>
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Archivo Word (.docx)</label>
+                    <input type="file" name="archivo" accept=".docx" class="w-full p-2 bg-gray-50 rounded-xl text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#A855F7] file:text-white hover:file:bg-[#9333ea] cursor-pointer" required>
+                </div>
+
+                <button type="submit" class="w-full bg-[#2D1B4B] text-white py-4 rounded-xl font-bold hover:bg-[#A855F7] shadow-lg transition-all mt-2 uppercase tracking-widest text-xs">
+                    SUBIR DOCUMENTO
+                </button>
+            </form>
+        </div>
+    </div>
+
 </div>
 {% endblock %}
