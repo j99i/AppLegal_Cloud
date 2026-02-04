@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Datos Fiscales: {{ c.nombre_empresa }}</h4>
+                </div>
+                <div class="card-body">
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-magic"></i> <strong>¿Tienes la Constancia de Situación Fiscal?</strong>
+                        <p class="mb-2 text-sm">Sube el PDF y llenaremos los datos por ti automáticamente.</p>
+                        
+                        <form method="POST" enctype="multipart/form-data" class="d-flex gap-2">
+                            {% csrf_token %}
+                            <input type="file" name="archivo_constancia" class="form-control" accept=".pdf" required>
+                            <button type="submit" class="btn btn-dark">
+                                <i class="fas fa-upload"></i> Auto-llenar
+                            </button>
+                        </form>
+                    </div>
+
+                    <hr>
+
+                    <form method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" name="accion_guardar" value="true">
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Razón Social (Tal cual aparece en la Constancia)</label>
+                            <input type="text" name="razon_social" class="form-control" value="{{ datos.razon_social|default:'' }}" required placeholder="Ej. ESCUELA KEMPER URGATE SA DE CV">
+                            <div class="form-text">Sin régimen capital (ej. sin SA de CV) para CFDI 4.0 si es posible.</div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">RFC</label>
+                                <input type="text" name="rfc" class="form-control" value="{{ datos.rfc|default:'' }}" required placeholder="XAXX010101000">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Código Postal (Fiscal)</label>
+                                <input type="text" name="codigo_postal" class="form-control" value="{{ datos.codigo_postal|default:'' }}" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Régimen Fiscal</label>
+                            <select name="regimen_fiscal" class="form-select" required>
+                                <option value="">Selecciona una opción...</option>
+                                {% for r in regimenes %}
+                                    <option value="{{ r.code }}" {% if datos.regimen_fiscal == r.code %}selected{% endif %}>
+                                        {{ r.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Uso de CFDI</label>
+                                <select name="uso_cfdi" class="form-select">
+                                    <option value="G03" {% if datos.uso_cfdi == 'G03' %}selected{% endif %}>G03 - Gastos en general</option>
+                                    <option value="S01" {% if datos.uso_cfdi == 'S01' %}selected{% endif %}>S01 - Sin efectos fiscales</option>
+                                    <option value="D01" {% if datos.uso_cfdi == 'D01' %}selected{% endif %}>D01 - Honorarios médicos</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Email para envío de Facturas</label>
+                                <input type="email" name="email_facturacion" class="form-control" value="{{ datos.email_facturacion|default:c.email }}">
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fas fa-save"></i> Guardar Datos Fiscales
+                            </button>
+                            <a href="{% url 'detalle_cliente' c.id %}" class="btn btn-secondary">Cancelar</a>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

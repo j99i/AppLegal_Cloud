@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-7xl mx-auto animate__animated animate__fadeIn">
+    
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h2 class="text-3xl font-black text-[#2D1B4B]">Cartera de Clientes</h2>
+            <p class="text-sm text-gray-500">Estado financiero global por cliente.</p>
+        </div>
+        <div class="text-right">
+            <p class="text-xs font-bold text-gray-400">DEUDA TOTAL CARTERA</p>
+            <p class="text-3xl font-black text-red-500">${{ total_por_cobrar|floatformat:2 }}</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for c in clientes %}
+        <a href="{% url 'finanzas_cliente_detalle' c.id %}" class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all group relative overflow-hidden">
+            
+            <div class="absolute top-0 right-0 w-24 h-24 bg-gray-50 rounded-bl-full -z-0 group-hover:bg-purple-50 transition-colors"></div>
+
+            <div class="relative z-10">
+                <div class="flex items-center gap-4 mb-6">
+                    {% if c.logo %}
+                        <img src="{{ c.logo.url }}" class="w-14 h-14 rounded-xl object-contain bg-white border border-gray-100">
+                    {% else %}
+                        <div class="w-14 h-14 rounded-xl bg-[#2D1B4B] text-white flex items-center justify-center text-xl font-bold">
+                            {{ c.nombre_empresa|slice:":1" }}
+                        </div>
+                    {% endif %}
+                    <div>
+                        <h3 class="font-bold text-[#2D1B4B] text-lg leading-tight">{{ c.nombre_empresa }}</h3>
+                        <p class="text-xs text-gray-500">{{ c.total_proyectos }} Proyectos activos</p>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-400">Total Facturado</span>
+                        <span class="font-bold text-gray-600">${{ c.cuentas.all|length }} ops</span>
+                    </div>
+                    <div class="flex justify-between text-sm border-t border-gray-100 pt-2">
+                        <span class="text-gray-400">Pagado</span>
+                        <span class="font-bold text-green-600">${{ c.pagado_total|floatformat:2 }}</span>
+                    </div>
+                    <div class="flex justify-between text-lg bg-red-50 p-3 rounded-xl mt-2">
+                        <span class="font-bold text-red-400">Por Cobrar</span>
+                        <span class="font-black text-red-500">${{ c.deuda_total|floatformat:2 }}</span>
+                    </div>
+                </div>
+            </div>
+        </a>
+        {% empty %}
+        <p>No hay actividad financiera.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

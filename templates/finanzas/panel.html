@@ -1,124 +1,113 @@
 {% extends 'base.html' %}
+
 {% block content %}
 <div class="max-w-7xl mx-auto animate__animated animate__fadeIn">
-    
+
     <div class="flex justify-between items-center mb-8">
-        <h2 class="text-3xl font-black text-[#2D1B4B]">Finanzas y Cobranza</h2>
-        <div class="text-right">
-            <p class="text-xs font-bold text-gray-400 uppercase">Total por Cobrar</p>
-            <p class="text-2xl font-black text-red-500">${{ total_por_cobrar|floatformat:2 }}</p>
+        <div>
+            <h2 class="text-3xl font-black text-[#2D1B4B]">Tablero Financiero</h2>
+            <p class="text-gray-500 text-sm">Control detallado de Facturación y Cobranza por Proyecto.</p>
+        </div>
+        <div>
+            <a href="{% url 'libro_contable' %}" class="bg-white text-[#2D1B4B] border border-gray-200 px-4 py-2 rounded-xl font-bold text-sm hover:bg-gray-50 shadow-sm transition-all">
+                <i class="fas fa-book mr-2"></i> Libro Contable
+            </a>
         </div>
     </div>
 
-    <div class="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="w-full text-left">
-                <thead class="bg-gray-50 text-xs text-gray-400 uppercase">
-                    <tr>
-                        <th class="p-6 font-black text-[#2D1B4B]">Cliente / Concepto</th>
-                        <th class="p-6 font-black text-center text-[#2D1B4B]">Estado</th>
-                        <th class="p-6 font-black text-right text-[#2D1B4B]">Total</th>
-                        <th class="p-6 font-black text-right text-[#2D1B4B]">Pagado</th>
-                        <th class="p-6 font-black text-right text-red-500">Saldo</th>
-                        <th class="p-6 font-black text-center text-[#2D1B4B]">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody class="text-sm">
-                    {% for c in cuentas %}
-                    <tr class="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                        <td class="p-6">
-                            <p class="font-bold text-[#2D1B4B]">{{ c.cliente.nombre_empresa }}</p>
-                            <p class="text-xs text-gray-400">{{ c.concepto }}</p>
-                            <p class="text-[10px] text-gray-400 mt-1">Vence: {{ c.fecha_vencimiento|default:"--/--/--" }}</p>
-                        </td>
-                        <td class="p-6 text-center">
-                            <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase
-                                {% if c.estado == 'pagado' %}bg-green-100 text-green-600
-                                {% elif c.estado == 'parcial' %}bg-yellow-100 text-yellow-600
-                                {% else %}bg-red-100 text-red-500{% endif %}">
-                                {{ c.get_estado_display }}
-                            </span>
-                        </td>
-                        <td class="p-6 text-right font-bold text-gray-600">${{ c.monto_total|floatformat:2 }}</td>
-                        <td class="p-6 text-right font-bold text-green-600">${{ c.monto_pagado|floatformat:2 }}</td>
-                        <td class="p-6 text-right font-black text-red-500">${{ c.saldo_pendiente|floatformat:2 }}</td>
-                        <td class="p-6 text-center">
-                            {% if c.estado != 'pagado' %}
-                            <button onclick="abrirPago('{{ c.id }}', '{{ c.cliente.nombre_empresa }}', '{{ c.saldo_pendiente }}')" class="bg-[#2D1B4B] text-white px-4 py-2 rounded-lg font-bold text-xs hover:bg-[#A855F7] shadow-md transition-all">
-                                <i class="fas fa-hand-holding-usd mr-1"></i> PAGAR
-                            </button>
-                            {% else %}
-                            <span class="text-green-500 font-bold text-xs"><i class="fas fa-check-circle"></i> Al corriente</span>
-                            {% endif %}
-                            
-                            {% if c.pagos.exists %}
-                            <div class="mt-2 space-y-1">
-                                {% for p in c.pagos.all %}
-                                <a href="{% url 'recibo_pago_pdf' p.id %}" target="_blank" class="block text-[10px] text-blue-500 hover:underline">
-                                    Recibo ${{ p.monto|floatformat:0 }} ({{ p.fecha_pago|date:"d/m" }})
-                                </a>
-                                {% endfor %}
-                            </div>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr><td colspan="6" class="p-10 text-center text-gray-400">No hay cuentas por cobrar registradas.</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
+        <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 relative overflow-hidden group">
+            <div class="relative z-10">
+                <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Por Cobrar Global</p>
+                <p class="text-3xl font-black text-red-500">${{ total_por_cobrar|floatformat:2|default:"0.00" }}</p>
+            </div>
+            <div class="absolute -right-4 -bottom-4 text-red-50 text-6xl group-hover:scale-110 transition-transform">
+                <i class="fas fa-hand-holding-usd"></i>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 relative overflow-hidden">
+            <div class="relative z-10">
+                <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Cobrado Total</p>
+                <p class="text-3xl font-black text-green-500">$0.00</p> 
+            </div>
+            <div class="absolute -right-4 -bottom-4 text-green-50 text-6xl">
+                <i class="fas fa-check-circle"></i>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 relative overflow-hidden">
+            <div class="relative z-10">
+                <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Clientes con Deuda</p>
+                <p class="text-3xl font-black text-[#2D1B4B]">{{ clientes.count }}</p>
+            </div>
+            <div class="absolute -right-4 -bottom-4 text-gray-100 text-6xl">
+                <i class="fas fa-users"></i>
+            </div>
+        </div>
+
+        <div class="bg-[#2D1B4B] p-6 rounded-[2rem] shadow-sm border border-gray-100 relative overflow-hidden text-white">
+            <div class="relative z-10">
+                <p class="text-xs font-bold text-purple-200 uppercase tracking-wider mb-1">Fecha de Corte</p>
+                <p class="text-xl font-bold">{% now "d M Y" %}</p>
+            </div>
+            <div class="absolute -right-4 -bottom-4 text-purple-800 text-6xl opacity-30">
+                <i class="fas fa-calendar-alt"></i>
+            </div>
         </div>
     </div>
-</div>
 
-<div id="modal-pago" class="fixed inset-0 bg-[#2D1B4B]/90 hidden items-center justify-center z-50 backdrop-blur-sm animate__animated animate__fadeIn">
-    <div class="bg-white p-8 rounded-[2rem] w-full max-w-md m-4 shadow-2xl relative animate__animated animate__zoomIn">
-        <button onclick="document.getElementById('modal-pago').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400 hover:text-red-500"><i class="fas fa-times text-xl"></i></button>
-        
-        <h3 class="text-xl font-black text-[#2D1B4B] mb-1">Registrar Pago</h3>
-        <p class="text-sm text-gray-400 mb-6">Cliente: <span id="pago-cliente" class="font-bold text-[#A855F7]"></span></p>
-        
-        <form action="{% url 'registrar_pago' %}" method="POST" class="space-y-4">
-            {% csrf_token %}
-            <input type="hidden" name="cuenta_id" id="input-cuenta-id">
+    <h3 class="text-xl font-bold text-[#2D1B4B] mb-6 pl-2 border-l-4 border-purple-500">Cartera de Clientes</h3>
+
+    {% if clientes %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for c in clientes %}
+        <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 hover:shadow-lg transition-all group relative">
             
-            <div>
-                <label class="block text-xs font-bold text-gray-400 mb-1">Monto a Pagar (Máx: $<span id="max-saldo"></span>)</label>
-                <input type="number" name="monto" id="input-monto" step="0.01" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-[#2D1B4B] text-lg border-2 border-transparent focus:border-[#A855F7] outline-none" required>
-            </div>
-            
-            <div>
-                <label class="block text-xs font-bold text-gray-400 mb-1">Método de Pago</label>
-                <select name="metodo" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-[#2D1B4B] border-none outline-none">
-                    <option value="transferencia">Transferencia Electrónica</option>
-                    <option value="efectivo">Efectivo</option>
-                    <option value="cheque">Cheque</option>
-                </select>
-            </div>
-
-            <div>
-                <label class="block text-xs font-bold text-gray-400 mb-1">Referencia / Folio</label>
-                <input type="text" name="referencia" placeholder="Ej. SPEI-12345" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-[#2D1B4B] text-sm border-none outline-none">
+            <div class="flex items-center gap-4 mb-4">
+                <div class="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center text-xl font-bold text-gray-400 border border-gray-100 group-hover:bg-purple-50 group-hover:text-purple-600 transition-colors">
+                    {% if c.logo %}
+                        <img src="{{ c.logo.url }}" class="w-full h-full object-cover rounded-xl">
+                    {% else %}
+                        {{ c.nombre_empresa|slice:":1" }}
+                    {% endif %}
+                </div>
+                <div class="overflow-hidden">
+                    <h4 class="font-bold text-[#2D1B4B] truncate text-lg">{{ c.nombre_empresa }}</h4>
+                    <p class="text-xs text-gray-400">{{ c.total_proyectos }} Proyecto(s) Activo(s)</p>
+                </div>
             </div>
 
-            <button type="submit" class="w-full bg-[#2D1B4B] text-white py-4 rounded-xl font-black shadow-lg hover:bg-[#A855F7] mt-2 transition-colors">
-                CONFIRMAR PAGO
-            </button>
-        </form>
+            <div class="bg-gray-50 rounded-xl p-4 mb-4 flex justify-between items-center">
+                <div>
+                    <p class="text-[10px] uppercase font-bold text-gray-400">Deuda Total</p>
+                    <p class="text-xl font-black text-red-500">${{ c.deuda_total|floatformat:2 }}</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-[10px] uppercase font-bold text-gray-400">Pagado</p>
+                    <p class="text-sm font-bold text-green-600">${{ c.pagado_total|floatformat:2 }}</p>
+                </div>
+            </div>
+
+            <a href="{% url 'finanzas_cliente_detalle' c.id %}" class="block w-full bg-[#2D1B4B] text-white text-center py-3 rounded-xl font-bold text-sm hover:bg-[#A855F7] transition-colors shadow-md transform group-hover:-translate-y-1">
+                GESTIONAR COBRANZA <i class="fas fa-arrow-right ml-2"></i>
+            </a>
+
+        </div>
+        {% endfor %}
     </div>
-</div>
+    {% else %}
+    <div class="text-center py-20 bg-white rounded-[2rem] border border-dashed border-gray-200">
+        <div class="bg-gray-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-300 text-4xl animate-pulse">
+            <i class="fas fa-folder-open"></i>
+        </div>
+        <h3 class="text-gray-500 font-bold text-lg">Todo al día</h3>
+        <p class="text-sm text-gray-400">No hay clientes con cuentas pendientes de cobro.</p>
+        <div class="mt-6">
+            <a href="{% url 'lista_cotizaciones' %}" class="text-purple-600 font-bold hover:underline">Ir a Cotizaciones para crear nuevos proyectos</a>
+        </div>
+    </div>
+    {% endif %}
 
-<script>
-    function abrirPago(id, cliente, saldo) {
-        document.getElementById('input-cuenta-id').value = id;
-        document.getElementById('pago-cliente').innerText = cliente;
-        document.getElementById('max-saldo').innerText = saldo;
-        document.getElementById('input-monto').max = saldo;
-        document.getElementById('input-monto').value = saldo; // Sugerir pago total
-        
-        const modal = document.getElementById('modal-pago');
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-    }
-</script>
+</div>
 {% endblock %}

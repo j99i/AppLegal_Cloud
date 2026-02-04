@@ -1,158 +1,203 @@
 {% extends 'base.html' %}
-{% load static %}
-
-{% block titulo_pagina %}Nueva Cotización{% endblock %}
-
 {% block content %}
-<div class="max-w-7xl mx-auto animate__animated animate__fadeIn">
-
-    <div class="flex justify-between items-center mb-8">
-        <div>
-            <h1 class="text-3xl font-black text-[#2D1B4B] font-serif mb-1">Nueva Cotización</h1>
-            <p class="text-gray-500 font-medium text-sm">Crea una propuesta comercial para un prospecto.</p>
-        </div>
-        <a href="{% url 'lista_cotizaciones' %}" class="text-gray-400 hover:text-[#2D1B4B] transition-colors">
-            <i class="fas fa-times text-xl"></i>
-        </a>
+<div class="max-w-5xl mx-auto animate__animated animate__fadeIn">
+    
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-3xl font-black text-[#2D1B4B]">Nueva Cotización</h2>
+        <a href="{% url 'lista_cotizaciones' %}" class="text-gray-400 hover:text-gray-600 font-bold text-sm">Cancelar</a>
     </div>
 
-    <form action="" method="POST" id="form-cotizacion">
+    <div class="bg-purple-50 p-6 rounded-[2rem] border border-purple-100 mb-8 flex flex-col md:flex-row items-center gap-6">
+        <div class="flex-1">
+            <h3 class="font-bold text-[#2D1B4B] mb-2"><i class="fas fa-user-check mr-2"></i> ¿Cliente Existente?</h3>
+            <select id="selector-cliente" onchange="cargarCliente()" class="w-full p-3 bg-white rounded-xl border border-purple-200 font-bold text-[#2D1B4B] focus:ring-2 focus:ring-[#A855F7] outline-none">
+                <option value="">-- Nuevo Prospecto --</option>
+                {% for cli in clientes %}
+                <option value="{{ cli.id }}" 
+                    data-nombre="{{ cli.nombre_contacto }}"
+                    data-empresa="{{ cli.nombre_empresa }}"
+                    data-email="{{ cli.email }}"
+                    data-telefono="{{ cli.telefono }}">
+                    {{ cli.nombre_empresa }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="hidden md:block w-px h-16 bg-purple-200"></div>
+        <div class="flex-1 text-center md:text-left">
+            <p class="text-xs text-gray-400 italic">"Si seleccionas un cliente, el PDF se guardará automáticamente en su carpeta de Drive."</p>
+        </div>
+    </div>
+
+    <form method="POST" id="form-cotizacion">
         {% csrf_token %}
-        
-        <div class="bg-white rounded-[2rem] p-8 shadow-sm border border-gray-100 mb-6">
-            <h3 class="text-lg font-black text-[#2D1B4B] mb-6 flex items-center gap-2">
-                <i class="fas fa-user-circle text-[#A855F7]"></i> Datos del Prospecto
-            </h3>
+        <input type="hidden" name="cliente_id" id="input-cliente-id">
+
+        <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100 mb-8">
+            <h3 class="font-bold text-[#2D1B4B] mb-6 border-b pb-2">Datos del Receptor</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Nombre Completo</label>
-                    <input type="text" name="nombre" class="w-full p-3 bg-white rounded-xl font-bold text-[#2D1B4B] outline-none border border-gray-200 focus:border-[#A855F7] focus:ring-1 focus:ring-[#A855F7] transition-all" placeholder="Ej. Juan Pérez" required>
+                    <label class="block text-xs font-bold text-gray-400 mb-1">Nombre Contacto</label>
+                    <input type="text" name="nombre" id="f-nombre" class="w-full p-3 bg-gray-50 rounded-xl font-bold border-none bg-gray-50" required>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Empresa (Opcional)</label>
-                    <input type="text" name="empresa" class="w-full p-3 bg-white rounded-xl font-bold text-[#2D1B4B] outline-none border border-gray-200 focus:border-[#A855F7] focus:ring-1 focus:ring-[#A855F7] transition-all" placeholder="Ej. Coca-Cola FEMSA">
+                    <label class="block text-xs font-bold text-gray-400 mb-1">Empresa / Razón Social</label>
+                    <input type="text" name="empresa" id="f-empresa" class="w-full p-3 bg-gray-50 rounded-xl font-bold border-none bg-gray-50">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Email</label>
-                    <input type="email" name="email" class="w-full p-3 bg-white rounded-xl font-bold text-[#2D1B4B] outline-none border border-gray-200 focus:border-[#A855F7] focus:ring-1 focus:ring-[#A855F7] transition-all" placeholder="cliente@empresa.com" required>
+                    <label class="block text-xs font-bold text-gray-400 mb-1">Email</label>
+                    <input type="email" name="email" id="f-email" class="w-full p-3 bg-gray-50 rounded-xl font-bold border-none bg-gray-50" required>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Teléfono</label>
-                    <input type="text" name="telefono" class="w-full p-3 bg-white rounded-xl font-bold text-[#2D1B4B] outline-none border border-gray-200 focus:border-[#A855F7] focus:ring-1 focus:ring-[#A855F7] transition-all" placeholder="55 1234 5678" required>
+                    <label class="block text-xs font-bold text-gray-400 mb-1">Teléfono</label>
+                    <input type="text" name="telefono" id="f-telefono" class="w-full p-3 bg-gray-50 rounded-xl font-bold border-none bg-gray-50" required>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Validez de la Oferta</label>
-                    <input type="date" name="validez" class="w-full p-3 bg-white rounded-xl font-bold text-[#2D1B4B] outline-none border border-gray-200 focus:border-[#A855F7] focus:ring-1 focus:ring-[#A855F7] transition-all">
+                    <label class="block text-xs font-bold text-gray-400 mb-1">Válida hasta</label>
+                    <input type="date" name="validez" class="w-full p-3 bg-gray-50 rounded-xl font-bold border-none bg-gray-50">
                 </div>
             </div>
         </div>
 
-        <div class="bg-white rounded-[2rem] p-8 shadow-sm border border-gray-100 mb-8">
+        <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100 mb-8">
             <div class="flex justify-between items-center mb-6">
-                <h3 class="text-lg font-black text-[#2D1B4B] flex items-center gap-2">
-                    <i class="fas fa-list-ul text-[#A855F7]"></i> Servicios a Cotizar
-                </h3>
-                <button type="button" onclick="agregarFila()" class="text-[#A855F7] font-bold text-xs uppercase hover:text-[#2D1B4B] transition-colors flex items-center gap-1">
-                    <i class="fas fa-plus-circle"></i> Agregar Fila
-                </button>
+                <h3 class="font-bold text-[#2D1B4B]">Servicios a Cotizar</h3>
+                <button type="button" onclick="agregarFila()" class="bg-[#2D1B4B] text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-[#A855F7] transition-colors">+ Agregar Item</button>
             </div>
+            
+            <div id="contenedor-items" class="space-y-4">
+                <div class="fila-item grid grid-cols-12 gap-2 items-start bg-gray-50 p-3 rounded-xl relative hidden">
+                    <div class="col-span-4">
+                        <select name="servicio_id" class="w-full p-2 rounded-lg text-sm font-bold border-none bg-white" onchange="actualizarPrecio(this)">
+                            <option value="">Seleccionar Servicio...</option>
+                            {% for s in servicios %}
+                            <option value="{{ s.id }}" data-precio="{{ s.precio }}">{{ s.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                        <input type="hidden" name="valores_adicionales_json[]" class="input-json">
+                    </div>
+                    <div class="col-span-2">
+                        <input type="number" name="cantidad" value="1" min="1" class="w-full p-2 rounded-lg text-sm text-center border-none" onchange="calcularSubtotal(this)">
+                    </div>
+                    <div class="col-span-2">
+                        <input type="number" name="precio" step="0.01" class="w-full p-2 rounded-lg text-sm text-right border-none" onchange="calcularSubtotal(this)">
+                    </div>
+                    <div class="col-span-3 text-right font-black text-[#2D1B4B] pt-2 total-fila">$0.00</div>
+                    <button type="button" onclick="eliminarFila(this)" class="absolute -top-2 -right-2 bg-red-100 text-red-500 w-6 h-6 rounded-full flex items-center justify-center hover:bg-red-500 hover:text-white transition-colors"><i class="fas fa-times text-xs"></i></button>
+                </div>
+            </div>
+            
+            <div class="flex flex-col items-end mt-6 pt-4 border-t border-gray-100 gap-4">
+                
+                <div class="flex items-center gap-4 bg-gray-50 p-2 pr-4 rounded-xl border border-gray-200">
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" name="aplicar_iva" id="switch-iva" class="sr-only peer" checked onchange="toggleIVA()">
+                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2D1B4B]"></div>
+                        <span class="ml-3 text-xs font-bold text-gray-500">Aplicar IVA</span>
+                    </label>
+                    
+                    <div class="flex items-center gap-2 border-l border-gray-300 pl-4" id="container-porcentaje">
+                        <span class="text-xs font-bold text-gray-400">Tasa:</span>
+                        <div class="relative">
+                            <input type="number" name="porcentaje_iva" id="input-iva" value="16" class="w-16 p-1 text-right font-bold text-[#2D1B4B] rounded border border-gray-300 text-sm" onchange="calcularTotalGlobal()">
+                            <span class="absolute right-4 top-1 text-xs text-gray-400">%</span>
+                        </div>
+                    </div>
+                </div>
 
-            <div class="overflow-x-auto">
-                <table class="w-full" id="tabla-servicios">
-                    <thead>
-                        <tr class="text-left border-b border-gray-100">
-                            <th class="pb-4 text-xs font-bold text-gray-400 uppercase tracking-wider w-1/3">Servicio</th>
-                            <th class="pb-4 text-xs font-bold text-gray-400 uppercase tracking-wider w-24 text-center">Cant.</th>
-                            <th class="pb-4 text-xs font-bold text-gray-400 uppercase tracking-wider w-32 text-right">Precio U.</th>
-                            <th class="pb-4 text-xs font-bold text-gray-400 uppercase tracking-wider w-10"></th>
-                        </tr>
-                    </thead>
-                    <tbody class="space-y-4" id="body-servicios">
-                        </tbody>
-                </table>
+                <div class="text-right w-1/3 space-y-1">
+                    <div class="flex justify-between text-sm text-gray-500"><span>Subtotal:</span> <span id="display-subtotal">$0.00</span></div>
+                    <div class="flex justify-between text-sm text-gray-500">
+                        <span>IVA (<span id="label-iva-percent">16</span>%):</span> 
+                        <span id="display-iva">$0.00</span>
+                    </div>
+                    <div class="flex justify-between text-xl font-black text-[#2D1B4B] mt-2 border-t pt-2"><span>Total:</span> <span id="display-total">$0.00</span></div>
+                </div>
             </div>
         </div>
 
-        <div class="flex justify-end gap-4">
-            <a href="{% url 'lista_cotizaciones' %}" class="px-8 py-4 rounded-xl font-bold text-xs text-gray-500 hover:bg-gray-100 transition-all uppercase tracking-widest">
-                Cancelar
-            </a>
-            <button type="submit" class="bg-[#2D1B4B] text-white px-8 py-4 rounded-xl font-black text-xs shadow-xl hover:bg-[#A855F7] hover:text-white transition-all uppercase tracking-widest flex items-center gap-2">
-                <i class="fas fa-paper-plane"></i> Crear Cotización
-            </button>
-        </div>
+        <button type="submit" class="w-full bg-green-500 text-white py-4 rounded-[1.5rem] font-black text-lg shadow-xl hover:bg-green-600 hover:shadow-2xl hover:-translate-y-1 transition-all">
+            CREAR COTIZACIÓN
+        </button>
     </form>
 </div>
 
-{{ servicios|json_script:"data-servicios" }}
-
 <script>
-    // 1. Cargar datos del script oculto
-    const serviciosData = JSON.parse(document.getElementById('data-servicios').textContent);
-
-    // 2. Función para agregar filas
-    function agregarFila() {
-        const tbody = document.getElementById('body-servicios');
-        const tr = document.createElement('tr');
-        tr.className = "group border-b border-gray-50 last:border-0";
-        
-        let options = '<option value="">Seleccionar...</option>';
-        
-        // Iteramos sobre la lista simple de diccionarios
-        serviciosData.forEach(s => {
-            options += `<option value="${s.id}" data-precio="${s.precio}">${s.nombre}</option>`;
-        });
-
-        tr.innerHTML = `
-            <td class="py-4 pr-4 align-top">
-                <div class="relative">
-                    <select name="servicio_id" onchange="actualizarPrecio(this)" class="w-full p-3 bg-white rounded-xl font-bold text-sm text-[#2D1B4B] border border-gray-200 focus:border-[#A855F7] outline-none appearance-none cursor-pointer focus:ring-1 focus:ring-[#A855F7] transition-all">
-                        ${options}
-                    </select>
-                    <div class="absolute right-3 top-3 pointer-events-none text-gray-400">
-                        <i class="fas fa-chevron-down text-xs"></i>
-                    </div>
-                </div>
-                <input type="hidden" name="valores_adicionales_json[]">
-            </td>
-            
-            <td class="py-4 px-2 align-top">
-                <input type="number" name="cantidad" value="1" min="1" class="w-full p-3 bg-white rounded-xl font-bold text-center text-[#2D1B4B] outline-none focus:border-[#A855F7] border border-gray-200 focus:ring-1 focus:ring-[#A855F7] transition-all">
-            </td>
-            
-            <td class="py-4 px-2 align-top">
-                <div class="relative">
-                    <span class="absolute left-3 top-3 text-gray-400 font-bold pointer-events-none">$</span>
-                    <input type="number" name="precio" step="0.01" class="w-full p-3 pl-6 bg-white rounded-xl font-bold text-right text-[#2D1B4B] outline-none focus:border-[#A855F7] border border-gray-200 focus:ring-1 focus:ring-[#A855F7] transition-all">
-                </div>
-            </td>
-
-            <td class="py-4 pl-2 align-top text-center">
-                <button type="button" onclick="this.closest('tr').remove()" class="p-3 text-gray-300 hover:text-red-500 transition-colors">
-                    <i class="fas fa-trash-alt"></i>
-                </button>
-            </td>
-        `;
-        tbody.appendChild(tr);
-    }
-
-    // 3. Autocompletar precio
-    function actualizarPrecio(select) {
-        const precio = select.options[select.selectedIndex].dataset.precio;
-        const row = select.closest('tr');
-        const inputPrecio = row.querySelector('input[name="precio"]');
-        
-        if(precio) {
-            inputPrecio.value = precio;
-            // Efecto visual de "actualizado" (Lila suave)
-            inputPrecio.classList.add('bg-purple-50');
-            setTimeout(() => inputPrecio.classList.remove('bg-purple-50'), 500);
+    // --- LÓGICA DE CLIENTES ---
+    function cargarCliente() {
+        const select = document.getElementById('selector-cliente');
+        const opt = select.options[select.selectedIndex];
+        if (opt.value) {
+            document.getElementById('input-cliente-id').value = opt.value;
+            document.getElementById('f-nombre').value = opt.dataset.nombre;
+            document.getElementById('f-empresa').value = opt.dataset.empresa;
+            document.getElementById('f-email').value = opt.dataset.email;
+            document.getElementById('f-telefono').value = opt.dataset.telefono;
+        } else {
+            document.getElementById('input-cliente-id').value = "";
+            document.getElementById('f-nombre').value = "";
+            document.getElementById('f-empresa').value = "";
+            document.getElementById('f-email').value = "";
+            document.getElementById('f-telefono').value = "";
         }
     }
 
-    // 4. Agregar fila inicial al cargar
-    document.addEventListener('DOMContentLoaded', () => {
-        agregarFila();
-    });
+    // --- LÓGICA DE ITEMS ---
+    function agregarFila() {
+        const contenedor = document.getElementById('contenedor-items');
+        const nueva = document.querySelector('.fila-item').cloneNode(true);
+        nueva.classList.remove('hidden');
+        contenedor.appendChild(nueva);
+    }
+    function eliminarFila(btn) { btn.closest('.fila-item').remove(); calcularTotalGlobal(); }
+    
+    function actualizarPrecio(select) {
+        const precio = select.options[select.selectedIndex].dataset.precio || 0;
+        select.closest('.fila-item').querySelector('[name="precio"]').value = precio;
+        calcularSubtotal(select);
+    }
+
+    function calcularSubtotal(input) {
+        const fila = input.closest('.fila-item');
+        const total = (parseFloat(fila.querySelector('[name="cantidad"]').value) || 0) * (parseFloat(fila.querySelector('[name="precio"]').value) || 0);
+        fila.querySelector('.total-fila').innerText = '$' + total.toFixed(2);
+        fila.dataset.total = total;
+        calcularTotalGlobal();
+    }
+
+    // --- NUEVA LÓGICA DE IVA DINÁMICO ---
+    function toggleIVA() {
+        const activo = document.getElementById('switch-iva').checked;
+        const input = document.getElementById('input-iva');
+        
+        if (!activo) {
+            input.disabled = true;
+            input.classList.add('bg-gray-100', 'text-gray-400');
+        } else {
+            input.disabled = false;
+            input.classList.remove('bg-gray-100', 'text-gray-400');
+        }
+        calcularTotalGlobal();
+    }
+
+    function calcularTotalGlobal() {
+        let subtotal = 0;
+        document.querySelectorAll('.fila-item:not(.hidden)').forEach(f => subtotal += parseFloat(f.dataset.total) || 0);
+        
+        const aplica = document.getElementById('switch-iva').checked;
+        let porcentaje = parseFloat(document.getElementById('input-iva').value) || 0;
+        
+        if (!aplica) porcentaje = 0;
+
+        const iva = subtotal * (porcentaje / 100);
+        const total = subtotal + iva;
+
+        document.getElementById('display-subtotal').innerText = '$' + subtotal.toFixed(2);
+        document.getElementById('label-iva-percent').innerText = porcentaje;
+        document.getElementById('display-iva').innerText = '$' + iva.toFixed(2);
+        document.getElementById('display-total').innerText = '$' + total.toFixed(2);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => agregarFila());
 </script>
 {% endblock %}

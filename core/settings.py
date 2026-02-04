@@ -212,3 +212,21 @@ if not DEBUG:
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = 'DENY'
+
+    # core/settings.py
+
+# ... al final del archivo ...
+
+# CONFIGURACIÓN FACTURAMA SANDBOX
+# Tu usuario es el que aparece arriba a la derecha en el portal ("Jovani563")
+FACTURAMA_USER = env('FACTURAMA_USER')
+
+# Tu contraseña es la misma con la que entras al portal web
+FACTURAMA_PASS = env('FACTURAMA_PASS')
+
+# Esto le dice a la librería que use el servidor de pruebas (dev.facturama.mx)
+FACTURAMA_SANDBOX = True
+
+# settings.py
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')

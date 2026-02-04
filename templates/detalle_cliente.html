@@ -13,11 +13,23 @@
             </div>
             <div>
                 <h2 class="text-2xl font-black text-[#2D1B4B] leading-none">{{ cliente.nombre_empresa }}</h2>
-                <p class="text-xs text-gray-400 mt-1">{{ cliente.nombre_contacto }} | {{ cliente.telefono }}</p>
+                <div class="flex items-center gap-2 mt-1">
+                    <p class="text-xs text-gray-400">{{ cliente.nombre_contacto }} | {{ cliente.telefono }}</p>
+                    
+                    {% if cliente.rfc %}
+                        <span class="bg-green-100 text-green-700 px-2 py-0.5 rounded text-[10px] font-bold">
+                            RFC: {{ cliente.rfc }}
+                        </span>
+                    {% else %}
+                        <span class="bg-orange-100 text-orange-600 px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer hover:bg-orange-200" onclick="abrirModalFiscal()">
+                            <i class="fas fa-exclamation-circle"></i> Falta RFC
+                        </span>
+                    {% endif %}
+                </div>
                 
                 {% if not carpeta_actual %}
                     {% if user.can_edit_client or user.rol == 'admin' %}
-                    <a href="{% url 'editar_cliente' cliente.id %}" class="inline-flex items-center gap-1 text-[10px] font-bold text-[#A855F7] hover:underline mt-1 bg-purple-50 px-2 py-1 rounded-md">
+                    <a href="{% url 'editar_cliente' cliente.id %}" class="inline-flex items-center gap-1 text-[10px] font-bold text-[#A855F7] hover:underline mt-2 bg-purple-50 px-2 py-1 rounded-md">
                         <i class="fas fa-pen"></i> Editar Información
                     </a>
                     {% endif %}
@@ -29,6 +41,56 @@
             <div><p class="text-[10px] font-bold text-gray-400 uppercase">Casos</p><p class="text-xl font-black text-[#2D1B4B]">{{ stats_cliente.expedientes_activos }}</p></div>
         </div>
     </div>
+
+    {% if not carpeta_actual %}
+    <div class="mb-8 animate__animated animate__fadeIn">
+        <div class="flex justify-between items-end mb-4">
+            <div>
+                <h3 class="text-xl font-black text-[#2D1B4B]">Semáforo de Cumplimiento</h3>
+                <p class="text-xs text-gray-500">Estado general de la documentación.</p>
+            </div>
+            {% if total_pendientes > 0 %}
+            <span class="bg-red-100 text-red-600 px-3 py-1 rounded-full text-xs font-bold animate-pulse">
+                <i class="fas fa-exclamation-circle mr-1"></i> {{ total_pendientes }} Documentos Faltantes
+            </span>
+            {% else %}
+            <span class="bg-green-100 text-green-600 px-3 py-1 rounded-full text-xs font-bold">
+                <i class="fas fa-check-circle mr-1"></i> Expediente al 100%
+            </span>
+            {% endif %}
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {% for categoria, lista in requisitos_por_cat.items %}
+            <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                <h4 class="font-bold text-[#2D1B4B] mb-3 text-sm uppercase border-b pb-2 flex justify-between">
+                    {{ categoria }}
+                </h4>
+                <div class="space-y-3">
+                    {% for req in lista %}
+                    <div class="flex items-center justify-between group">
+                        <div class="flex items-center gap-2 overflow-hidden">
+                            <div class="w-3 h-3 rounded-full flex-shrink-0 
+                                {% if req.estado == 'completado' %}bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.4)]
+                                {% else %}bg-red-500 animate-pulse{% endif %}">
+                            </div>
+                            <span class="text-xs font-medium text-gray-600 truncate" title="{{ req.nombre }}">
+                                {{ req.nombre }}
+                            </span>
+                        </div>
+                        {% if req.estado == 'completado' %}
+                            <i class="fas fa-check text-green-500 text-xs"></i>
+                        {% else %}
+                            <i class="fas fa-clock text-red-300 text-xs"></i>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
 
     <div class="mb-6 border-b border-gray-200">
         <ul class="flex flex-wrap -mb-px text-sm font-medium text-center">
@@ -51,6 +113,7 @@
     </div>
 
     <div id="drive-content" class="animate__animated animate__fadeIn">
+        
         <div class="flex justify-between items-center mb-4">
             <nav class="flex text-sm font-bold text-gray-400">
                 {% if carpeta_actual %}
@@ -62,11 +125,20 @@
                 {% else %} <span class="text-[#2D1B4B]">Carpeta Raíz</span> {% endif %}
             </nav>
             <div class="flex gap-2">
+                <button onclick="abrirModalFiscal()" class="bg-gray-800 text-white px-4 py-2 rounded-xl font-bold text-xs hover:bg-gray-900 shadow-md flex items-center gap-2" title="Configurar Datos Fiscales">
+                    <i class="fas fa-file-invoice-dollar"></i> SAT
+                </button>
+
                 {% if user.access_contratos or user.rol == 'admin' %}
                 <a href="{% url 'generador_contratos' cliente.id %}" class="bg-[#A855F7] text-white px-4 py-2 rounded-xl font-bold text-xs hover:bg-[#9333EA] shadow-md flex items-center gap-2">
                     <i class="fas fa-file-signature"></i> CONTRATO
                 </a>
                 {% endif %}
+                
+                <a href="{% url 'ver_papelera' cliente.id %}" class="bg-gray-100 text-gray-500 px-4 py-2 rounded-xl font-bold text-xs hover:bg-red-50 hover:text-red-500 transition-colors" title="Ver Papelera">
+                    <i class="fas fa-trash-alt"></i>
+                </a>
+
                 {% if carpeta_actual %}
                 <a href="{% url 'descargar_carpeta_zip' carpeta_actual.id %}" class="bg-blue-100 text-blue-700 px-4 py-2 rounded-xl font-bold text-xs hover:bg-blue-200"><i class="fas fa-file-archive"></i> ZIP</a>
                 {% endif %}
@@ -79,17 +151,60 @@
             </div>
         </div>
 
+        {% if carpeta_actual %}
+            {% for categoria, lista in requisitos_por_cat.items %}
+                {% if categoria == carpeta_actual.nombre %}
+                <div class="bg-purple-50 p-6 rounded-[2rem] border border-purple-100 mb-6 shadow-sm animate__animated animate__fadeInDown">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-black text-[#2D1B4B] flex items-center gap-2">
+                            <i class="fas fa-clipboard-list text-[#A855F7]"></i> Checklist de {{ categoria }}
+                        </h3>
+                        <span class="text-xs font-bold text-purple-600 bg-white px-3 py-1 rounded-full shadow-sm">
+                            Requisitos Obligatorios
+                        </span>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {% for req in lista %}
+                        <div class="bg-white p-3 rounded-xl border {% if req.estado == 'completado' %}border-green-200{% else %}border-red-100{% endif %} flex items-center justify-between shadow-sm">
+                            <div class="flex items-center gap-3 overflow-hidden">
+                                <div class="w-4 h-4 rounded-full flex-shrink-0 flex items-center justify-center
+                                    {% if req.estado == 'completado' %}bg-green-100 text-green-600{% else %}bg-red-100 text-red-500{% endif %}">
+                                    <i class="fas {% if req.estado == 'completado' %}fa-check{% else %}fa-exclamation{% endif %} text-[10px]"></i>
+                                </div>
+                                <span class="text-sm font-bold text-gray-700 truncate" title="{{ req.nombre }}">
+                                    {{ req.nombre }}
+                                </span>
+                            </div>
+
+                            {% if req.estado == 'completado' %}
+                                <button onclick="abrirPreview('{{ req.archivo_asociado.id }}')" class="text-xs bg-green-50 text-green-600 px-3 py-1.5 rounded-lg font-bold hover:bg-green-100 transition-colors">
+                                    <i class="fas fa-eye mr-1"></i> Ver
+                                </button>
+                            {% else %}
+                                <button onclick="abrirModalSubirRequisito('{{ req.id }}', '{{ req.nombre }}')" class="text-xs bg-[#2D1B4B] text-white px-3 py-1.5 rounded-lg font-bold hover:bg-[#A855F7] transition-colors shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
+                                    <i class="fas fa-upload mr-1"></i> Subir
+                                </button>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+        
         <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 min-h-[500px]">
             {% if carpetas %}
             <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-8">
                 {% for carpeta in carpetas %}
                 <div class="group relative">
-                    <a href="{% url 'detalle_carpeta' cliente.id carpeta.id %}" class="block bg-purple-50 p-4 rounded-xl text-center hover:bg-purple-100 transition-all">
-                        <i class="fas fa-folder text-4xl text-purple-300 group-hover:text-purple-500 mb-2"></i>
+                    <a href="{% url 'detalle_carpeta' cliente.id carpeta.id %}" class="block bg-gray-50 p-4 rounded-xl text-center hover:bg-purple-50 transition-all border border-transparent hover:border-purple-100">
+                        <i class="fas fa-folder text-4xl text-yellow-400 group-hover:text-yellow-500 mb-2 drop-shadow-sm"></i>
                         <p class="text-xs font-bold text-[#2D1B4B] truncate">{{ carpeta.nombre }}</p>
                     </a>
                     {% if user.can_delete_client or user.rol == 'admin' %}
-                    <a href="{% url 'eliminar_carpeta' carpeta.id %}" onclick="return confirm('¿Borrar?')" class="absolute top-1 right-1 text-red-300 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100"><i class="fas fa-times-circle"></i></a>
+                    <a href="{% url 'eliminar_carpeta' carpeta.id %}" onclick="return confirm('¿Borrar carpeta y todo su contenido permanentemente?')" class="absolute top-1 right-1 text-red-300 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100"><i class="fas fa-times-circle"></i></a>
                     {% endif %}
                 </div>
                 {% endfor %}
@@ -114,13 +229,24 @@
                         <tr class="border-b border-gray-50 hover:bg-gray-50 group">
                             <td class="py-3 pl-2"><input type="checkbox" name="doc_ids" value="{{ doc.id }}" class="doc-check rounded text-[#2D1B4B] accent-[#A855F7]" onchange="verificarSeleccion()"></td>
                             <td class="py-3 flex items-center gap-3">
-                                <i class="fas fa-file text-gray-400"></i>
+                                <div class="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-500">
+                                    <i class="fas fa-file"></i>
+                                </div>
                                 <span class="font-bold text-[#2D1B4B] truncate max-w-xs cursor-pointer hover:underline" onclick="abrirPreview('{{ doc.id }}')">{{ doc.nombre_archivo }}</span>
+                                {% if doc.requisito_set.exists %}
+                                    <span class="text-[10px] bg-green-100 text-green-600 px-2 py-0.5 rounded-full font-bold">Requisito</span>
+                                {% endif %}
                             </td>
                             <td class="py-3 text-gray-500 text-xs">{{ doc.fecha_subida|date:"d/m/y" }}</td>
                             <td class="py-3 text-right">
-                                <button type="button" onclick="abrirPreview('{{ doc.id }}')" class="text-gray-400 hover:text-[#A855F7] mx-1"><i class="fas fa-eye"></i></button>
-                                <a href="{{ doc.archivo.url }}" download class="text-gray-400 hover:text-[#2D1B4B] mx-1"><i class="fas fa-download"></i></a>
+                                <button type="button" onclick="abrirPreview('{{ doc.id }}')" class="text-gray-400 hover:text-[#A855F7] mx-1" title="Ver"><i class="fas fa-eye"></i></button>
+                                <a href="{{ doc.archivo.url }}" download class="text-gray-400 hover:text-[#2D1B4B] mx-1" title="Descargar"><i class="fas fa-download"></i></a>
+                                
+                                <button type="button" onclick="abrirModalMover('{{ doc.id }}')" class="text-gray-400 hover:text-blue-500 mx-1" title="Mover a otra carpeta"><i class="fas fa-exchange-alt"></i></button>
+                                
+                                {% if user.can_delete_client or user.rol == 'admin' %}
+                                <a href="{% url 'eliminar_archivo_drive' doc.id %}" onclick="return confirm('¿Mover a papelera?')" class="text-gray-400 hover:text-red-500 mx-1" title="Eliminar"><i class="fas fa-trash"></i></a>
+                                {% endif %}
                             </td>
                         </tr>
                         {% endfor %}
@@ -137,7 +263,6 @@
 
     <div id="rec-content" class="hidden animate__animated animate__fadeIn">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-            
             <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
                 <div class="flex justify-between items-center mb-6">
                     <h3 class="text-lg font-bold text-[#2D1B4B]"><i class="fas fa-tasks mr-2 text-orange-500"></i> Tareas Pendientes</h3>
@@ -162,7 +287,6 @@
                     {% endfor %}
                 </div>
             </div>
-
             <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
                 <h3 class="text-lg font-bold text-[#2D1B4B] mb-6"><i class="fas fa-calendar-alt mr-2 text-blue-500"></i> Eventos Próximos</h3>
                 <div class="space-y-3">
@@ -182,7 +306,6 @@
                     {% endfor %}
                 </div>
             </div>
-
         </div>
     </div>
 
@@ -220,28 +343,174 @@
 
 </div>
 
+<div id="modal-fiscal" class="fixed inset-0 z-[60] hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="fixed inset-0 bg-gray-900/70 backdrop-blur-sm transition-opacity"></div>
+    <div class="fixed inset-0 z-10 overflow-y-auto">
+        <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+            <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-2xl border border-gray-200">
+                
+                <button onclick="cerrarModalFiscal()" class="absolute top-4 right-4 z-20 p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+
+                <div class="bg-gray-50 px-4 py-5 sm:px-6 border-b border-gray-100 flex items-center gap-4">
+                    <div class="flex-shrink-0 bg-[#2D1B4B] h-12 w-12 rounded-xl flex items-center justify-center text-white text-xl shadow-lg">
+                        <i class="fas fa-university"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-black leading-6 text-gray-900">Datos Fiscales (SAT 4.0)</h3>
+                        <p class="text-sm text-gray-500">Configuración necesaria para timbrar facturas.</p>
+                    </div>
+                </div>
+
+                <div class="px-4 py-5 sm:p-6 space-y-6">
+                    <div class="rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 p-5 relative overflow-hidden">
+                        <div class="absolute -right-6 -top-10 text-blue-100/50 text-9xl transform rotate-12 pointer-events-none"><i class="fas fa-file-pdf"></i></div>
+                        <div class="relative z-10">
+                            <h4 class="text-sm font-bold text-[#2D1B4B] mb-2 flex items-center gap-2">
+                                <i class="fas fa-magic text-blue-500"></i> Auto-llenado Inteligente
+                            </h4>
+                            <p class="text-xs text-gray-600 mb-4 pr-10">Sube tu <strong>Constancia de Situación Fiscal</strong> y detectaremos los datos automáticamente.</p>
+                            
+                            <form action="{% url 'guardar_datos_fiscales' cliente.id %}" method="POST" enctype="multipart/form-data" class="flex flex-col sm:flex-row gap-3 items-stretch">
+                                {% csrf_token %}
+                                <div class="flex-grow">
+                                    <input type="file" name="archivo_constancia" accept=".pdf" 
+                                           class="block w-full text-sm text-gray-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white file:cursor-pointer hover:file:bg-blue-700 bg-white border border-gray-200 rounded-xl cursor-pointer focus:outline-none">
+                                </div>
+                                <button type="submit" class="bg-[#2D1B4B] text-white px-6 py-2 rounded-xl font-bold text-xs hover:bg-[#432C68] shadow-md transition-all flex items-center justify-center gap-2 whitespace-nowrap">
+                                    <i class="fas fa-bolt"></i> PROCESAR
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="relative">
+                        <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-gray-200"></div></div>
+                        <div class="relative flex justify-center"><span class="bg-white px-3 text-xs font-bold text-gray-400 uppercase tracking-wider">O edita manualmente</span></div>
+                    </div>
+
+                    <form action="{% url 'guardar_datos_fiscales' cliente.id %}" method="POST" class="grid grid-cols-1 gap-y-4 gap-x-4 sm:grid-cols-6">
+                        {% csrf_token %}
+                        <input type="hidden" name="accion_guardar" value="true">
+
+                        <div class="sm:col-span-6">
+                            <label class="block text-xs font-bold text-gray-500 mb-1">Razón Social <span class="text-red-500">*</span></label>
+                            <input type="text" name="razon_social" value="{{ cliente.razon_social|default:cliente.nombre_empresa }}" 
+                                   class="block w-full rounded-xl border-gray-200 bg-gray-50 focus:border-purple-500 focus:ring-purple-500 sm:text-sm font-bold text-gray-800 uppercase py-3 pl-3" required>
+                        </div>
+
+                        <div class="sm:col-span-3">
+                            <label class="block text-xs font-bold text-gray-500 mb-1">RFC <span class="text-red-500">*</span></label>
+                            <input type="text" name="rfc" value="{{ cliente.rfc|default:'' }}" 
+                                   class="block w-full rounded-xl border-gray-200 bg-gray-50 focus:border-purple-500 focus:ring-purple-500 sm:text-sm font-bold text-gray-800 uppercase py-3 pl-3" maxlength="13" required>
+                        </div>
+
+                        <div class="sm:col-span-3">
+                            <label class="block text-xs font-bold text-gray-500 mb-1">C.P. Fiscal <span class="text-red-500">*</span></label>
+                            <input type="text" name="codigo_postal" value="{{ cliente.codigo_postal|default:'' }}" 
+                                   class="block w-full rounded-xl border-gray-200 bg-gray-50 focus:border-purple-500 focus:ring-purple-500 sm:text-sm font-bold text-gray-800 py-3 pl-3" maxlength="5" required>
+                        </div>
+
+                        <div class="sm:col-span-6">
+                            <label class="block text-xs font-bold text-gray-500 mb-1">Régimen Fiscal <span class="text-red-500">*</span></label>
+                            <select name="regimen_fiscal" class="block w-full rounded-xl border-gray-200 bg-gray-50 focus:border-purple-500 focus:ring-purple-500 sm:text-sm font-bold text-gray-800 py-3 pl-3" required>
+                                <option value="">Selecciona...</option>
+                                <option value="601">601 - General de Ley Personas Morales</option>
+                                <option value="603">603 - Personas Morales con Fines no Lucrativos</option>
+                                <option value="605">605 - Sueldos y Salarios</option>
+                                <option value="606">606 - Arrendamiento</option>
+                                <option value="612">612 - Personas Físicas con Act. Empresariales</option>
+                                <option value="621">621 - Incorporación Fiscal</option>
+                                <option value="626">626 - Régimen Simplificado de Confianza (RESICO)</option>
+                                <option value="616">616 - Sin obligaciones fiscales</option>
+                            </select>
+                            {% if cliente.regimen_fiscal %}
+                            <script>document.querySelector('[name=regimen_fiscal]').value = "{{ cliente.regimen_fiscal }}";</script>
+                            {% endif %}
+                        </div>
+
+                        <div class="sm:col-span-3">
+                            <label class="block text-xs font-bold text-gray-500 mb-1">Uso de CFDI</label>
+                            <select name="uso_cfdi" class="block w-full rounded-xl border-gray-200 bg-gray-50 focus:border-purple-500 focus:ring-purple-500 sm:text-sm font-bold text-gray-800 py-3 pl-3" required>
+                                <option value="G03">G03 - Gastos en general</option>
+                                <option value="P01">P01 - Por definir</option>
+                                <option value="D01">D01 - Honorarios médicos</option>
+                                <option value="S01">S01 - Sin efectos fiscales</option>
+                            </select>
+                            {% if cliente.uso_cfdi %}
+                            <script>document.querySelector('[name=uso_cfdi]').value = "{{ cliente.uso_cfdi }}";</script>
+                            {% endif %}
+                        </div>
+
+                        <div class="sm:col-span-3">
+                            <label class="block text-xs font-bold text-gray-500 mb-1">Email Facturación</label>
+                            <input type="email" name="email_facturacion" value="{{ cliente.email_facturacion|default:cliente.email }}" 
+                                   class="block w-full rounded-xl border-gray-200 bg-gray-50 focus:border-purple-500 focus:ring-purple-500 sm:text-sm font-bold text-gray-800 py-3 pl-3" required>
+                        </div>
+
+                        <div class="sm:col-span-6 mt-4">
+                            <button type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-black text-white bg-green-500 hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all transform hover:-translate-y-1">
+                                <i class="fas fa-save mr-2 mt-0.5"></i> GUARDAR Y CERRAR
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="modal-req" class="fixed inset-0 bg-[#2D1B4B]/90 hidden items-center justify-center z-50">
+    <div class="bg-white p-8 rounded-[2rem] w-full max-w-sm m-4 shadow-2xl relative">
+        <button onclick="document.getElementById('modal-req').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400"><i class="fas fa-times"></i></button>
+        <h3 class="text-lg font-black text-[#2D1B4B] mb-1">Subir Evidencia</h3>
+        <p id="req-titulo-modal" class="text-sm text-gray-500 mb-6 italic">...</p>
+        <form id="form-req" action="" method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="file" name="archivo" class="w-full p-3 bg-gray-50 rounded-xl mb-4 text-sm" required>
+            <button type="submit" class="w-full bg-green-500 text-white py-3 rounded-xl font-bold hover:bg-green-600 transition-colors shadow-lg">
+                <i class="fas fa-check mr-2"></i> MARCAR COMO LISTO
+            </button>
+        </form>
+    </div>
+</div>
+
+<div id="modal-mover" class="fixed inset-0 bg-[#2D1B4B]/90 hidden items-center justify-center z-50">
+    <div class="bg-white p-8 rounded-[2rem] w-full max-w-sm m-4 shadow-2xl relative">
+        <button onclick="document.getElementById('modal-mover').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400"><i class="fas fa-times"></i></button>
+        <h3 class="text-xl font-black text-[#2D1B4B] mb-2">Mover Archivo</h3>
+        <p class="text-xs text-gray-400 mb-4">Selecciona la nueva ubicación:</p>
+        <form id="form-mover" action="" method="POST">
+            {% csrf_token %}
+            <select name="carpeta_destino" class="w-full p-3 bg-gray-50 rounded-xl font-bold border-none mb-6 text-sm">
+                <option value="raiz">📂 Carpeta Raíz (Inicio)</option>
+                {% for c in todas_carpetas %}
+                    <option value="{{ c.id }}">📁 {{ c.nombre }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="w-full bg-[#2D1B4B] text-white py-3 rounded-xl font-bold hover:bg-blue-600 transition-colors shadow-lg"><i class="fas fa-exchange-alt mr-2"></i> MOVER</button>
+        </form>
+    </div>
+</div>
+
 <div id="modal-preview" class="fixed inset-0 bg-black/90 hidden items-center justify-center z-50"><div class="bg-white w-full max-w-5xl h-[85vh] rounded-xl overflow-hidden relative flex flex-col shadow-2xl"><div class="bg-[#2D1B4B] p-4 flex justify-between items-center shrink-0"><h3 id="preview-title" class="text-white font-bold truncate">Vista Previa</h3><div class="flex gap-4"><a id="preview-download" href="#" download class="text-white hover:text-[#A855F7]"><i class="fas fa-download"></i></a><button onclick="cerrarPreview()" class="text-white hover:text-red-500"><i class="fas fa-times text-xl"></i></button></div></div><div id="preview-body" class="flex-1 bg-gray-100 overflow-auto flex items-center justify-center p-4"></div></div></div>
-
 <div id="modal-carpeta" class="fixed inset-0 bg-[#2D1B4B]/90 hidden items-center justify-center z-50"><div class="bg-white p-8 rounded-[2rem] w-full max-w-sm m-4 shadow-2xl"><button onclick="document.getElementById('modal-carpeta').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400"><i class="fas fa-times"></i></button><h3 class="text-xl font-black text-[#2D1B4B] mb-4">Nueva Carpeta</h3><form action="{% url 'crear_carpeta' cliente.id %}" method="POST">{% csrf_token %}{% if carpeta_actual %}<input type="hidden" name="padre_id" value="{{ carpeta_actual.id }}">{% endif %}<input type="text" name="nombre" class="w-full p-3 bg-gray-50 rounded-xl font-bold border-none mb-4" placeholder="Nombre..." required><button type="submit" class="w-full bg-[#2D1B4B] text-white py-3 rounded-xl font-bold hover:bg-[#A855F7] transition-colors">CREAR</button></form></div></div>
-
 <div id="modal-archivo" class="fixed inset-0 bg-[#2D1B4B]/90 hidden items-center justify-center z-50"><div class="bg-white p-8 rounded-[2rem] w-full max-w-sm m-4 shadow-2xl"><button onclick="document.getElementById('modal-archivo').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400"><i class="fas fa-times"></i></button><h3 class="text-xl font-black text-[#2D1B4B] mb-4">Subir Archivos</h3><form action="{% url 'subir_archivo_drive' cliente.id %}" method="POST" enctype="multipart/form-data">{% csrf_token %}{% if carpeta_actual %}<input type="hidden" name="carpeta_id" value="{{ carpeta_actual.id }}">{% endif %}<input type="file" name="archivo" multiple class="w-full p-3 bg-gray-50 rounded-xl mb-4"><button type="submit" class="w-full bg-[#2D1B4B] text-white py-3 rounded-xl font-bold hover:bg-[#A855F7] transition-colors">SUBIR</button></form></div></div>
-
 <div id="modal-tarea" class="fixed inset-0 bg-[#2D1B4B]/90 hidden items-center justify-center z-50"><div class="bg-white p-8 rounded-[2rem] w-full max-w-sm m-4 shadow-2xl"><button onclick="document.getElementById('modal-tarea').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400"><i class="fas fa-times"></i></button><h3 class="text-xl font-black text-[#2D1B4B] mb-4">Nueva Tarea</h3><form action="{% url 'gestionar_tarea' cliente.id %}" method="POST">{% csrf_token %}<input type="text" name="titulo" class="w-full p-3 bg-gray-50 rounded-xl font-bold border-none mb-4" placeholder="Título de la tarea" required><input type="date" name="fecha_limite" class="w-full p-3 bg-gray-50 rounded-xl font-bold border-none mb-4" required><select name="prioridad" class="w-full p-3 bg-gray-50 rounded-xl font-bold border-none mb-4"><option value="alta">Alta Prioridad</option><option value="media" selected>Media</option><option value="baja">Baja</option></select><button type="submit" class="w-full bg-[#2D1B4B] text-white py-3 rounded-xl font-bold hover:bg-[#A855F7] transition-colors">GUARDAR</button></form></div></div>
 
 <script>
     function switchTab(id) {
         ['drive', 'rec', 'history'].forEach(t => {
             document.getElementById(t + '-content').classList.add('hidden');
-            // Quitamos clases de color
             document.getElementById(t + '-tab').classList.remove('border-[#A855F7]', 'text-[#2D1B4B]');
             document.getElementById(t + '-tab').classList.add('text-gray-400', 'border-transparent');
         });
         document.getElementById(id + '-content').classList.remove('hidden');
-        // Agregamos clases de color NUEVAS
         document.getElementById(id + '-tab').classList.add('border-[#A855F7]', 'text-[#2D1B4B]');
         document.getElementById(id + '-tab').classList.remove('text-gray-400', 'border-transparent');
     }
-    // Funciones Masivas y Preview (Mantener las previas)
+    
     function toggleTodos(s) { document.querySelectorAll('.doc-check').forEach(c => c.checked = s.checked); verificarSeleccion(); }
     function verificarSeleccion() { 
         const c = document.querySelectorAll('.doc-check:checked').length; 
@@ -251,6 +520,7 @@
     }
     function ejecutarMasivo(a) { if(a==='eliminar' && !confirm('¿Seguro?'))return; document.getElementById('input-accion').value=a; document.getElementById('form-masivo').submit(); }
     function cerrarMasivo() { document.querySelectorAll('.doc-check').forEach(c => c.checked=false); verificarSeleccion(); }
+    
     function abrirPreview(id) {
         const m=document.getElementById('modal-preview'), b=document.getElementById('preview-body');
         m.classList.remove('hidden'); m.classList.add('flex');
@@ -267,5 +537,36 @@
     function cerrarPreview() { document.getElementById('modal-preview').classList.add('hidden'); }
     function modalCrearCarpeta() { document.getElementById('modal-carpeta').classList.remove('hidden'); document.getElementById('modal-carpeta').classList.add('flex'); }
     function modalSubirArchivo() { document.getElementById('modal-archivo').classList.remove('hidden'); document.getElementById('modal-archivo').classList.add('flex'); }
+    
+    function abrirModalSubirRequisito(id, nombre) {
+        document.getElementById('req-titulo-modal').innerText = nombre;
+        document.getElementById('form-req').action = "/requisito/subir/" + id + "/";
+        document.getElementById('modal-req').classList.remove('hidden');
+        document.getElementById('modal-req').classList.add('flex');
+    }
+
+    function abrirModalMover(id) {
+        document.getElementById('form-mover').action = "/archivo/mover/" + id + "/";
+        document.getElementById('modal-mover').classList.remove('hidden');
+        document.getElementById('modal-mover').classList.add('flex');
+    }
+
+    // --- MODAL FISCAL LOGIC ---
+    function abrirModalFiscal() {
+        document.getElementById('modal-fiscal').classList.remove('hidden');
+    }
+
+    function cerrarModalFiscal() {
+        document.getElementById('modal-fiscal').classList.add('hidden');
+    }
+
+    // --- AUTO-OPEN (Redirección desde Finanzas) ---
+    document.addEventListener("DOMContentLoaded", function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('accion') === 'abrir_fiscal') {
+            abrirModalFiscal();
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+    });
 </script>
 {% endblock %}

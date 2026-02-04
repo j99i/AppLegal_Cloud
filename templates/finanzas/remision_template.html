@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Remisión de Pago</title>
+    <style>
+        @page { size: A4; margin: 0cm; }
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            color: #333;
+            margin: 0; padding: 0;
+            line-height: 1.5; font-size: 14px;
+        }
+        :root {
+            --corp-dark: #2D1B4B;
+            --corp-accent: #A855F7;
+            --corp-light: #F3F4F6;
+        }
+        .sidebar-decor {
+            position: fixed; left: 0; top: 0; bottom: 0; width: 12px;
+            background: linear-gradient(180deg, #2D1B4B 0%, #1E1233 100%);
+            z-index: 100;
+        }
+        
+        /* --- MARCA DE AGUA --- */
+        .watermark {
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 120px;
+            font-weight: 900;
+            color: #2D1B4B;
+            opacity: 0.04; /* Muy suave */
+            z-index: -1000;
+            white-space: nowrap;
+            text-transform: uppercase;
+            font-family: 'Arial Black', sans-serif;
+            pointer-events: none;
+        }
+
+        .container { padding: 40px 40px 40px 60px; }
+        .header {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            border-bottom: 2px solid #f3f4f6; padding-bottom: 25px; margin-bottom: 35px;
+        }
+        .brand-logo { line-height: 1; }
+        .brand-top { font-size: 10px; text-transform: uppercase; letter-spacing: 4px; color: #A855F7; font-weight: 800; display: block; margin-bottom: 2px; }
+        .brand-main { font-size: 28px; font-weight: 900; color: #2D1B4B; text-transform: uppercase; letter-spacing: -1px; font-family: 'Arial Black', sans-serif; display: block; }
+        .brand-dot { color: #A855F7; }
+        .brand-line { width: 40px; height: 4px; background-color: #2D1B4B; margin-top: 8px; border-radius: 2px; }
+
+        .invoice-title { text-align: right; }
+        .invoice-title h1 { margin: 0; font-size: 32px; color: #2D1B4B; font-weight: 900; letter-spacing: 1px; }
+        .meta-data { font-size: 12px; color: #A855F7; margin-top: 5px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+
+        .info-section { width: 100%; margin-bottom: 40px; }
+        .info-col { width: 48%; display: inline-block; vertical-align: top; }
+        .info-label { font-size: 10px; text-transform: uppercase; color: #9ca3af; letter-spacing: 1px; margin-bottom: 8px; font-weight: 800; }
+        .info-content { font-size: 15px; font-weight: 700; color: #2D1B4B; margin-bottom: 4px; }
+        .info-sub { font-size: 13px; font-weight: normal; color: #555; line-height: 1.4; }
+        .text-right { text-align: right; }
+
+        table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+        th { text-align: left; padding: 15px 10px; background-color: #2D1B4B; color: #ffffff; text-transform: uppercase; font-size: 10px; font-weight: bold; letter-spacing: 1px; }
+        td { padding: 18px 10px; border-bottom: 1px solid #eee; vertical-align: top; }
+        
+        .item-main-title { font-size: 15px; color: #2D1B4B; font-weight: bold; margin-bottom: 6px; }
+        .item-desc { font-size: 13px; color: #666; margin-bottom: 12px; line-height: 1.4; }
+
+        .totals-section { width: 100%; text-align: right; margin-top: 20px; }
+        .totals-table { width: 45%; margin-left: 55%; }
+        .total-row td { border: none; padding: 8px 10px; font-size: 13px; color: #555; }
+        .total-final td { font-size: 22px; font-weight: 900; color: #2D1B4B; border-top: 3px solid #2D1B4B !important; padding-top: 15px !important; }
+
+        .footer { position: fixed; bottom: 40px; left: 60px; right: 40px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; font-size: 10px; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px; }
+        
+        .status-badge {
+            display: inline-block; padding: 5px 10px; border: 2px solid #A855F7; 
+            color: #A855F7; font-weight: bold; font-size: 10px; border-radius: 4px; margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar-decor"></div>
+    
+    <div class="watermark">CORPAD</div>
+
+    <div class="container">
+        <div class="header">
+            <div class="brand-logo">
+                <span class="brand-top">GESTIONES</span>
+                <span class="brand-main">CORPAD<span class="brand-dot">.</span></span>
+                <div class="brand-line"></div>
+            </div>
+            
+            <div class="invoice-title">
+                <h1>RECIBO DE PAGO</h1>
+                <div class="meta-data">FOLIO: {{ r.folio }}</div>
+                <div class="meta-data">FECHA: {{ r.fecha_emision|date:"d/m/Y" }}</div>
+                <div class="status-badge">DOCUMENTO INTERNO</div>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <div class="info-col">
+                <div class="info-label">RECIBIMOS DE:</div>
+                <div class="info-content">{{ r.cliente.nombre_empresa }}</div>
+                <div class="info-sub">
+                    Atn: {{ r.cliente.nombre_contacto }}<br>
+                    {{ r.cliente.email }}
+                </div>
+            </div>
+            
+            <div class="info-col text-right">
+                <div class="info-label">DETALLES DEL PROYECTO:</div>
+                <div class="info-content">Cotización Ref. #{{ r.cotizacion.id }}</div>
+                <div class="info-sub">
+                    {{ r.cotizacion.prospecto_empresa }}<br>
+                    Total Proyecto: ${{ r.cotizacion.total|floatformat:2 }}
+                </div>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th width="70%">CONCEPTO</th>
+                    <th width="30%" class="text-right">IMPORTE PAGADO</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>
+                        <div class="item-main-title">
+                            {% if 'ANT' in r.folio %}
+                                PAGO DE ANTICIPO (50%)
+                            {% elif 'FIN' in r.folio %}
+                                LIQUIDACIÓN FINAL
+                            {% else %}
+                                PAGO PARCIAL
+                            {% endif %}
+                        </div>
+                        <div class="item-desc">
+                            Pago correspondiente a los servicios legales y de gestión descritos en la cotización #{{ r.cotizacion.id }}.
+                        </div>
+                    </td>
+                    <td class="text-right" style="font-weight:bold; color:#2D1B4B; font-size: 16px;">
+                        ${{ r.monto_total|floatformat:2 }}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="totals-section">
+            <table class="totals-table">
+                <tr class="total-final">
+                    <td class="text-right">TOTAL PAGADO:</td>
+                    <td class="text-right">${{ r.monto_total|floatformat:2 }}</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="footer">
+            <p>Este documento es un comprobante de recepción de fondos interno.</p>
+            <p>Gestiones Corpad S.A.S. | Ciudad de México</p>
+        </div>
+    </div>
+</body>
+</html>

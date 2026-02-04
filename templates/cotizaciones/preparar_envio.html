@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-6xl mx-auto animate__animated animate__fadeIn">
+
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <a href="{% url 'detalle_cotizacion' c.id %}" class="text-gray-500 hover:text-gray-700 text-sm font-bold">
+                <i class="fas fa-arrow-left mr-1"></i> Cancelar y Volver
+            </a>
+            <h2 class="text-3xl font-black text-[#2D1B4B] mt-2">Sala de Envío</h2>
+            <p class="text-sm text-gray-500">Personaliza el mensaje antes de contactar al cliente.</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        
+        <div class="bg-white p-8 rounded-[2rem] shadow-xl border border-gray-100 h-full flex flex-col">
+            <div class="flex items-center gap-3 mb-6 border-b border-gray-100 pb-4">
+                <div class="w-10 h-10 rounded-full bg-[#2D1B4B] text-white flex items-center justify-center">
+                    <i class="fas fa-envelope"></i>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold text-[#2D1B4B]">Vía Correo Electrónico</h3>
+                    <p class="text-[10px] text-green-600 font-bold"><i class="fas fa-check-circle"></i> PDF se adjuntará automáticamente</p>
+                </div>
+            </div>
+
+            <form action="{% url 'enviar_cotizacion_email' c.id %}" method="POST" enctype="multipart/form-data" class="flex-1 flex flex-col">
+                {% csrf_token %}
+                
+                <div class="mb-4">
+                    <label class="block text-xs font-bold text-gray-400 mb-1">Para:</label>
+                    <input type="text" value="{{ c.prospecto_email }}" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-gray-600 cursor-not-allowed" readonly>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-xs font-bold text-gray-400 mb-1">Asunto:</label>
+                    <input type="text" name="asunto" value="Propuesta de Servicios Legales - {{ c.prospecto_empresa|default:c.prospecto_nombre }}" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-[#2D1B4B] border border-gray-200 focus:border-[#A855F7] outline-none">
+                </div>
+
+                <div class="mb-4 flex-1">
+                    <label class="block text-xs font-bold text-gray-400 mb-1">Mensaje:</label>
+                    <textarea name="mensaje" class="w-full h-40 p-4 bg-gray-50 rounded-xl text-sm text-gray-700 border border-gray-200 focus:border-[#A855F7] outline-none resize-none font-sans leading-relaxed">{{ msg_email }}</textarea>
+                </div>
+
+                <div class="mb-6 bg-gray-50 p-3 rounded-xl border border-dashed border-gray-300">
+                    <label class="block text-xs font-bold text-gray-400 mb-2">Logo para la Firma (Opcional):</label>
+                    <input type="file" name="logo_firma" accept="image/*" class="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-[#2D1B4B] file:text-white hover:file:bg-[#A855F7]">
+                </div>
+
+                <button type="submit" class="w-full bg-[#2D1B4B] text-white py-4 rounded-xl font-bold shadow-lg hover:bg-[#A855F7] transition-all flex justify-center items-center gap-2">
+                    <i class="fas fa-paper-plane"></i> ENVIAR CORREO
+                </button>
+            </form>
+        </div>
+
+        <div class="bg-white p-8 rounded-[2rem] shadow-xl border border-gray-100 relative overflow-hidden h-full flex flex-col">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-green-50 rounded-bl-full -z-0"></div>
+
+            <div class="relative z-10 flex-1 flex flex-col">
+                <div class="flex items-center gap-3 mb-6 border-b border-gray-100 pb-4">
+                    <div class="w-10 h-10 rounded-full bg-green-500 text-white flex items-center justify-center">
+                        <i class="fab fa-whatsapp text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-[#2D1B4B]">Vía WhatsApp</h3>
+                        <p class="text-[10px] text-green-600 font-bold"><i class="fas fa-link"></i> Incluye enlace de descarga</p>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-xs font-bold text-gray-400 mb-1">Número Destino:</label>
+                    <input type="text" id="wa-numero" value="{{ c.prospecto_telefono }}" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-gray-600" placeholder="521...">
+                    <p class="text-[10px] text-orange-400 mt-1">Asegúrate de incluir la lada (ej. 52 para MX).</p>
+                </div>
+
+                <div class="mb-6 flex-1">
+                    <label class="block text-xs font-bold text-gray-400 mb-1">Mensaje (Editable):</label>
+                    <textarea id="wa-mensaje" class="w-full h-64 p-4 bg-green-50 rounded-xl text-sm text-gray-800 border border-green-100 focus:border-green-300 outline-none resize-none leading-relaxed">{{ msg_wa }}</textarea>
+                </div>
+
+                <button onclick="enviarWhatsApp()" class="w-full bg-green-500 text-white py-4 rounded-xl font-bold shadow-lg hover:bg-green-600 transition-all flex justify-center items-center gap-2 mt-auto">
+                    <i class="fab fa-whatsapp"></i> ABRIR WHATSAPP WEB
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function enviarWhatsApp() {
+        let numero = document.getElementById('wa-numero').value.replace(/[^0-9]/g, '');
+        let mensaje = encodeURIComponent(document.getElementById('wa-mensaje').value);
+        
+        if(numero.length < 10) { alert("Por favor verifica el número de teléfono."); return; }
+        
+        // Abrir WhatsApp Web
+        let url = `https://wa.me/${numero}?text=${mensaje}`;
+        window.open(url, '_blank');
+    }
+</script>
+{% endblock %}

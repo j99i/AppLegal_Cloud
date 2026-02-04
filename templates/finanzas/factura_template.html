@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Factura {{ f.folio_interno }}</title>
+    <style>
+        @page {
+            size: letter;
+            margin: 1cm;
+        }
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            font-size: 10pt;
+            color: #333;
+            line-height: 1.3;
+        }
+        .header {
+            width: 100%;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #004085; /* Azul corporativo */
+            padding-bottom: 10px;
+        }
+        .header-content {
+            width: 100%;
+        }
+        .logo-area {
+            float: left;
+            width: 50%;
+        }
+        .invoice-data {
+            float: right;
+            width: 45%;
+            text-align: right;
+            font-size: 9pt;
+        }
+        .title {
+            font-size: 18pt;
+            font-weight: bold;
+            color: #004085;
+            margin: 0;
+        }
+        .subtitle {
+            font-size: 12pt;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        /* Sección Cliente y Emisor */
+        .info-section {
+            width: 100%;
+            margin-bottom: 20px;
+            clear: both;
+        }
+        .col-50 {
+            width: 48%;
+            display: inline-block;
+            vertical-align: top;
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .label {
+            font-weight: bold;
+            color: #555;
+        }
+
+        /* Tabla de Conceptos */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th {
+            background-color: #004085;
+            color: white;
+            padding: 8px;
+            text-align: left;
+            font-size: 9pt;
+        }
+        td {
+            border-bottom: 1px solid #ddd;
+            padding: 8px;
+            font-size: 9pt;
+        }
+        .text-right { text-align: right; }
+        .total-row td {
+            font-weight: bold;
+            border-top: 2px solid #333;
+            background-color: #eee;
+        }
+
+        /* Footer SAT (Sellos y QR) */
+        .footer-sat {
+            width: 100%;
+            border: 1px solid #ccc;
+            padding: 10px;
+            page-break-inside: avoid;
+        }
+        .qr-box {
+            width: 20%;
+            float: left;
+            text-align: center;
+        }
+        .sellos-box {
+            width: 78%;
+            float: right;
+            font-size: 7pt;
+        }
+        .sello-title {
+            font-weight: bold;
+            color: #004085;
+            margin-top: 5px;
+        }
+        .cadena {
+            word-break: break-all;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="header-content">
+            <div class="logo-area">
+                <div class="title">GESTIONES CORPAD</div>
+                <div class="subtitle">Servicios Legales y Administrativos</div>
+                <p>
+                    <span class="label">RFC:</span> GC0230101XYZ<br>
+                    <span class="label">Régimen Fiscal:</span> 601 - General de Ley PM<br>
+                    <span class="label">Lugar de Expedición:</span> 54948 - Tultitlán, Edo. Méx.
+                </p>
+            </div>
+            <div class="invoice-data">
+                <p style="font-size: 14pt; font-weight: bold;">FACTURA</p>
+                <p><span class="label">Folio:</span> {{ f.folio_interno }}</p>
+                <p><span class="label">Fecha:</span> {% now "d/m/Y H:i" %}</p>
+                <p><span class="label">Tipo de Comprobante:</span> I - Ingreso</p>
+                <p><span class="label">UUID:</span> <br><small>{{ f.uuid|default:"Pendiente de Timbrado" }}</small></p>
+            </div>
+        </div>
+    </div>
+
+    <div class="info-section">
+        <div class="col-50">
+            <strong>RECEPTOR (CLIENTE)</strong><br>
+            {{ f.cliente.nombre_empresa }}<br>
+            <span class="label">RFC:</span> {{ f.cliente.rfc|default:"XAXX010101000" }}<br>
+            <span class="label">C.P.:</span> {{ f.cliente.cp|default:"54948" }}<br>
+            <span class="label">Régimen Fiscal:</span> {{ f.cliente.regimen_fiscal|default:"616 - Sin obligaciones fiscales" }}<br>
+            <span class="label">Uso CFDI:</span> S01 - Sin efectos fiscales
+        </div>
+        <div class="col-50" style="background: white;">
+            <p><strong>Condiciones de Pago:</strong> Contado</p>
+             <p><strong>Método de Pago:</strong> PUE - Pago en una sola exhibición</p>
+             <p><strong>Forma de Pago:</strong> 03 - Transferencia electrónica</p>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Clave SAT</th>
+                <th>Descripción</th>
+                <th class="text-right">Cant</th>
+                <th class="text-right">Precio U.</th>
+                <th class="text-right">Importe</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>84111506</td>
+                <td>
+                    Servicios Profesionales<br>
+                    <small style="color: #666;">Ref: Pago de Anticipo - Cotización #{{ f.cotizaciones.first.id }}</small>
+                </td>
+                <td class="text-right">1</td>
+                <td class="text-right">${{ f.monto_total|floatformat:2 }}</td>
+                <td class="text-right">${{ f.monto_total|floatformat:2 }}</td>
+            </tr>
+            
+            <tr>
+                <td colspan="3" style="border: none;"></td>
+                <td class="text-right label">Subtotal:</td>
+                <td class="text-right">${{ f.monto_total|floatformat:2 }}</td>
+            </tr>
+            <tr>
+                <td colspan="3" style="border: none;"></td>
+                <td class="text-right label">IVA (0%):</td> <td class="text-right">$0.00</td>
+            </tr>
+            <tr class="total-row">
+                <td colspan="3" style="border: none; background: white;"></td>
+                <td class="text-right">TOTAL:</td>
+                <td class="text-right">${{ f.monto_total|floatformat:2 }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="footer-sat">
+        <div class="qr-box">
+            {% if f.qr_imagen %}
+                <img src="file://{{ base_url }}/media/{{ f.qr_imagen.name }}" width="140px" height="140px">
+            {% else %}
+                <div style="width: 140px; height: 140px; border: 1px dashed #ccc; padding-top: 50px;">
+                    SIN QR
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="sellos-box">
+            <div class="sello-title">Este documento es una representación impresa de un CFDI 4.0</div>
+            
+            <div class="sello-title">Sello Digital del CFDI:</div>
+            <div class="cadena">
+                {{ f.uuid }}... (Ver XML para cadena completa)
+            </div>
+
+            <div class="sello-title">Sello del SAT:</div>
+            <div class="cadena">
+                ||1.1|{{ f.uuid }}|{% now "Y-m-d" %}T{% now "H:i:s" %}|LSO1306189R5|...||
+            </div>
+
+            <div class="sello-title">Cadena Original del complemento de certificación digital del SAT:</div>
+            <div class="cadena">
+                ||1.1|{{ f.uuid }}|2026-02-03T22:00:00|MAS0810247C0|...||
+            </div>
+        </div>
+        <div style="clear: both;"></div>
+    </div>
+
+</body>
+</html>

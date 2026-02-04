@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-5xl mx-auto animate__animated animate__fadeIn">
+    
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h2 class="text-2xl font-black text-[#2D1B4B]">Libro Diario</h2>
+            <p class="text-xs text-gray-500">Registro cronológico de movimientos contables.</p>
+        </div>
+        <a href="{% url 'panel_finanzas' %}" class="bg-gray-100 text-gray-600 px-4 py-2 rounded-xl font-bold text-xs hover:bg-gray-200">
+            <i class="fas fa-arrow-left mr-2"></i> Volver a Finanzas
+        </a>
+    </div>
+
+    <div class="space-y-6">
+        {% for poliza in polizas %}
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="bg-gray-50 p-4 flex justify-between items-center border-b border-gray-100">
+                <div class="flex items-center gap-4">
+                    <div class="bg-[#2D1B4B] text-white w-10 h-10 rounded-lg flex items-center justify-center font-bold text-xs">
+                        {{ poliza.tipo|slice:":1"|upper }}
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-[#2D1B4B] text-sm">Póliza #{{ poliza.id }} - {{ poliza.fecha|date:"d M Y" }}</h3>
+                        <p class="text-xs text-gray-500">{{ poliza.concepto }}</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <p class="text-[10px] text-gray-400 font-bold uppercase">Creada por</p>
+                    <p class="text-xs font-bold text-gray-600">{{ poliza.creada_por.username }}</p>
+                </div>
+            </div>
+
+            <table class="w-full text-left text-xs">
+                <thead class="bg-gray-50/50 text-gray-400 uppercase font-bold">
+                    <tr>
+                        <th class="px-6 py-2 w-1/2">Cuenta Contable</th>
+                        <th class="px-6 py-2 text-right text-gray-600">Debe (+)</th>
+                        <th class="px-6 py-2 text-right text-gray-600">Haber (-)</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50">
+                    {% for mov in poliza.movimientos.all %}
+                    <tr class="hover:bg-blue-50/30 transition-colors">
+                        <td class="px-6 py-3">
+                            <span class="font-mono text-gray-400 mr-2">{{ mov.cuenta.codigo }}</span>
+                            <span class="font-bold text-gray-700">{{ mov.cuenta.nombre }}</span>
+                        </td>
+                        <td class="px-6 py-3 text-right font-mono {% if mov.debe > 0 %}text-green-600 font-bold{% else %}text-gray-300{% endif %}">
+                            {% if mov.debe > 0 %}${{ mov.debe|floatformat:2 }}{% else %}-{% endif %}
+                        </td>
+                        <td class="px-6 py-3 text-right font-mono {% if mov.haber > 0 %}text-red-500 font-bold{% else %}text-gray-300{% endif %}">
+                            {% if mov.haber > 0 %}${{ mov.haber|floatformat:2 }}{% else %}-{% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% empty %}
+        <div class="text-center py-20 text-gray-400">
+            <i class="fas fa-book-open text-6xl mb-4 opacity-20"></i>
+            <p>No hay pólizas registradas aún.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

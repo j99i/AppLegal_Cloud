@@ -1,162 +1,210 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="max-w-6xl mx-auto animate__animated animate__fadeIn">
+<div class="max-w-4xl mx-auto animate__animated animate__fadeIn">
     
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+    <div class="flex justify-between items-center mb-6">
         <div>
-            <div class="flex items-center gap-3">
-                <h2 class="text-3xl font-black text-[#2D1B4B]">Cotización #{{ c.id|stringformat:"04d" }}</h2>
-                <span class="px-3 py-1 rounded-full text-xs font-bold uppercase 
-                    {% if c.estado == 'borrador' %}bg-gray-200 text-gray-600{% elif c.estado == 'aceptada' %}bg-green-100 text-green-700{% else %}bg-blue-100 text-blue-700{% endif %}">
-                    {{ c.get_estado_display }}
-                </span>
-            </div>
-            <p class="text-gray-500 font-bold mt-1">{{ c.prospecto_nombre }} <span class="text-gray-300">|</span> {{ c.prospecto_empresa }}</p>
+            <a href="{% url 'lista_cotizaciones' %}" class="text-gray-500 hover:text-gray-700 text-sm font-bold mb-2 inline-block">
+                <i class="fas fa-arrow-left mr-1"></i> Volver a Cotizaciones
+            </a>
+            <h2 class="text-3xl font-black text-[#2D1B4B]">Cotización #{{ c.id }}</h2>
+            <span class="px-3 py-1 rounded-full text-xs font-bold uppercase
+                {% if c.estado == 'aceptada' %}bg-green-100 text-green-600
+                {% elif c.estado == 'rechazada' %}bg-red-100 text-red-500
+                {% else %}bg-yellow-100 text-yellow-600{% endif %}">
+                {{ c.get_estado_display }}
+            </span>
         </div>
-        
-        <div class="flex gap-2">
-            {% if c.estado != 'aceptada' %}
-            <a href="{% url 'convertir_cliente' c.id %}" onclick="return confirm('¿Aceptar cotización y crear expediente de cliente?')" class="bg-green-500 text-white px-6 py-3 rounded-xl font-black text-xs shadow-lg hover:bg-green-600 hover:-translate-y-1 transition-all flex items-center gap-2">
-                <i class="fas fa-user-check"></i> CONVERTIR A CLIENTE
-            </a>
-            {% else %}
-            <a href="{% url 'detalle_cliente' c.cliente_convertido.id %}" class="bg-[#2D1B4B] text-white px-6 py-3 rounded-xl font-bold text-xs shadow-lg flex items-center gap-2 hover:bg-[#A855F7] transition-all">
-                <i class="fas fa-folder-open"></i> VER EXPEDIENTE
-            </a>
-            {% endif %}
+        <div class="text-right">
+            <p class="text-xs text-gray-400 font-bold uppercase">Fecha de Creación</p>
+            <p class="font-bold text-[#2D1B4B]">{{ c.fecha_creacion|date:"d M Y" }}</p>
         </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <div class="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden mb-8">
         
-        <div class="lg:col-span-2 space-y-6">
-            
-            <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex justify-between items-center">
+        <div class="p-8 border-b border-gray-100 bg-gray-50/50">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <p class="text-xs font-bold text-gray-400 uppercase">Total Estimado</p>
-                    <p class="text-3xl font-black text-[#2D1B4B]">${{ c.total|floatformat:2 }}</p>
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Prospecto / Cliente</p>
+                    <h3 class="text-xl font-black text-[#2D1B4B]">{{ c.prospecto_nombre }}</h3>
+                    {% if c.prospecto_empresa %}
+                    <p class="text-sm font-bold text-gray-600"><i class="fas fa-building mr-1 opacity-50"></i> {{ c.prospecto_empresa }}</p>
+                    {% endif %}
                 </div>
-                <a href="{% url 'pdf_cotizacion' c.id %}" target="_blank" class="bg-red-50 text-red-500 px-5 py-3 rounded-xl font-bold text-xs hover:bg-red-100 transition-colors border border-red-100">
-                    <i class="fas fa-file-pdf mr-2"></i> VER PDF OFICIAL
-                </a>
-            </div>
-
-            <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
-                <h3 class="font-bold text-[#2D1B4B] mb-4">Detalle de Servicios</h3>
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="text-xs text-gray-400 border-b">
-                            <th class="py-2 font-black uppercase">Servicio</th>
-                            <th class="py-2 font-black uppercase text-center">Cant.</th>
-                            <th class="py-2 font-black uppercase text-right">Total</th>
-                        </tr>
-                    </thead>
-                    <tbody class="text-sm">
-                        {% for item in c.items.all %}
-                        <tr class="border-b border-gray-50 last:border-0">
-                            <td class="py-4">
-                                <p class="font-bold text-[#2D1B4B]">{{ item.servicio.nombre }}</p>
-                                <p class="text-xs text-gray-500">{{ item.descripcion_personalizada }}</p>
-                            </td>
-                            <td class="py-4 text-center font-bold text-gray-600">{{ item.cantidad }}</td>
-                            <td class="py-4 text-right font-bold text-[#2D1B4B]">${{ item.total|floatformat:2 }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                <div class="md:text-right">
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Contacto</p>
+                    <p class="text-sm text-gray-600"><i class="fas fa-envelope mr-1 opacity-50"></i> {{ c.prospecto_email }}</p>
+                    <p class="text-sm text-gray-600"><i class="fas fa-phone mr-1 opacity-50"></i> {{ c.prospecto_telefono }}</p>
+                </div>
             </div>
         </div>
 
-        <div class="space-y-6">
+        <div class="p-8">
+            <h4 class="font-bold text-[#2D1B4B] mb-4">Detalle de Servicios</h4>
+            <table class="w-full text-left text-sm">
+                <thead>
+                    <tr class="text-gray-400 border-b border-gray-100">
+                        <th class="pb-2 font-bold w-12">Cant.</th>
+                        <th class="pb-2 font-bold">Descripción</th>
+                        <th class="pb-2 font-bold text-right">Precio Unit.</th>
+                        <th class="pb-2 font-bold text-right">Total</th>
+                    </tr>
+                </thead>
+                <tbody class="text-gray-600">
+                    {% for item in c.items.all %}
+                    <tr class="border-b border-gray-50 last:border-0">
+                        <td class="py-4 font-bold">{{ item.cantidad }}</td>
+                        <td class="py-4">
+                            <span class="block font-bold text-[#2D1B4B]">{{ item.servicio.nombre }}</span>
+                            {% if item.descripcion_personalizada %}
+                            <span class="text-xs text-gray-500">{{ item.descripcion_personalizada }}</span>
+                            {% endif %}
+                            
+                            {% if item.valores_adicionales %}
+                            <div class="mt-1 flex flex-wrap gap-1">
+                                {% for k, v in item.valores_adicionales.items %}
+                                <span class="bg-purple-50 text-purple-700 px-2 py-0.5 rounded text-[10px] font-bold">
+                                    {{ k }}: {{ v }}
+                                </span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td class="py-4 text-right">${{ item.precio_unitario|floatformat:2 }}</td>
+                        <td class="py-4 text-right font-bold text-[#2D1B4B]">${{ item.total|floatformat:2 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="bg-gray-800 text-white p-8">
+            <div class="flex justify-end">
+                <div class="w-full md:w-1/3 space-y-2">
+                    <div class="flex justify-between text-sm text-gray-400">
+                        <span>Subtotal</span>
+                        <span>${{ c.subtotal|floatformat:2 }}</span>
+                    </div>
+                    <div class="flex justify-between text-sm text-gray-400">
+                        <span>IVA (16%)</span>
+                        <span>${{ c.impuestos|floatformat:2 }}</span>
+                    </div>
+                    <div class="flex justify-between text-xl font-black text-white pt-4 border-t border-gray-700 mt-2">
+                        <span>TOTAL</span>
+                        <span>${{ c.total|floatformat:2 }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
+        <a href="{% url 'generar_pdf_cotizacion' c.id %}" target="_blank" class="bg-white border border-gray-200 text-gray-700 p-4 rounded-xl font-bold text-center hover:bg-gray-50 transition-colors">
+            <i class="fas fa-file-pdf mr-2 text-red-500"></i> Descargar PDF
+        </a>
+
+        {% if c.estado != 'aceptada' %}
+            <a href="{% url 'preparar_envio_cotizacion' c.id %}" class="w-full bg-[#2D1B4B] text-white p-4 rounded-xl font-bold text-center hover:bg-[#A855F7] shadow-lg transition-colors block">
+                <i class="fas fa-paper-plane mr-2"></i> Enviar al Cliente
+            </a>
+        {% endif %}
+    </div>
+
+    {% if c.estado != 'aceptada' %}
+    <div class="bg-green-50 p-8 rounded-[2rem] border border-green-100 text-center animate__animated animate__fadeInUp">
+        <h3 class="text-xl font-black text-[#2D1B4B] mb-2">¿El cliente aceptó la propuesta?</h3>
+        <p class="text-gray-600 mb-6 text-sm">Al cerrar el trato se crearán las cuentas por cobrar y los expedientes.</p>
+        
+        <button onclick="abrirModalConversion()" class="bg-green-500 text-white px-8 py-4 rounded-xl font-black text-lg shadow-lg hover:bg-green-600 transform hover:-translate-y-1 transition-all">
+            <i class="fas fa-handshake mr-2"></i> CERRAR TRATO
+        </button>
+    </div>
+    {% endif %}
+
+    {% if c.cliente_convertido %}
+    <div class="mt-8 bg-purple-50 p-6 rounded-2xl border border-purple-100 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div>
+            <h3 class="font-bold text-[#2D1B4B]">Gestión Fiscal</h3>
+            <p class="text-xs text-gray-500">El cliente ya está activo. ¿Necesitas facturar algo más?</p>
+        </div>
+        <div class="flex gap-2">
+            <a href="{% url 'detalle_cliente' c.cliente_convertido.id %}" class="bg-white text-[#2D1B4B] px-6 py-3 rounded-xl font-bold shadow-sm hover:shadow-md border border-gray-100 text-xs">
+                <i class="fas fa-user mr-2"></i> Ver Cliente
+            </a>
+            <a href="{% url 'previsualizar_factura' c.id %}" class="bg-[#2D1B4B] text-white px-6 py-3 rounded-xl font-bold shadow-md hover:bg-[#4c2e7e] text-xs">
+                <i class="fas fa-file-invoice mr-2 text-yellow-400"></i> Nueva Factura
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+<div id="modal-conversion" class="fixed inset-0 bg-[#2D1B4B]/90 hidden items-center justify-center z-50 backdrop-blur-sm animate__animated animate__fadeIn">
+    <div class="bg-white p-8 rounded-[2rem] w-full max-w-lg m-4 shadow-2xl relative">
+        <button onclick="cerrarModalConversion()" class="absolute top-6 right-6 text-gray-400 hover:text-red-500"><i class="fas fa-times text-xl"></i></button>
+        
+        <div class="text-center mb-8">
+            <div class="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-4">
+                <i class="fas fa-check"></i>
+            </div>
+            <h3 class="text-2xl font-black text-[#2D1B4B]">¡Felicidades por la Venta!</h3>
+            <p class="text-gray-500 mt-2 text-sm">Define el esquema para el <strong>Anticipo (50%)</strong>:</p>
+        </div>
+        
+        <form action="{% url 'convertir_a_cliente' c.id %}" method="POST" class="space-y-4">
+            {% csrf_token %}
             
-            <div class="bg-gradient-to-br from-[#25D366]/10 to-green-50 p-6 rounded-[2rem] border border-[#25D366]/20 relative overflow-hidden">
-                <div class="absolute top-0 right-0 p-4 opacity-10">
-                    <i class="fab fa-whatsapp text-6xl text-green-700"></i>
+            <label class="block cursor-pointer group">
+                <input type="radio" name="requiere_factura" value="si" class="peer hidden">
+                <div class="p-4 rounded-xl border-2 border-gray-100 peer-checked:border-[#A855F7] peer-checked:bg-purple-50 transition-all flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 peer-checked:bg-[#A855F7] peer-checked:text-white">
+                        <i class="fas fa-file-invoice"></i>
+                    </div>
+                    <div>
+                        <p class="font-bold text-[#2D1B4B]">Sí, requiere Factura</p>
+                        <p class="text-xs text-gray-500">Se genera: <strong class="text-[#A855F7]">Factura por el 50%</strong> y Remisión.</p>
+                    </div>
                 </div>
+            </label>
 
-                <h3 class="font-black text-green-800 flex items-center gap-2 mb-2 relative z-10">
-                    <i class="fab fa-whatsapp text-2xl"></i> Enviar Cotización
-                </h3>
-                <p class="text-xs text-green-700 mb-4 relative z-10">Si la app está en la nube se envía el LINK. En local se descarga el archivo.</p>
+            <label class="block cursor-pointer group">
+                <input type="radio" name="requiere_factura" value="no" class="peer hidden" checked>
+                <div class="p-4 rounded-xl border-2 border-gray-100 peer-checked:border-blue-500 peer-checked:bg-blue-50 transition-all flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 peer-checked:bg-blue-500 peer-checked:text-white">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                    <div>
+                        <p class="font-bold text-[#2D1B4B]">No, solo Remisión</p>
+                        <p class="text-xs text-gray-500">Se genera: Únicamente <strong class="text-blue-600">Remisión Interna por el 50%</strong>.</p>
+                    </div>
+                </div>
+            </label>
 
-                <label class="text-[10px] font-bold text-green-800 uppercase relative z-10">Plantilla de Mensaje</label>
-                <select id="ws-template" class="w-full p-2 rounded-lg border-0 bg-white/80 mb-3 text-sm font-bold text-gray-600 relative z-10 shadow-sm outline-none">
-                    <option value="default">Mensaje Formal Estándar</option>
-                    <option value="casual">Mensaje Rápido / Casual</option>
-                </select>
-
-                <button onclick="procesarEnvioWhatsApp()" class="w-full bg-[#25D366] text-white font-bold py-3 rounded-xl shadow-lg hover:bg-[#20bd5a] transition-all relative z-10 flex justify-center items-center gap-2">
-                    <span>ENVIAR WHATSAPP</span> <i class="fas fa-external-link-alt"></i>
-                </button>
+            <div class="bg-yellow-50 p-3 rounded-lg text-xs text-yellow-700 font-bold flex items-start gap-2 mt-4">
+                <i class="fas fa-info-circle mt-0.5"></i>
+                <p>Nota: La Cuenta por Cobrar se creará por el 100% del valor total del proyecto para su seguimiento.</p>
             </div>
 
-            <div class="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm">
-                <h3 class="font-black text-[#2D1B4B] flex items-center gap-2 mb-4">
-                    <i class="fas fa-envelope text-xl text-[#A855F7]"></i> Enviar por Correo
-                </h3>
-                <form action="{% url 'enviar_cotizacion_email' c.id %}" method="POST" class="space-y-3">
-                    {% csrf_token %}
-                    <input type="text" name="asunto" placeholder="Asunto del Correo" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-sm border border-gray-200 focus:border-[#A855F7] outline-none" value="Propuesta de Servicios Legales - AppLegal" required>
-                    <textarea name="mensaje" rows="4" class="w-full p-3 bg-gray-50 rounded-xl text-sm font-medium border border-gray-200 focus:border-[#A855F7] outline-none" placeholder="Escribe el mensaje...">Estimado/a {{ c.prospecto_nombre }},&#10;&#10;Adjunto a este correo encontrará la cotización detallada de los servicios solicitados.&#10;&#10;Quedo atento a cualquier duda.</textarea>
-                    <button type="submit" class="w-full bg-[#2D1B4B] text-white font-bold py-3 rounded-xl shadow-lg hover:bg-[#A855F7] transition-all">
-                        ENVIAR PDF ADJUNTO
-                    </button>
-                </form>
-            </div>
-
-        </div>
+            <button type="submit" class="w-full bg-[#2D1B4B] text-white py-4 rounded-xl font-bold shadow-lg hover:bg-green-600 mt-4 transition-colors">
+                CONFIRMAR INICIO DE PROYECTO
+            </button>
+        </form>
     </div>
 </div>
 
 <script>
-    function procesarEnvioWhatsApp() {
-        // Datos
-        const telefono = "{{ c.prospecto_telefono }}".replace(/[^0-9]/g, '');
-        const nombre = "{{ c.prospecto_nombre }}";
-        const total = "{{ c.total|floatformat:2 }}";
-        const folio = "{{ c.id|stringformat:'04d' }}";
-        
-        // Detectamos si estamos en producción o en local
-        const esProduccion = window.location.hostname !== '127.0.0.1' && window.location.hostname !== 'localhost';
-        
-        // Generamos la URL del PDF (usando el dominio actual)
-        const urlPdf = window.location.origin + "{% url 'pdf_cotizacion' c.id %}";
+    function abrirModalConversion() {
+        const modal = document.getElementById('modal-conversion');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
 
-        const tipo = document.getElementById('ws-template').value;
-        let mensaje = "";
-
-        if (esProduccion) {
-            // ESTRATEGIA A: Enviar LINK (Rápido y Automático)
-            if (tipo === 'default') {
-                mensaje = `👋 Hola *${nombre}*, te comparto la cotización *#${folio}* por un valor de *$${total}*.\n\n` +
-                          `📄 *Puedes verla aquí:* ${urlPdf}\n\n` +
-                          `Quedo atento.`;
-            } else {
-                mensaje = `Hola *${nombre}*, aquí tienes la cotización: ${urlPdf} ($${total}).`;
-            }
-            
-            // Abrimos WhatsApp Directamente
-            const url = `https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`;
-            window.open(url, '_blank');
-
-        } else {
-            // ESTRATEGIA B: Descargar Archivo (Solo Localhost)
-            alert("⚠️ Al estar en modo local, descargaremos el PDF para que lo adjuntes manualmente.");
-            
-            mensaje = `Hola *${nombre}*, te adjunto la cotización *#${folio}*.`;
-            
-            const linkDescarga = document.createElement('a');
-            linkDescarga.href = "{% url 'pdf_cotizacion' c.id %}";
-            linkDescarga.download = `Cotizacion_${folio}.pdf`;
-            document.body.appendChild(linkDescarga);
-            linkDescarga.click();
-            document.body.removeChild(linkDescarga);
-
-            setTimeout(() => {
-                const url = `https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`;
-                window.open(url, '_blank');
-            }, 1000);
-        }
+    function cerrarModalConversion() {
+        const modal = document.getElementById('modal-conversion');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
     }
 </script>
 {% endblock %}

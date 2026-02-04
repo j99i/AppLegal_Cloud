@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-4xl mx-auto animate__animated animate__fadeIn">
+    
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-black text-[#2D1B4B]">
+            <i class="fas fa-trash-alt mr-2 text-red-400"></i> Papelera de Reciclaje
+        </h2>
+        <a href="{% url 'detalle_cliente' cliente.id %}" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-xl font-bold hover:bg-gray-300">
+            <i class="fas fa-arrow-left mr-2"></i> Volver al Cliente
+        </a>
+    </div>
+
+    <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
+        <div class="bg-yellow-50 text-yellow-800 p-4 rounded-xl mb-6 text-sm flex items-center gap-3">
+            <i class="fas fa-info-circle text-xl"></i>
+            <p>Los archivos en esta lista se <strong>eliminarán permanentemente</strong> 7 días después de haber sido borrados. <br>Si restauras un archivo, recuerda volver a vincularlo en el Semáforo si es un requisito.</p>
+        </div>
+
+        {% if archivos %}
+        <table class="w-full text-left">
+            <thead>
+                <tr class="text-xs text-gray-400 border-b"><th class="py-2">Archivo</th><th>Eliminado el</th><th class="text-right">Acciones</th></tr>
+            </thead>
+            <tbody>
+                {% for doc in archivos %}
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="py-3 font-bold text-gray-600">
+                        <i class="fas fa-file mr-2"></i> {{ doc.nombre_archivo }}
+                        <div class="text-[10px] text-gray-400 font-normal pl-6">Estaba en: {{ doc.carpeta.nombre|default:"Raíz" }}</div>
+                    </td>
+                    <td class="py-3 text-xs text-red-400 font-bold">{{ doc.fecha_eliminacion|date:"d M Y, H:i" }}</td>
+                    <td class="py-3 text-right flex justify-end gap-2">
+                        <a href="{% url 'restaurar_archivo' doc.id %}" class="bg-green-100 text-green-600 px-3 py-1 rounded-lg text-xs font-bold hover:bg-green-200">
+                            <i class="fas fa-undo mr-1"></i> Restaurar
+                        </a>
+                        <a href="{% url 'forzar_eliminacion' doc.id %}" onclick="return confirm('¿Adiós para siempre?')" class="bg-red-100 text-red-600 px-3 py-1 rounded-lg text-xs font-bold hover:bg-red-200">
+                            <i class="fas fa-times mr-1"></i> Eliminar
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+            <div class="text-center py-10 text-gray-400">
+                <i class="fas fa-trash-restore text-4xl mb-3 opacity-30"></i>
+                <p>La papelera está vacía.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
