@@ -1,274 +1,303 @@
 {% extends 'base.html' %}
-
 {% block content %}
-<div class="max-w-7xl mx-auto animate__animated animate__fadeIn">
-
-    <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 mb-8 flex flex-col md:flex-row justify-between items-center gap-6">
-        <div class="flex items-center gap-4 w-full">
-            <div class="w-16 h-16 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-3xl shadow-sm border border-purple-100">
-                <i class="fas fa-building"></i>
-            </div>
-            <div>
-                <h2 class="text-3xl font-black text-[#2D1B4B]">{{ cliente.nombre_empresa }}</h2>
-                <div class="flex items-center gap-2 mt-1">
-                    {% if cliente.datos_fiscales.rfc %}
-                        <span class="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-bold">
-                            <i class="fas fa-check-circle mr-1"></i> RFC: {{ cliente.datos_fiscales.rfc }}
-                        </span>
-                    {% else %}
-                        <span class="bg-red-100 text-red-600 px-2 py-0.5 rounded text-xs font-bold cursor-pointer hover:bg-red-200" onclick="window.location.href='{% url 'detalle_cliente' cliente.id %}?accion=abrir_fiscal'">
-                            <i class="fas fa-exclamation-circle mr-1"></i> Sin Datos Fiscales
-                        </span>
-                    {% endif %}
-                    <a href="{% url 'detalle_cliente' cliente.id %}" class="text-xs text-gray-400 hover:text-purple-600 underline">Ir al Expediente</a>
-                </div>
-            </div>
+<div class="max-w-6xl mx-auto animate__animated animate__fadeIn">
+    
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h2 class="text-3xl font-black text-[#2D1B4B]">Finanzas: <span class="text-[#A855F7]">{{ cliente.nombre_empresa }}</span></h2>
+            <p class="text-gray-500 font-bold">Estado de Cuenta y Facturación</p>
         </div>
-        
-        <div class="text-right min-w-[200px]">
-            <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Saldo Pendiente</p>
-            <p class="text-3xl font-black text-[#2D1B4B]">${{ cliente.saldo_total_pendiente|default:"0.00"|floatformat:2 }}</p>
+        <a href="{% url 'detalle_cliente' cliente.id %}" class="bg-gray-100 text-gray-500 px-4 py-2 rounded-xl font-bold hover:bg-gray-200">
+            <i class="fas fa-arrow-left mr-2"></i> Volver al Expediente
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100">
+            <p class="text-xs font-bold text-gray-400 uppercase">Total Proyectos</p>
+            <p class="text-2xl font-black text-[#2D1B4B]">{{ cuentas.count }}</p>
+        </div>
+        <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100">
+            <p class="text-xs font-bold text-gray-400 uppercase">Saldo Pendiente</p>
+            <p class="text-2xl font-black text-red-500">${{ cliente.saldo_total_pendiente|floatformat:2 }}</p>
+        </div>
+        <div class="bg-gradient-to-r from-[#2D1B4B] to-[#432C68] p-6 rounded-[2rem] shadow-lg text-white">
+            <p class="text-xs font-bold text-white/60 uppercase">Datos Fiscales</p>
+            {% if cliente.rfc %}
+                <p class="text-lg font-bold">{{ cliente.rfc }}</p>
+                <p class="text-xs opacity-70 truncate">{{ cliente.razon_social }}</p>
+            {% else %}
+                <a href="{% url 'editar_cliente' cliente.id %}" class="inline-block mt-2 bg-white/20 px-3 py-1 rounded-lg text-xs font-bold hover:bg-white/30">
+                    + Configurar RFC
+                </a>
+            {% endif %}
         </div>
     </div>
 
-    <div class="space-y-8">
-        {% for c in cuentas %}
-        <div class="bg-white rounded-[2.5rem] shadow-lg border border-gray-100 overflow-hidden relative group hover:shadow-xl transition-shadow">
+    <div class="space-y-6">
+        {% for cuenta in cuentas %}
+        <div class="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
             
-            <div class="bg-[#2D1B4B] p-6 text-white flex justify-between items-center">
+            <div class="p-6 border-b border-gray-100 flex justify-between items-start bg-gray-50/50">
                 <div>
-                    <h3 class="font-bold text-lg flex items-center gap-2">
-                        <i class="fas fa-project-diagram text-purple-300"></i> 
-                        {{ c.concepto }}
-                    </h3>
-                    <p class="text-xs text-purple-200 opacity-80">Cotización #{{ c.cotizacion.id }} | Fecha: {{ c.fecha_emision|date:"d M Y" }}</p>
+                    <h3 class="text-lg font-black text-[#2D1B4B]">{{ cuenta.concepto }}</h3>
+                    <p class="text-xs text-gray-500 font-bold">Cotización #{{ cuenta.cotizacion.id }} • Vence: {{ cuenta.fecha_vencimiento|date:"d M Y" }}</p>
                 </div>
                 <div class="text-right">
-                    <span class="block text-xs text-purple-200 uppercase">Estado</span>
-                    {% if c.saldo_pendiente <= 0 %}
-                        <span class="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-md">
-                            <i class="fas fa-check-double mr-1"></i> LIQUIDADO
-                        </span>
-                    {% else %}
-                        <span class="bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-md">
-                            <i class="fas fa-hourglass-half mr-1"></i> PENDIENTE
-                        </span>
-                    {% endif %}
+                    <p class="text-sm font-bold text-gray-400">Total Proyecto</p>
+                    <p class="text-xl font-black text-[#2D1B4B]">${{ cuenta.monto_total|floatformat:2 }}</p>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-gray-100">
+            <div class="p-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
                 
-                <div class="p-8 bg-gradient-to-b from-white to-gray-50/50">
-                    <div class="flex items-center gap-3 mb-6">
-                        <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-black border-4 border-white shadow-sm">1</div>
-                        <div>
-                            <h4 class="font-bold text-gray-800">Arranque</h4>
-                            <p class="text-xs text-gray-400">Anticipo (50%)</p>
-                        </div>
-                    </div>
-
-                    <div class="mb-6">
-                        <div class="flex justify-between text-sm mb-2">
-                            <span class="text-gray-500">Monto Anticipo:</span>
-                            <span class="font-bold text-gray-800">${{ c.monto_total|floatformat:2 }} / 2</span>
-                        </div>
-                        <div class="bg-green-100 text-green-700 p-3 rounded-xl text-center font-bold text-sm border border-green-200">
-                            <i class="fas fa-check-circle mr-1"></i> PAGADO
-                        </div>
-                    </div>
-
+                <div>
+                    <h4 class="text-xs font-bold text-gray-400 uppercase mb-4 flex justify-between items-center">
+                        Historial de Pagos
+                        {% if cuenta.saldo_pendiente > 0 %}
+                            {% with ultima_factura=cuenta.cotizacion.facturas_asociadas.last %}
+                            <button onclick="abrirModalPago('{{ cuenta.id }}', '{{ cuenta.saldo_pendiente }}', '{% if ultima_factura and ultima_factura.estado_sat == 'timbrada' %}true{% else %}false{% endif %}')" class="text-[#A855F7] hover:underline font-bold text-xs bg-purple-50 px-3 py-1 rounded-full border border-purple-100">
+                                + Registrar Pago
+                            </button>
+                            {% endwith %}
+                        {% endif %}
+                    </h4>
+                    
                     <div class="space-y-3">
-                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">FACTURACIÓN</p>
-                        
-                        {% with factura_ant=c.cotizacion.factura_set.first %} 
-                        {% if factura_ant %}
-                            <div class="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-xl shadow-sm">
+                        {% for pago in cuenta.pagos.all %}
+                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded-xl hover:bg-white border border-transparent hover:border-gray-100 transition-all">
+                            <div>
+                                <p class="text-sm font-bold text-[#2D1B4B]">${{ pago.monto|floatformat:2 }}</p>
+                                <p class="text-[10px] text-gray-500">{{ pago.fecha_pago|date:"d/m/Y" }} • {{ pago.metodo }}</p>
+                            </div>
+                            <a href="{% url 'recibo_pago_pdf' pago.id %}" target="_blank" class="text-xs bg-white border border-gray-200 text-gray-600 px-3 py-1.5 rounded-lg font-bold hover:bg-gray-800 hover:text-white transition-colors">
+                                <i class="fas fa-receipt mr-1"></i> Recibo
+                            </a>
+                        </div>
+                        {% empty %}
+                        <p class="text-sm text-gray-400 italic">No hay pagos registrados aún.</p>
+                        {% endfor %}
+                    </div>
+
+                    <div class="mt-6">
+                        <div class="flex justify-between text-xs font-bold mb-1">
+                            <span class="text-green-600">Estado de Pago</span>
+                            <span class="text-red-500">Resta: ${{ cuenta.saldo_pendiente|floatformat:2 }}</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                            <div class="bg-[#2D1B4B] h-2.5 rounded-full transition-all duration-1000" style="width: {% if cuenta.saldo_pendiente <= 0 %}100%{% elif cuenta.pagos.count > 0 %}30%{% else %}0%{% endif %}"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border-l border-gray-100 pl-0 lg:pl-8">
+                    <h4 class="text-xs font-bold text-gray-400 uppercase mb-4">Documentos Fiscales</h4>
+                    
+                    <div class="space-y-4">
+                        {% for factura in cuenta.cotizacion.facturas_asociadas.all %}
+                            <div class="flex items-center justify-between p-4 border border-gray-200 rounded-xl hover:shadow-md transition-shadow bg-white">
                                 <div class="flex items-center gap-3">
-                                    <div class="bg-red-50 text-red-500 w-8 h-8 rounded-lg flex items-center justify-center"><i class="fas fa-file-invoice"></i></div>
+                                    <div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 text-xl">
+                                        <i class="fas fa-file-invoice"></i>
+                                    </div>
                                     <div>
-                                        <p class="text-xs font-bold text-gray-700">Factura Emitida</p>
-                                        <p class="text-[10px] text-gray-400">{{ factura_ant.folio_interno }}</p>
+                                        <p class="text-sm font-bold text-[#2D1B4B]">{{ factura.folio_interno }}</p>
+                                        <p class="text-[10px] text-gray-500">
+                                            {% if factura.uuid %}Timbrada{% else %}Borrador{% endif %} • ${{ factura.monto_total|floatformat:2 }}
+                                        </p>
                                     </div>
                                 </div>
                                 <div class="flex gap-2">
-                                    {% if factura_ant.pdf_representacion %}
-                                        <a href="{{ factura_ant.pdf_representacion.url }}" target="_blank" class="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 p-2 rounded-lg transition-colors" title="Ver PDF">
+                                    {% if factura.pdf_representacion %}
+                                        <a href="{{ factura.pdf_representacion.url }}" target="_blank" class="text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors" title="Descargar PDF">
                                             <i class="fas fa-file-pdf"></i>
                                         </a>
-                                    {% else %}
-                                        <span class="text-gray-300 bg-gray-100 p-2 rounded-lg cursor-not-allowed" title="PDF no disponible"><i class="fas fa-file-pdf"></i></span>
                                     {% endif %}
-
-                                    {% if factura_ant.archivo_xml %}
-                                        <a href="{{ factura_ant.archivo_xml.url }}" download class="text-blue-500 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 p-2 rounded-lg transition-colors" title="Descargar XML">
+                                    {% if factura.archivo_xml %}
+                                        <a href="{{ factura.archivo_xml.url }}" download class="text-blue-500 hover:bg-blue-50 p-2 rounded-lg transition-colors" title="Descargar XML">
                                             <i class="fas fa-code"></i>
                                         </a>
                                     {% endif %}
                                 </div>
                             </div>
-                        {% else %}
-                            <div class="bg-yellow-50 border border-yellow-100 rounded-xl p-4 text-center">
-                                <p class="text-xs text-yellow-700 mb-3">Anticipo cobrado, falta facturar.</p>
-                                <a href="{% url 'crear_factura_anticipo' c.id %}" onclick="return confirm('¿Timbrar Factura de Anticipo ante el SAT?')" class="block w-full bg-black text-white py-2 rounded-lg font-bold text-xs hover:bg-gray-800 transition-transform transform hover:-translate-y-1 shadow-lg">
-                                    <i class="fas fa-bolt text-yellow-400 mr-1"></i> TIMBRAR ANTICIPO
-                                </a>
-                            </div>
-                        {% endif %}
-                        {% endwith %}
-                    </div>
-                </div>
-
-                <div class="p-8 bg-white relative">
-                    <div class="flex items-center gap-3 mb-6">
-                        <div class="w-10 h-10 rounded-full {% if c.saldo_pendiente <= 0 %}bg-green-100 text-green-600{% else %}bg-gray-100 text-gray-400{% endif %} flex items-center justify-center font-black border-4 border-white shadow-sm">2</div>
-                        <div>
-                            <h4 class="font-bold text-gray-800">Cierre</h4>
-                            <p class="text-xs text-gray-400">Liquidación Final</p>
-                        </div>
-                    </div>
-
-                    <div class="mb-6 p-4 rounded-xl border-2 border-dashed {% if c.saldo_pendiente <= 0 %}border-green-200 bg-green-50{% else %}border-gray-200 bg-gray-50{% endif %} text-center">
-                        <p class="text-xs text-gray-500 uppercase mb-1">Saldo Pendiente</p>
-                        <p class="text-2xl font-black {% if c.saldo_pendiente > 0 %}text-[#2D1B4B]{% else %}text-green-600{% endif %}">
-                            ${{ c.saldo_pendiente|floatformat:2 }}
-                        </p>
-                    </div>
-
-                    <div class="space-y-3">
-                        {% if c.saldo_pendiente > 0 %}
-                            <button onclick="abrirModalPago('{{ c.id }}', '{{ c.cliente.nombre_empresa }}', '{{ c.saldo_pendiente }}')" class="w-full py-3 bg-green-500 text-white rounded-xl font-bold hover:bg-green-600 shadow-lg transition-transform transform hover:-translate-y-1 flex items-center justify-center gap-2">
-                                <i class="fas fa-hand-holding-usd"></i> REGISTRAR COBRO FINAL
-                            </button>
-                            
-                            <p class="text-[10px] text-center text-gray-400 mt-2">Al registrar el pago, podrás generar la Factura Final automáticamente.</p>
-                        {% else %}
-                            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">FACTURAS DE CIERRE</p>
-                            
-                            {% for fac in c.cotizacion.factura_set.all %}
-                                {% if "ANT" not in fac.folio_interno %} 
-                                <div class="flex items-center justify-between p-3 bg-white border border-green-100 rounded-xl shadow-sm mb-2">
-                                    <div class="flex items-center gap-3">
-                                        <div class="bg-green-50 text-green-600 w-8 h-8 rounded-lg flex items-center justify-center"><i class="fas fa-file-invoice-dollar"></i></div>
-                                        <div>
-                                            <p class="text-xs font-bold text-gray-700">Factura Final</p>
-                                            <p class="text-[10px] text-gray-400">{{ fac.folio_interno }}</p>
-                                        </div>
-                                    </div>
-                                    <div class="flex gap-2">
-                                        {% if fac.pdf_representacion %}
-                                            <a href="{{ fac.pdf_representacion.url }}" target="_blank" class="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 p-2 rounded-lg" title="PDF">
-                                                <i class="fas fa-file-pdf"></i>
-                                            </a>
-                                        {% endif %}
-                                        
-                                        {% if fac.archivo_xml %}
-                                            <a href="{{ fac.archivo_xml.url }}" download class="text-blue-500 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 p-2 rounded-lg" title="XML">
-                                                <i class="fas fa-code"></i>
-                                            </a>
-                                        {% endif %}
-                                    </div>
-                                </div>
+                        {% empty %}
+                            <div class="text-center py-6 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                                <p class="text-sm text-gray-400 mb-2">No se ha generado factura de anticipo.</p>
+                                
+                                {% if cliente.rfc %}
+                                    <button onclick="abrirModalFactura('{{ cuenta.id }}')" class="inline-block bg-[#2D1B4B] text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-[#A855F7] transition-colors shadow-lg transform hover:-translate-y-0.5">
+                                        Generar Factura Anticipo (50%)
+                                    </button>
+                                {% else %}
+                                    <p class="text-xs text-red-400 font-bold">Falta RFC del cliente para facturar.</p>
                                 {% endif %}
-                            {% endfor %}
-
-                            <div class="text-center mt-4">
-                                <span class="text-xs font-bold text-green-600 bg-green-100 px-3 py-1 rounded-full">
-                                    <i class="fas fa-star"></i> PROYECTO CERRADO
-                                </span>
                             </div>
-                        {% endif %}
+                        {% endfor %}
                     </div>
                 </div>
+
             </div>
-        </div>
-        {% empty %}
-        <div class="text-center py-20">
-            <i class="fas fa-folder-open text-6xl text-gray-200 mb-4"></i>
-            <p class="text-gray-400 font-bold">No hay proyectos financieros activos.</p>
         </div>
         {% endfor %}
     </div>
 
 </div>
 
-<div id="modal-pago" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-    <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity"></div>
-    <div class="fixed inset-0 z-10 overflow-y-auto">
-        <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
-            <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-md">
-                <button onclick="cerrarModalPago()" class="absolute top-4 right-4 text-gray-400 hover:text-red-500"><i class="fas fa-times"></i></button>
-                
-                <div class="p-6">
-                    <div class="flex items-center gap-3 mb-6">
-                        <div class="bg-green-100 text-green-600 w-12 h-12 rounded-xl flex items-center justify-center text-xl"><i class="fas fa-cash-register"></i></div>
-                        <div>
-                            <h3 class="text-lg font-black text-[#2D1B4B]">Registrar Cobro</h3>
-                            <p class="text-xs text-gray-500">Liquidación de etapa.</p>
-                        </div>
-                    </div>
-                    
-                    <form action="{% url 'registrar_pago' %}" method="POST">
-                        {% csrf_token %}
-                        <input type="hidden" name="cuenta_id" id="input-cuenta-id">
-                        
-                        <div class="mb-4">
-                            <label class="block text-xs font-bold text-gray-400 mb-1">Monto a Cobrar (Máx: $<span id="max-saldo"></span>)</label>
-                            <div class="relative">
-                                <span class="absolute left-3 top-3 text-gray-400 font-bold">$</span>
-                                <input type="number" step="0.01" name="monto" id="input-monto" class="w-full pl-8 p-3 bg-gray-50 rounded-xl font-bold text-[#2D1B4B] text-lg focus:ring-2 focus:ring-green-500 outline-none" required>
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-4 mb-4">
-                            <div>
-                                <label class="block text-xs font-bold text-gray-400 mb-1">Método</label>
-                                <select name="metodo" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-gray-600 text-sm focus:ring-2 focus:ring-green-500 outline-none">
-                                    <option value="transferencia">Transferencia</option>
-                                    <option value="efectivo">Efectivo</option>
-                                    <option value="tarjeta">Tarjeta</option>
-                                    <option value="cheque">Cheque</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-gray-400 mb-1">Referencia</label>
-                                <input type="text" name="referencia" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-gray-600 text-sm focus:ring-2 focus:ring-green-500 outline-none" placeholder="#12345">
-                            </div>
-                        </div>
-
-                        <div class="mb-6 bg-blue-50 p-4 rounded-xl border border-blue-100">
-                            <label class="flex items-start gap-3 cursor-pointer">
-                                <input type="checkbox" name="generar_factura_final" class="mt-1 w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
-                                <div>
-                                    <span class="block text-sm font-bold text-blue-800">Generar Factura Final y Remisión</span>
-                                    <span class="block text-[10px] text-blue-600">Timbrar automáticamente ante el SAT por el monto recibido.</span>
-                                </div>
-                            </label>
-                        </div>
-
-                        <button type="submit" class="w-full bg-[#2D1B4B] text-white py-3 rounded-xl font-bold hover:bg-green-600 shadow-lg transition-all transform hover:-translate-y-1">
-                            <i class="fas fa-check mr-2"></i> CONFIRMAR INGRESO
-                        </button>
-                    </form>
+<div id="modal-pago" class="fixed inset-0 bg-[#2D1B4B]/90 hidden items-center justify-center z-50">
+    <div class="bg-white p-8 rounded-[2rem] w-full max-w-sm shadow-2xl relative m-4 animate__animated animate__fadeInUp">
+        <button onclick="document.getElementById('modal-pago').classList.add('hidden')" class="absolute top-4 right-4 text-gray-400 hover:text-red-500"><i class="fas fa-times text-xl"></i></button>
+        
+        <h3 class="text-xl font-black text-[#2D1B4B] mb-1">Registrar Cobro</h3>
+        <p class="text-xs text-gray-500 mb-6">Ingresa los detalles del pago recibido.</p>
+        
+        <form action="{% url 'registrar_pago' %}" method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="cuenta_id" id="pago-cuenta-id">
+            
+            <div class="bg-gray-50 p-4 rounded-xl mb-4 border border-gray-100">
+                <label class="block text-xs font-bold text-gray-400 mb-1">MONTO A COBRAR ($)</label>
+                <input type="number" step="0.01" name="monto" id="pago-monto" class="w-full bg-transparent font-black text-2xl text-[#2D1B4B] outline-none" required>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 mb-1">Método</label>
+                    <select name="metodo" class="w-full p-2 bg-gray-50 rounded-lg font-bold text-sm border-none outline-none text-[#2D1B4B]">
+                        <option value="Transferencia">Transferencia</option>
+                        <option value="Efectivo">Efectivo</option>
+                        <option value="Tarjeta">Tarjeta</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 mb-1">Referencia</label>
+                    <input type="text" name="referencia" class="w-full p-2 bg-gray-50 rounded-lg font-bold text-sm border-none outline-none text-[#2D1B4B]" placeholder="Opcional">
                 </div>
             </div>
+
+            <div class="border-t border-gray-100 pt-4 mt-4">
+                
+                <div id="box-factura-auto" class="hidden mb-3">
+                    <p class="text-[10px] font-bold text-[#A855F7] flex items-center gap-1 mb-2 bg-purple-50 p-2 rounded-lg">
+                        <i class="fas fa-magic"></i> FACTURA LIQUIDACIÓN AUTOMÁTICA
+                    </p>
+                    <div class="flex items-center gap-2 bg-gray-50 p-2 rounded-lg border border-gray-100">
+                        <span class="text-xs font-bold text-gray-400">¿Descuento Final?</span>
+                        <span class="text-xs text-gray-400">$</span>
+                        <input type="number" step="0.01" id="desc-auto-input" placeholder="0.00" class="w-full bg-transparent font-bold text-[#2D1B4B] outline-none text-sm">
+                    </div>
+                </div>
+
+                <div id="box-factura-manual" class="mb-3">
+                    <div class="flex items-center gap-2 mb-2">
+                        <input type="checkbox" name="generar_factura_final" id="chk-fac" class="accent-[#A855F7] w-4 h-4 cursor-pointer" onchange="toggleDescuentoManual(this)">
+                        <label for="chk-fac" class="text-xs font-bold text-gray-600 cursor-pointer">Generar Factura Final</label>
+                    </div>
+                    
+                    <div id="input-descuento-manual" class="hidden flex items-center gap-2 bg-gray-50 p-2 rounded-lg ml-6 border border-gray-100 animate__animated animate__fadeIn">
+                        <span class="text-xs font-bold text-gray-400">¿Descuento Final?</span>
+                        <span class="text-xs text-gray-400">$</span>
+                        <input type="number" step="0.01" id="desc-manual-input" placeholder="0.00" class="w-full bg-transparent font-bold text-[#2D1B4B] outline-none text-sm">
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="w-full bg-[#2D1B4B] text-white py-3 rounded-xl font-bold hover:bg-[#A855F7] shadow-lg mt-2 transition-all transform hover:-translate-y-1">
+                CONFIRMAR PAGO
+            </button>
+        </form>
+    </div>
+</div>
+
+<div id="modal-factura" class="fixed inset-0 bg-[#2D1B4B]/90 hidden items-center justify-center z-50">
+    <div class="bg-white p-8 rounded-[2rem] w-full max-w-sm m-4 shadow-2xl relative animate__animated animate__fadeInUp">
+        <button onclick="document.getElementById('modal-factura').classList.add('hidden')" class="absolute top-5 right-5 text-gray-400 hover:text-red-500"><i class="fas fa-times"></i></button>
+        
+        <div class="text-center mb-6">
+            <div class="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3 text-blue-600 text-xl">
+                <i class="fas fa-file-invoice-dollar"></i>
+            </div>
+            <h3 class="text-lg font-black text-[#2D1B4B]">Generar Anticipo</h3>
+            <p class="text-xs text-gray-500">Factura del 50% del proyecto.</p>
         </div>
+        
+        <form id="form-factura" action="" method="POST">
+            {% csrf_token %}
+            
+            <div class="bg-gray-50 p-4 rounded-xl mb-4 border border-gray-100">
+                <p class="text-xs font-bold text-gray-400 uppercase mb-1">Concepto</p>
+                <p class="text-sm font-bold text-[#2D1B4B]">Anticipo de Proyecto</p>
+            </div>
+
+            <label class="block text-xs font-bold text-gray-400 mb-1 uppercase">¿Aplicar Descuento? ($)</label>
+            <div class="relative mb-6">
+                <span class="absolute left-4 top-3 text-gray-400 font-bold">$</span>
+                <input type="number" step="0.01" name="descuento" value="0" class="w-full p-3 pl-8 bg-gray-50 rounded-xl font-bold text-[#2D1B4B] border border-gray-100 focus:border-[#A855F7] outline-none">
+            </div>
+
+            <button type="submit" class="w-full bg-[#2D1B4B] text-white py-3 rounded-xl font-bold shadow-lg hover:bg-[#A855F7] transition-all transform hover:-translate-y-1">
+                <i class="fas fa-bolt mr-2"></i> TIMBRAR AHORA
+            </button>
+        </form>
     </div>
 </div>
 
 <script>
-    function abrirModalPago(id, cliente, saldo) {
-        document.getElementById('input-cuenta-id').value = id;
-        document.getElementById('max-saldo').innerText = saldo;
-        document.getElementById('input-monto').max = saldo;
-        document.getElementById('input-monto').value = saldo;
+    // --- LÓGICA DEL MODAL DE PAGO INTELIGENTE ---
+    function abrirModalPago(id, saldo, tieneAnticipo) {
+        document.getElementById('pago-cuenta-id').value = id;
+        document.getElementById('pago-monto').value = saldo;
         
-        const modal = document.getElementById('modal-pago');
-        modal.classList.remove('hidden');
+        const boxAuto = document.getElementById('box-factura-auto');
+        const boxManual = document.getElementById('box-factura-manual');
+        const inputAuto = document.getElementById('desc-auto-input');
+        const inputManual = document.getElementById('desc-manual-input');
+
+        if (tieneAnticipo === 'true') {
+            // MODO AUTOMÁTICO (Factura Forzada)
+            boxAuto.classList.remove('hidden');
+            boxManual.classList.add('hidden');
+            
+            // Activamos el input automático para enviar 'descuento_final'
+            inputAuto.setAttribute('name', 'descuento_final');
+            inputManual.removeAttribute('name'); // Desactivamos el otro
+        } else {
+            // MODO MANUAL (Opcional)
+            boxAuto.classList.add('hidden');
+            boxManual.classList.remove('hidden');
+            
+            // Limpiamos
+            document.getElementById('chk-fac').checked = false;
+            document.getElementById('input-descuento-manual').classList.add('hidden');
+            inputAuto.removeAttribute('name');
+            inputManual.removeAttribute('name');
+        }
+
+        const m = document.getElementById('modal-pago');
+        m.classList.remove('hidden');
+        m.classList.add('flex');
     }
-    function cerrarModalPago() {
-        document.getElementById('modal-pago').classList.add('hidden');
+
+    // Toggle para mostrar input de descuento en modo manual
+    function toggleDescuentoManual(checkbox) {
+        const div = document.getElementById('input-descuento-manual');
+        const inputManual = document.getElementById('desc-manual-input');
+        
+        if (checkbox.checked) {
+            div.classList.remove('hidden');
+            inputManual.setAttribute('name', 'descuento_final'); // Lo activamos
+        } else {
+            div.classList.add('hidden');
+            inputManual.removeAttribute('name'); // Lo desactivamos
+        }
+    }
+
+    // --- LÓGICA DEL MODAL DE ANTICIPO ---
+    function abrirModalFactura(cuentaId) {
+        const form = document.getElementById('form-factura');
+        form.action = `/finanzas/facturar-anticipo/${cuentaId}/`; 
+        const m = document.getElementById('modal-factura');
+        m.classList.remove('hidden');
+        m.classList.add('flex');
     }
 </script>
-
 {% endblock %}

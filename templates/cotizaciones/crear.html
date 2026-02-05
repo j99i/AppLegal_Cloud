@@ -4,200 +4,210 @@
     
     <div class="flex justify-between items-center mb-6">
         <h2 class="text-3xl font-black text-[#2D1B4B]">Nueva Cotización</h2>
-        <a href="{% url 'lista_cotizaciones' %}" class="text-gray-400 hover:text-gray-600 font-bold text-sm">Cancelar</a>
+        <a href="{% url 'lista_cotizaciones' %}" class="text-gray-500 font-bold hover:text-red-500">
+            Cancelar
+        </a>
     </div>
 
-    <div class="bg-purple-50 p-6 rounded-[2rem] border border-purple-100 mb-8 flex flex-col md:flex-row items-center gap-6">
-        <div class="flex-1">
-            <h3 class="font-bold text-[#2D1B4B] mb-2"><i class="fas fa-user-check mr-2"></i> ¿Cliente Existente?</h3>
-            <select id="selector-cliente" onchange="cargarCliente()" class="w-full p-3 bg-white rounded-xl border border-purple-200 font-bold text-[#2D1B4B] focus:ring-2 focus:ring-[#A855F7] outline-none">
-                <option value="">-- Nuevo Prospecto --</option>
-                {% for cli in clientes %}
-                <option value="{{ cli.id }}" 
-                    data-nombre="{{ cli.nombre_contacto }}"
-                    data-empresa="{{ cli.nombre_empresa }}"
-                    data-email="{{ cli.email }}"
-                    data-telefono="{{ cli.telefono }}">
-                    {{ cli.nombre_empresa }}
-                </option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="hidden md:block w-px h-16 bg-purple-200"></div>
-        <div class="flex-1 text-center md:text-left">
-            <p class="text-xs text-gray-400 italic">"Si seleccionas un cliente, el PDF se guardará automáticamente en su carpeta de Drive."</p>
-        </div>
-    </div>
-
-    <form method="POST" id="form-cotizacion">
+    <form action="{% url 'nueva_cotizacion' %}" method="POST" id="form-cotizacion">
         {% csrf_token %}
-        <input type="hidden" name="cliente_id" id="input-cliente-id">
 
-        <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100 mb-8">
-            <h3 class="font-bold text-[#2D1B4B] mb-6 border-b pb-2">Datos del Receptor</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100 mb-6">
+            <h3 class="text-lg font-bold text-[#2D1B4B] mb-4 border-b border-gray-100 pb-2">1. Datos del Cliente</h3>
+            
+            <div class="flex gap-4 mb-4">
+                <label class="cursor-pointer flex items-center">
+                    <input type="radio" name="tipo_cliente" value="existente" checked onchange="toggleCliente(this.value)" class="accent-[#A855F7] w-4 h-4">
+                    <span class="ml-2 font-bold text-gray-700">Cliente Existente</span>
+                </label>
+                <label class="cursor-pointer flex items-center">
+                    <input type="radio" name="tipo_cliente" value="nuevo" onchange="toggleCliente(this.value)" class="accent-[#A855F7] w-4 h-4">
+                    <span class="ml-2 font-bold text-gray-700">Nuevo Prospecto</span>
+                </label>
+            </div>
+
+            <div id="cliente-existente">
+                <label class="block text-xs font-bold text-gray-400 mb-1 uppercase">Buscar Cliente</label>
+                <select name="cliente_id" id="select-cliente" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-[#2D1B4B] border border-gray-100 outline-none focus:border-[#A855F7]" onchange="llenarDatosCliente(this)">
+                    <option value="" selected>Seleccionar...</option>
+                    {% for c in clientes %}
+                        <option value="{{ c.id }}" 
+                                data-nombre="{{ c.nombre_contacto }}" 
+                                data-email="{{ c.email }}" 
+                                data-telefono="{{ c.telefono }}"
+                                data-empresa="{{ c.nombre_empresa }}">
+                            {{ c.nombre_empresa }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 <div>
-                    <label class="block text-xs font-bold text-gray-400 mb-1">Nombre Contacto</label>
-                    <input type="text" name="nombre" id="f-nombre" class="w-full p-3 bg-gray-50 rounded-xl font-bold border-none bg-gray-50" required>
+                    <label class="block text-xs font-bold text-gray-400 mb-1">Nombre / Empresa</label>
+                    <input type="text" name="empresa" id="input-empresa" class="w-full p-3 rounded-xl border border-gray-200 outline-none focus:border-[#A855F7]" required>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-400 mb-1">Empresa / Razón Social</label>
-                    <input type="text" name="empresa" id="f-empresa" class="w-full p-3 bg-gray-50 rounded-xl font-bold border-none bg-gray-50">
+                    <label class="block text-xs font-bold text-gray-400 mb-1">Contacto</label>
+                    <input type="text" name="nombre" id="input-contacto" class="w-full p-3 rounded-xl border border-gray-200 outline-none focus:border-[#A855F7]">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-gray-400 mb-1">Email</label>
-                    <input type="email" name="email" id="f-email" class="w-full p-3 bg-gray-50 rounded-xl font-bold border-none bg-gray-50" required>
+                    <input type="email" name="email" id="input-email" class="w-full p-3 rounded-xl border border-gray-200 outline-none focus:border-[#A855F7]">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-gray-400 mb-1">Teléfono</label>
-                    <input type="text" name="telefono" id="f-telefono" class="w-full p-3 bg-gray-50 rounded-xl font-bold border-none bg-gray-50" required>
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-gray-400 mb-1">Válida hasta</label>
-                    <input type="date" name="validez" class="w-full p-3 bg-gray-50 rounded-xl font-bold border-none bg-gray-50">
-                </div>
-            </div>
-        </div>
-
-        <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100 mb-8">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="font-bold text-[#2D1B4B]">Servicios a Cotizar</h3>
-                <button type="button" onclick="agregarFila()" class="bg-[#2D1B4B] text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-[#A855F7] transition-colors">+ Agregar Item</button>
-            </div>
-            
-            <div id="contenedor-items" class="space-y-4">
-                <div class="fila-item grid grid-cols-12 gap-2 items-start bg-gray-50 p-3 rounded-xl relative hidden">
-                    <div class="col-span-4">
-                        <select name="servicio_id" class="w-full p-2 rounded-lg text-sm font-bold border-none bg-white" onchange="actualizarPrecio(this)">
-                            <option value="">Seleccionar Servicio...</option>
-                            {% for s in servicios %}
-                            <option value="{{ s.id }}" data-precio="{{ s.precio }}">{{ s.nombre }}</option>
-                            {% endfor %}
-                        </select>
-                        <input type="hidden" name="valores_adicionales_json[]" class="input-json">
-                    </div>
-                    <div class="col-span-2">
-                        <input type="number" name="cantidad" value="1" min="1" class="w-full p-2 rounded-lg text-sm text-center border-none" onchange="calcularSubtotal(this)">
-                    </div>
-                    <div class="col-span-2">
-                        <input type="number" name="precio" step="0.01" class="w-full p-2 rounded-lg text-sm text-right border-none" onchange="calcularSubtotal(this)">
-                    </div>
-                    <div class="col-span-3 text-right font-black text-[#2D1B4B] pt-2 total-fila">$0.00</div>
-                    <button type="button" onclick="eliminarFila(this)" class="absolute -top-2 -right-2 bg-red-100 text-red-500 w-6 h-6 rounded-full flex items-center justify-center hover:bg-red-500 hover:text-white transition-colors"><i class="fas fa-times text-xs"></i></button>
+                    <input type="text" name="telefono" id="input-telefono" class="w-full p-3 rounded-xl border border-gray-200 outline-none focus:border-[#A855F7]">
                 </div>
             </div>
             
-            <div class="flex flex-col items-end mt-6 pt-4 border-t border-gray-100 gap-4">
-                
-                <div class="flex items-center gap-4 bg-gray-50 p-2 pr-4 rounded-xl border border-gray-200">
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" name="aplicar_iva" id="switch-iva" class="sr-only peer" checked onchange="toggleIVA()">
-                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2D1B4B]"></div>
-                        <span class="ml-3 text-xs font-bold text-gray-500">Aplicar IVA</span>
-                    </label>
-                    
-                    <div class="flex items-center gap-2 border-l border-gray-300 pl-4" id="container-porcentaje">
-                        <span class="text-xs font-bold text-gray-400">Tasa:</span>
-                        <div class="relative">
-                            <input type="number" name="porcentaje_iva" id="input-iva" value="16" class="w-16 p-1 text-right font-bold text-[#2D1B4B] rounded border border-gray-300 text-sm" onchange="calcularTotalGlobal()">
-                            <span class="absolute right-4 top-1 text-xs text-gray-400">%</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="text-right w-1/3 space-y-1">
-                    <div class="flex justify-between text-sm text-gray-500"><span>Subtotal:</span> <span id="display-subtotal">$0.00</span></div>
-                    <div class="flex justify-between text-sm text-gray-500">
-                        <span>IVA (<span id="label-iva-percent">16</span>%):</span> 
-                        <span id="display-iva">$0.00</span>
-                    </div>
-                    <div class="flex justify-between text-xl font-black text-[#2D1B4B] mt-2 border-t pt-2"><span>Total:</span> <span id="display-total">$0.00</span></div>
-                </div>
+            <div class="mt-4">
+                <label class="block text-xs font-bold text-gray-400 mb-1">Válida hasta</label>
+                <input type="date" name="validez" class="w-full md:w-1/3 p-3 rounded-xl border border-gray-200 outline-none focus:border-[#A855F7]">
             </div>
         </div>
 
-        <button type="submit" class="w-full bg-green-500 text-white py-4 rounded-[1.5rem] font-black text-lg shadow-xl hover:bg-green-600 hover:shadow-2xl hover:-translate-y-1 transition-all">
-            CREAR COTIZACIÓN
-        </button>
+        <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100 mb-6">
+            <h3 class="text-lg font-bold text-[#2D1B4B] mb-4 border-b border-gray-100 pb-2">2. Servicios a Cotizar</h3>
+            
+            <table class="w-full text-left" id="tabla-servicios">
+                <thead>
+                    <tr class="text-xs text-gray-400 uppercase border-b border-gray-100">
+                        <th class="pb-2 w-1/3">Servicio (Catálogo)</th>
+                        <th class="pb-2">Descripción Personalizada</th>
+                        <th class="pb-2 w-20 text-center">Cant.</th>
+                        <th class="pb-2 w-32 text-right">Precio Unit.</th>
+                        <th class="pb-2 w-10"></th>
+                    </tr>
+                </thead>
+                <tbody id="items-container">
+                    <tr class="item-row border-b border-gray-50">
+                        <td class="py-3 pr-2 align-top">
+                            <select name="servicio_id" class="w-full p-2 bg-gray-50 rounded-lg text-sm border border-gray-200 outline-none focus:border-[#A855F7]" onchange="cargarPrecio(this)">
+                                <option value="">Seleccionar servicio...</option>
+                                {% for s in servicios %}
+                                    <option value="{{ s.id }}" 
+                                            data-precio="{{ s.precio_base|stringformat:'f' }}" 
+                                            data-desc="{{ s.descripcion }}">
+                                        {{ s.nombre }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                        <td class="py-3 pr-2 align-top">
+                            <textarea name="descripcion_item" rows="1" class="w-full p-2 rounded-lg border border-gray-200 text-sm input-desc outline-none focus:border-[#A855F7]" placeholder="Detalles..."></textarea>
+                        </td>
+                        <td class="py-3 pr-2 align-top">
+                            <input type="number" name="cantidad" value="1" min="1" class="w-full p-2 rounded-lg border border-gray-200 text-center text-sm outline-none focus:border-[#A855F7]">
+                        </td>
+                        <td class="py-3 pr-2 align-top">
+                            <input type="number" name="precio" step="0.01" class="w-full p-2 rounded-lg border border-gray-200 text-right text-sm input-precio outline-none focus:border-[#A855F7]" placeholder="0.00">
+                        </td>
+                        <td class="py-3 text-center align-top">
+                            <button type="button" onclick="eliminarFila(this)" class="text-gray-300 hover:text-red-500 transition-colors pt-2">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <button type="button" onclick="agregarFila()" class="mt-4 text-[#A855F7] font-bold text-sm hover:text-[#2D1B4B] transition-colors flex items-center gap-2">
+                <i class="fas fa-plus-circle"></i> Agregar otro servicio
+            </button>
+        </div>
+
+        <div class="text-right">
+            <button type="submit" class="bg-[#2D1B4B] text-white px-8 py-4 rounded-xl font-bold shadow-lg hover:bg-[#A855F7] transition-all transform hover:-translate-y-1">
+                CREAR COTIZACIÓN
+            </button>
+        </div>
+
     </form>
 </div>
 
 <script>
     // --- LÓGICA DE CLIENTES ---
-    function cargarCliente() {
-        const select = document.getElementById('selector-cliente');
-        const opt = select.options[select.selectedIndex];
-        if (opt.value) {
-            document.getElementById('input-cliente-id').value = opt.value;
-            document.getElementById('f-nombre').value = opt.dataset.nombre;
-            document.getElementById('f-empresa').value = opt.dataset.empresa;
-            document.getElementById('f-email').value = opt.dataset.email;
-            document.getElementById('f-telefono').value = opt.dataset.telefono;
+    function toggleCliente(tipo) {
+        const select = document.getElementById('select-cliente');
+        const inputs = ['input-empresa', 'input-contacto', 'input-email', 'input-telefono'];
+        const divSelect = document.getElementById('cliente-existente');
+        
+        if (tipo === 'nuevo') {
+            select.value = "";
+            select.disabled = true;
+            divSelect.classList.add('opacity-50', 'pointer-events-none');
+            // Limpiar inputs para escribir nuevos
+            inputs.forEach(id => document.getElementById(id).value = "");
         } else {
-            document.getElementById('input-cliente-id').value = "";
-            document.getElementById('f-nombre').value = "";
-            document.getElementById('f-empresa').value = "";
-            document.getElementById('f-email').value = "";
-            document.getElementById('f-telefono').value = "";
+            select.disabled = false;
+            divSelect.classList.remove('opacity-50', 'pointer-events-none');
         }
     }
 
-    // --- LÓGICA DE ITEMS ---
+    function llenarDatosCliente(select) {
+        const option = select.options[select.selectedIndex];
+        if (option.value) {
+            document.getElementById('input-empresa').value = option.getAttribute('data-empresa') || "";
+            document.getElementById('input-contacto').value = option.getAttribute('data-nombre') || "";
+            document.getElementById('input-email').value = option.getAttribute('data-email') || "";
+            document.getElementById('input-telefono').value = option.getAttribute('data-telefono') || "";
+        }
+    }
+
+    // --- LÓGICA DE SERVICIOS (Corrección del Precio) ---
+    function cargarPrecio(select) {
+        // Encontramos la fila padre (TR)
+        const row = select.closest('tr');
+        const option = select.options[select.selectedIndex];
+        
+        if (option.value) {
+            // Obtenemos el precio limpio (float)
+            const precio = option.getAttribute('data-precio');
+            const desc = option.getAttribute('data-desc');
+            
+            // Asignamos a los inputs de esa misma fila
+            const inputPrecio = row.querySelector('.input-precio');
+            const inputDesc = row.querySelector('.input-desc');
+
+            if (inputPrecio) inputPrecio.value = precio;
+            
+            // Solo llenamos la descripción si el campo está vacío para no borrar lo que escriba el usuario
+            if (inputDesc && inputDesc.value.trim() === "") {
+                inputDesc.value = desc || option.text;
+            }
+        }
+    }
+
     function agregarFila() {
-        const contenedor = document.getElementById('contenedor-items');
-        const nueva = document.querySelector('.fila-item').cloneNode(true);
-        nueva.classList.remove('hidden');
-        contenedor.appendChild(nueva);
-    }
-    function eliminarFila(btn) { btn.closest('.fila-item').remove(); calcularTotalGlobal(); }
-    
-    function actualizarPrecio(select) {
-        const precio = select.options[select.selectedIndex].dataset.precio || 0;
-        select.closest('.fila-item').querySelector('[name="precio"]').value = precio;
-        calcularSubtotal(select);
-    }
-
-    function calcularSubtotal(input) {
-        const fila = input.closest('.fila-item');
-        const total = (parseFloat(fila.querySelector('[name="cantidad"]').value) || 0) * (parseFloat(fila.querySelector('[name="precio"]').value) || 0);
-        fila.querySelector('.total-fila').innerText = '$' + total.toFixed(2);
-        fila.dataset.total = total;
-        calcularTotalGlobal();
-    }
-
-    // --- NUEVA LÓGICA DE IVA DINÁMICO ---
-    function toggleIVA() {
-        const activo = document.getElementById('switch-iva').checked;
-        const input = document.getElementById('input-iva');
+        const container = document.getElementById('items-container');
+        const firstRow = container.querySelector('.item-row');
         
-        if (!activo) {
-            input.disabled = true;
-            input.classList.add('bg-gray-100', 'text-gray-400');
+        // Clonar la primera fila
+        const newRow = firstRow.cloneNode(true);
+        
+        // Limpiar los valores de la nueva fila
+        newRow.querySelector('select').value = "";
+        newRow.querySelector('.input-desc').value = "";
+        newRow.querySelector('.input-precio').value = "";
+        newRow.querySelector('input[name="cantidad"]').value = "1";
+        
+        container.appendChild(newRow);
+    }
+
+    function eliminarFila(btn) {
+        const row = btn.closest('tr');
+        const container = document.getElementById('items-container');
+        
+        // Si hay más de una fila, la borramos. Si es la última, solo la limpiamos.
+        if (container.querySelectorAll('.item-row').length > 1) {
+            row.remove();
         } else {
-            input.disabled = false;
-            input.classList.remove('bg-gray-100', 'text-gray-400');
+            row.querySelector('select').value = "";
+            row.querySelector('.input-desc').value = "";
+            row.querySelector('.input-precio').value = "";
+            row.querySelector('input[name="cantidad"]').value = "1";
         }
-        calcularTotalGlobal();
     }
-
-    function calcularTotalGlobal() {
-        let subtotal = 0;
-        document.querySelectorAll('.fila-item:not(.hidden)').forEach(f => subtotal += parseFloat(f.dataset.total) || 0);
-        
-        const aplica = document.getElementById('switch-iva').checked;
-        let porcentaje = parseFloat(document.getElementById('input-iva').value) || 0;
-        
-        if (!aplica) porcentaje = 0;
-
-        const iva = subtotal * (porcentaje / 100);
-        const total = subtotal + iva;
-
-        document.getElementById('display-subtotal').innerText = '$' + subtotal.toFixed(2);
-        document.getElementById('label-iva-percent').innerText = porcentaje;
-        document.getElementById('display-iva').innerText = '$' + iva.toFixed(2);
-        document.getElementById('display-total').innerText = '$' + total.toFixed(2);
-    }
-
-    document.addEventListener('DOMContentLoaded', () => agregarFila());
 </script>
 {% endblock %}

@@ -41,21 +41,19 @@
         .header {
             display: flex;
             justify-content: space-between;
-            align-items: flex-start; /* Alineado arriba para dar espacio al logo */
+            align-items: flex-start;
             border-bottom: 2px solid #f3f4f6;
             padding-bottom: 25px;
             margin-bottom: 35px;
         }
         
-        /* --- DISEÑO DE LOGO TIPOGRÁFICO (CSS PURO) --- */
-        .brand-logo {
-            line-height: 1;
-        }
+        /* --- LOGO --- */
+        .brand-logo { line-height: 1; }
         .brand-top {
             font-size: 10px;
             text-transform: uppercase;
             letter-spacing: 4px;
-            color: #A855F7; /* Color Acento */
+            color: #A855F7;
             font-weight: 800;
             display: block;
             margin-bottom: 2px;
@@ -63,15 +61,13 @@
         .brand-main {
             font-size: 28px;
             font-weight: 900;
-            color: #2D1B4B; /* Color Oscuro */
+            color: #2D1B4B;
             text-transform: uppercase;
             letter-spacing: -1px;
-            font-family: 'Arial Black', 'Helvetica-Bold', sans-serif; /* Fuente muy gruesa */
+            font-family: 'Arial Black', 'Helvetica-Bold', sans-serif;
             display: block;
         }
-        .brand-dot {
-            color: #A855F7; /* Punto final de color */
-        }
+        .brand-dot { color: #A855F7; }
         .brand-line {
             width: 40px;
             height: 4px;
@@ -80,10 +76,8 @@
             border-radius: 2px;
         }
 
-        /* TÍTULO DEL DOCUMENTO */
-        .invoice-title {
-            text-align: right;
-        }
+        /* TÍTULO */
+        .invoice-title { text-align: right; }
         .invoice-title h1 {
             margin: 0;
             font-size: 32px;
@@ -274,25 +268,45 @@
             <div class="info-col">
                 <div class="info-label">PREPARADO PARA:</div>
                 <div class="info-content">
-                    {% if c.prospecto_empresa %}
+                    {% if c.cliente %}
+                        {{ c.cliente.nombre_empresa }}
+                    {% elif c.prospecto_empresa %}
                         {{ c.prospecto_empresa }}
                     {% else %}
                         {{ c.prospecto_nombre }}
                     {% endif %}
                 </div>
                 <div class="info-sub">
-                    {% if c.prospecto_empresa %}Atn: {{ c.prospecto_nombre }}<br>{% endif %}
-                    {{ c.prospecto_email }}<br>
-                    {{ c.prospecto_telefono }}
+                    {% if c.cliente %}
+                        Atn: {{ c.cliente.nombre_contacto }}<br>
+                        {{ c.cliente.email }}<br>
+                        {{ c.cliente.telefono }}
+                    {% else %}
+                        Atn: {{ c.prospecto_nombre }}<br>
+                        {{ c.prospecto_email }}<br>
+                        {{ c.prospecto_telefono }}
+                    {% endif %}
                 </div>
             </div>
             
             <div class="info-col text-right">
                 <div class="info-label">EMITIDO POR:</div>
-                <div class="info-content">{{ c.creado_por.get_full_name|default:c.creado_por.username }}</div>
+                
+                <div class="info-content">
+                    {% if c.creado_por %}
+                        {{ c.creado_por.get_full_name|default:c.creado_por.username }}
+                    {% else %}
+                        Administración Corpad
+                    {% endif %}
+                </div>
+                
                 <div class="info-sub">
                     Gestiones Corpad S.A.S.<br>
-                    {{ c.creado_por.email }}
+                    {% if c.creado_por %}
+                        {{ c.creado_por.email }}
+                    {% else %}
+                        contacto@corpad.com
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -310,12 +324,18 @@
                 {% for item in c.items.all %}
                 <tr>
                     <td>
-                        <div class="item-main-title">{{ item.servicio.nombre }}</div>
+                        <div class="item-main-title">
+                            {% if item.servicio %}
+                                {{ item.servicio.nombre }}
+                            {% else %}
+                                Servicio Personalizado
+                            {% endif %}
+                        </div>
                         <div class="item-desc">
                             {{ item.descripcion_personalizada|default:item.servicio.descripcion }}
                         </div>
 
-                        {% if item.servicio.campos_dinamicos %}
+                        {% if item.servicio and item.servicio.campos_dinamicos %}
                             <div class="specs-box">
                                 <div class="specs-title">ESPECIFICACIONES</div>
                                 {% for spec in item.servicio.campos_dinamicos %}
@@ -338,8 +358,8 @@
                         {% endif %}
                     </td>
                     <td class="text-center" style="font-weight:bold; color:#555;">{{ item.cantidad }}</td>
-                    <td class="text-right" style="color:#555;">${{ item.precio_unitario }}</td>
-                    <td class="text-right" style="font-weight:bold; color:#2D1B4B;">${{ item.subtotal }}</td>
+                    <td class="text-right" style="color:#555;">${{ item.precio_unitario|floatformat:2 }}</td>
+                    <td class="text-right" style="font-weight:bold; color:#2D1B4B;">${{ item.subtotal|floatformat:2 }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -349,17 +369,23 @@
             <table class="totals-table">
                 <tr class="total-row">
                     <td class="text-right">SUBTOTAL:</td>
-                    <td class="text-right">${{ c.subtotal }}</td> 
+                    <td class="text-right">${{ c.subtotal|floatformat:2 }}</td> 
                 </tr>
+                {% if c.impuestos > 0 %}
+                <tr class="total-row">
+                    <td class="text-right">IVA:</td>
+                    <td class="text-right">${{ c.impuestos|floatformat:2 }}</td> 
+                </tr>
+                {% endif %}
                 <tr class="total-row total-final">
                     <td class="text-right">TOTAL MXN:</td>
-                    <td class="text-right">${{ c.total }}</td>
+                    <td class="text-right">${{ c.total|floatformat:2 }}</td>
                 </tr>
             </table>
         </div>
 
         <div class="footer">
-            <p style="margin-bottom: 5px;"><strong>VIGENCIA DE LA OFERTA:</strong> {{ c.validez_hasta|default:"15 días hábiles" }}</p>
+            <p style="margin-bottom: 5px;"><strong>VIGENCIA DE LA OFERTA:</strong> {{ c.validez_hasta|date:"d/m/Y"|default:"15 días hábiles" }}</p>
             <p>Gracias por confiar en Gestiones Corpad.</p>
         </div>
     </div>

@@ -1,5 +1,7 @@
 {% extends 'base.html' %}
-{% load custom_filters %} {% block content %}
+{% load custom_filters %} 
+
+{% block content %}
 <div class="max-w-5xl mx-auto animate__animated animate__fadeIn">
     
     <div class="flex justify-between items-center mb-6">
@@ -13,7 +15,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
             
             <div class="space-y-6">
-                <h3 class="text-lg font-bold text-[#2D1B4B] border-b pb-2">Datos Generales</h3>
+                <h3 class="text-lg font-bold text-[#2D1B4B] border-b pb-2">1. Datos Generales</h3>
                 
                 <div class="flex items-center gap-4">
                     <div class="w-20 h-20 rounded-xl bg-gray-100 overflow-hidden border flex items-center justify-center">
@@ -30,7 +32,7 @@
                 </div>
 
                 <div>
-                    <label class="label-form">Nombre / Razón Social</label>
+                    <label class="label-form">Nombre Comercial (Interno)</label>
                     <input type="text" name="nombre_empresa" value="{{ c.nombre_empresa }}" class="input-form">
                 </div>
                 <div>
@@ -39,7 +41,7 @@
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="label-form">Email</label>
+                        <label class="label-form">Email Contacto</label>
                         <input type="email" name="email" value="{{ c.email }}" class="input-form">
                     </div>
                     <div>
@@ -50,33 +52,64 @@
             </div>
 
             <div class="space-y-6">
-                <div class="flex justify-between items-center border-b pb-2">
-                    <h3 class="text-lg font-bold text-[#A855F7]">Información Adicional</h3>
-                    {% if user.rol == 'admin' %}
-                    <a href="{% url 'configurar_campos' %}" class="text-[10px] bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded text-gray-500 font-bold">
-                        <i class="fas fa-cog"></i> Configurar Campos
-                    </a>
-                    {% endif %}
+                <h3 class="text-lg font-bold text-[#2D1B4B] border-b pb-2 flex items-center gap-2">
+                    2. Datos Fiscales (SAT 4.0) 
+                    <span class="bg-blue-100 text-blue-600 px-2 py-0.5 rounded text-[10px]">Facturación</span>
+                </h3>
+
+                <div>
+                    <label class="label-form">Razón Social (Tal cual en Constancia)</label>
+                    <input type="text" name="razon_social" value="{{ c.razon_social|default:'' }}" class="input-form uppercase" placeholder="EJ: EMPRESA S.A. DE C.V.">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="label-form">RFC</label>
+                        <input type="text" name="rfc" value="{{ c.rfc|default:'' }}" class="input-form uppercase" placeholder="XAXX010101000" maxlength="13">
+                    </div>
+                    <div>
+                        <label class="label-form">C.P. Fiscal</label>
+                        <input type="text" name="codigo_postal" value="{{ c.codigo_postal|default:'' }}" class="input-form" maxlength="5">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="label-form">Régimen Fiscal</label>
+                    <select name="regimen_fiscal" class="input-form bg-white">
+                        <option value="">-- Seleccionar --</option>
+                        <option value="601" {% if c.regimen_fiscal == '601' %}selected{% endif %}>601 - General de Ley Personas Morales</option>
+                        <option value="603" {% if c.regimen_fiscal == '603' %}selected{% endif %}>603 - Personas Morales con Fines no Lucrativos</option>
+                        <option value="605" {% if c.regimen_fiscal == '605' %}selected{% endif %}>605 - Sueldos y Salarios</option>
+                        <option value="612" {% if c.regimen_fiscal == '612' %}selected{% endif %}>612 - P.F. Actividades Empresariales</option>
+                        <option value="626" {% if c.regimen_fiscal == '626' %}selected{% endif %}>626 - RESICO</option>
+                        <option value="616" {% if c.regimen_fiscal == '616' %}selected{% endif %}>616 - Sin obligaciones fiscales</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="label-form">Uso CFDI</label>
+                        <select name="uso_cfdi" class="input-form bg-white">
+                            <option value="G03" {% if c.uso_cfdi == 'G03' %}selected{% endif %}>G03 - Gastos en general</option>
+                            <option value="S01" {% if c.uso_cfdi == 'S01' %}selected{% endif %}>S01 - Sin efectos fiscales</option>
+                            <option value="D01" {% if c.uso_cfdi == 'D01' %}selected{% endif %}>D01 - Honorarios médicos</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="label-form">Email Facturación</label>
+                        <input type="email" name="email_facturacion" value="{{ c.email_facturacion|default:c.email }}" class="input-form">
+                    </div>
                 </div>
 
                 {% if campos_dinamicos %}
-                    {% for campo in campos_dinamicos %}
-                    <div>
-                        <label class="label-form">{{ campo.nombre }}</label>
-                        
-                        {% if campo.tipo == 'textarea' %}
-                            <textarea name="custom_{{ campo.id }}" rows="3" class="input-form">{{ datos_existentes|get_item:campo.nombre }}</textarea>
-                        {% else %}
-                            <input type="{{ campo.tipo }}" name="custom_{{ campo.id }}" value="{{ datos_existentes|get_item:campo.nombre }}" class="input-form">
-                        {% endif %}
-                    </div>
-                    {% endfor %}
-                {% else %}
-                    <div class="text-center py-10 bg-gray-50 rounded-xl">
-                        <p class="text-gray-400 text-sm">No hay campos extra configurados.</p>
-                        {% if user.rol == 'admin' %}
-                        <a href="{% url 'configurar_campos' %}" class="text-[#A855F7] font-bold text-xs hover:underline">Agregar RFC, CURP, etc.</a>
-                        {% endif %}
+                    <div class="pt-4 border-t border-gray-100 mt-4">
+                        <label class="block text-xs font-bold text-gray-400 mb-2">CAMPOS PERSONALIZADOS</label>
+                        {% for campo in campos_dinamicos %}
+                        <div class="mb-2">
+                            <label class="text-[10px] font-bold text-gray-400 uppercase">{{ campo.nombre }}</label>
+                            <input type="{{ campo.tipo }}" name="custom_{{ campo.id }}" value="{{ c.datos_extra|get_item:campo.nombre }}" class="input-form text-sm py-1">
+                        </div>
+                        {% endfor %}
                     </div>
                 {% endif %}
             </div>
@@ -91,7 +124,7 @@
             {% endif %}
             
             <button type="submit" class="bg-[#2D1B4B] text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:bg-[#A855F7] transition-all">
-                GUARDAR CAMBIOS
+                GUARDAR TODO
             </button>
         </div>
     </form>

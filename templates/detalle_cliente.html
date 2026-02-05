@@ -21,9 +21,9 @@
                             RFC: {{ cliente.rfc }}
                         </span>
                     {% else %}
-                        <span class="bg-orange-100 text-orange-600 px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer hover:bg-orange-200" onclick="abrirModalFiscal()">
-                            <i class="fas fa-exclamation-circle"></i> Falta RFC
-                        </span>
+                        <a href="{% url 'editar_cliente' cliente.id %}" class="bg-orange-100 text-orange-600 px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer hover:bg-orange-200">
+                            <i class="fas fa-exclamation-circle"></i> Configurar RFC
+                        </a>
                     {% endif %}
                 </div>
                 
@@ -125,9 +125,15 @@
                 {% else %} <span class="text-[#2D1B4B]">Carpeta Raíz</span> {% endif %}
             </nav>
             <div class="flex gap-2">
-                <button onclick="abrirModalFiscal()" class="bg-gray-800 text-white px-4 py-2 rounded-xl font-bold text-xs hover:bg-gray-900 shadow-md flex items-center gap-2" title="Configurar Datos Fiscales">
-                    <i class="fas fa-file-invoice-dollar"></i> SAT
-                </button>
+                <a href="{% url 'editar_cliente' cliente.id %}" class="bg-gray-800 text-white px-4 py-2 rounded-xl font-bold text-xs hover:bg-gray-900 shadow-md flex items-center gap-2" title="Configurar Datos Fiscales">
+                    <i class="fas fa-file-invoice-dollar"></i> SAT / DATOS
+                </a>
+
+                {% if user.access_finanzas or user.rol == 'admin' %}
+                <a href="{% url 'finanzas_cliente_detalle' cliente.id %}" class="bg-emerald-500 text-white px-4 py-2 rounded-xl font-bold text-xs hover:bg-emerald-600 shadow-md flex items-center gap-2">
+                    <i class="fas fa-coins"></i> FINANZAS
+                </a>
+                {% endif %}
 
                 {% if user.access_contratos or user.rol == 'admin' %}
                 <a href="{% url 'generador_contratos' cliente.id %}" class="bg-[#A855F7] text-white px-4 py-2 rounded-xl font-bold text-xs hover:bg-[#9333EA] shadow-md flex items-center gap-2">
@@ -343,124 +349,6 @@
 
 </div>
 
-<div id="modal-fiscal" class="fixed inset-0 z-[60] hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-    <div class="fixed inset-0 bg-gray-900/70 backdrop-blur-sm transition-opacity"></div>
-    <div class="fixed inset-0 z-10 overflow-y-auto">
-        <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
-            <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-2xl border border-gray-200">
-                
-                <button onclick="cerrarModalFiscal()" class="absolute top-4 right-4 z-20 p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
-
-                <div class="bg-gray-50 px-4 py-5 sm:px-6 border-b border-gray-100 flex items-center gap-4">
-                    <div class="flex-shrink-0 bg-[#2D1B4B] h-12 w-12 rounded-xl flex items-center justify-center text-white text-xl shadow-lg">
-                        <i class="fas fa-university"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-lg font-black leading-6 text-gray-900">Datos Fiscales (SAT 4.0)</h3>
-                        <p class="text-sm text-gray-500">Configuración necesaria para timbrar facturas.</p>
-                    </div>
-                </div>
-
-                <div class="px-4 py-5 sm:p-6 space-y-6">
-                    <div class="rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 p-5 relative overflow-hidden">
-                        <div class="absolute -right-6 -top-10 text-blue-100/50 text-9xl transform rotate-12 pointer-events-none"><i class="fas fa-file-pdf"></i></div>
-                        <div class="relative z-10">
-                            <h4 class="text-sm font-bold text-[#2D1B4B] mb-2 flex items-center gap-2">
-                                <i class="fas fa-magic text-blue-500"></i> Auto-llenado Inteligente
-                            </h4>
-                            <p class="text-xs text-gray-600 mb-4 pr-10">Sube tu <strong>Constancia de Situación Fiscal</strong> y detectaremos los datos automáticamente.</p>
-                            
-                            <form action="{% url 'guardar_datos_fiscales' cliente.id %}" method="POST" enctype="multipart/form-data" class="flex flex-col sm:flex-row gap-3 items-stretch">
-                                {% csrf_token %}
-                                <div class="flex-grow">
-                                    <input type="file" name="archivo_constancia" accept=".pdf" 
-                                           class="block w-full text-sm text-gray-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white file:cursor-pointer hover:file:bg-blue-700 bg-white border border-gray-200 rounded-xl cursor-pointer focus:outline-none">
-                                </div>
-                                <button type="submit" class="bg-[#2D1B4B] text-white px-6 py-2 rounded-xl font-bold text-xs hover:bg-[#432C68] shadow-md transition-all flex items-center justify-center gap-2 whitespace-nowrap">
-                                    <i class="fas fa-bolt"></i> PROCESAR
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-
-                    <div class="relative">
-                        <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-gray-200"></div></div>
-                        <div class="relative flex justify-center"><span class="bg-white px-3 text-xs font-bold text-gray-400 uppercase tracking-wider">O edita manualmente</span></div>
-                    </div>
-
-                    <form action="{% url 'guardar_datos_fiscales' cliente.id %}" method="POST" class="grid grid-cols-1 gap-y-4 gap-x-4 sm:grid-cols-6">
-                        {% csrf_token %}
-                        <input type="hidden" name="accion_guardar" value="true">
-
-                        <div class="sm:col-span-6">
-                            <label class="block text-xs font-bold text-gray-500 mb-1">Razón Social <span class="text-red-500">*</span></label>
-                            <input type="text" name="razon_social" value="{{ cliente.razon_social|default:cliente.nombre_empresa }}" 
-                                   class="block w-full rounded-xl border-gray-200 bg-gray-50 focus:border-purple-500 focus:ring-purple-500 sm:text-sm font-bold text-gray-800 uppercase py-3 pl-3" required>
-                        </div>
-
-                        <div class="sm:col-span-3">
-                            <label class="block text-xs font-bold text-gray-500 mb-1">RFC <span class="text-red-500">*</span></label>
-                            <input type="text" name="rfc" value="{{ cliente.rfc|default:'' }}" 
-                                   class="block w-full rounded-xl border-gray-200 bg-gray-50 focus:border-purple-500 focus:ring-purple-500 sm:text-sm font-bold text-gray-800 uppercase py-3 pl-3" maxlength="13" required>
-                        </div>
-
-                        <div class="sm:col-span-3">
-                            <label class="block text-xs font-bold text-gray-500 mb-1">C.P. Fiscal <span class="text-red-500">*</span></label>
-                            <input type="text" name="codigo_postal" value="{{ cliente.codigo_postal|default:'' }}" 
-                                   class="block w-full rounded-xl border-gray-200 bg-gray-50 focus:border-purple-500 focus:ring-purple-500 sm:text-sm font-bold text-gray-800 py-3 pl-3" maxlength="5" required>
-                        </div>
-
-                        <div class="sm:col-span-6">
-                            <label class="block text-xs font-bold text-gray-500 mb-1">Régimen Fiscal <span class="text-red-500">*</span></label>
-                            <select name="regimen_fiscal" class="block w-full rounded-xl border-gray-200 bg-gray-50 focus:border-purple-500 focus:ring-purple-500 sm:text-sm font-bold text-gray-800 py-3 pl-3" required>
-                                <option value="">Selecciona...</option>
-                                <option value="601">601 - General de Ley Personas Morales</option>
-                                <option value="603">603 - Personas Morales con Fines no Lucrativos</option>
-                                <option value="605">605 - Sueldos y Salarios</option>
-                                <option value="606">606 - Arrendamiento</option>
-                                <option value="612">612 - Personas Físicas con Act. Empresariales</option>
-                                <option value="621">621 - Incorporación Fiscal</option>
-                                <option value="626">626 - Régimen Simplificado de Confianza (RESICO)</option>
-                                <option value="616">616 - Sin obligaciones fiscales</option>
-                            </select>
-                            {% if cliente.regimen_fiscal %}
-                            <script>document.querySelector('[name=regimen_fiscal]').value = "{{ cliente.regimen_fiscal }}";</script>
-                            {% endif %}
-                        </div>
-
-                        <div class="sm:col-span-3">
-                            <label class="block text-xs font-bold text-gray-500 mb-1">Uso de CFDI</label>
-                            <select name="uso_cfdi" class="block w-full rounded-xl border-gray-200 bg-gray-50 focus:border-purple-500 focus:ring-purple-500 sm:text-sm font-bold text-gray-800 py-3 pl-3" required>
-                                <option value="G03">G03 - Gastos en general</option>
-                                <option value="P01">P01 - Por definir</option>
-                                <option value="D01">D01 - Honorarios médicos</option>
-                                <option value="S01">S01 - Sin efectos fiscales</option>
-                            </select>
-                            {% if cliente.uso_cfdi %}
-                            <script>document.querySelector('[name=uso_cfdi]').value = "{{ cliente.uso_cfdi }}";</script>
-                            {% endif %}
-                        </div>
-
-                        <div class="sm:col-span-3">
-                            <label class="block text-xs font-bold text-gray-500 mb-1">Email Facturación</label>
-                            <input type="email" name="email_facturacion" value="{{ cliente.email_facturacion|default:cliente.email }}" 
-                                   class="block w-full rounded-xl border-gray-200 bg-gray-50 focus:border-purple-500 focus:ring-purple-500 sm:text-sm font-bold text-gray-800 py-3 pl-3" required>
-                        </div>
-
-                        <div class="sm:col-span-6 mt-4">
-                            <button type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-black text-white bg-green-500 hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all transform hover:-translate-y-1">
-                                <i class="fas fa-save mr-2 mt-0.5"></i> GUARDAR Y CERRAR
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
 <div id="modal-req" class="fixed inset-0 bg-[#2D1B4B]/90 hidden items-center justify-center z-50">
     <div class="bg-white p-8 rounded-[2rem] w-full max-w-sm m-4 shadow-2xl relative">
         <button onclick="document.getElementById('modal-req').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400"><i class="fas fa-times"></i></button>
@@ -550,23 +438,5 @@
         document.getElementById('modal-mover').classList.remove('hidden');
         document.getElementById('modal-mover').classList.add('flex');
     }
-
-    // --- MODAL FISCAL LOGIC ---
-    function abrirModalFiscal() {
-        document.getElementById('modal-fiscal').classList.remove('hidden');
-    }
-
-    function cerrarModalFiscal() {
-        document.getElementById('modal-fiscal').classList.add('hidden');
-    }
-
-    // --- AUTO-OPEN (Redirección desde Finanzas) ---
-    document.addEventListener("DOMContentLoaded", function() {
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('accion') === 'abrir_fiscal') {
-            abrirModalFiscal();
-            window.history.replaceState({}, document.title, window.location.pathname);
-        }
-    });
 </script>
 {% endblock %}

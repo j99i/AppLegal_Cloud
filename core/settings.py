@@ -17,14 +17,15 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 SECRET_KEY = env('SECRET_KEY', default='django-insecure-tu-clave-secreta-local-super-segura')
 
 # DEBUG debe ser False en producción. 
-# Si la variable no existe en el entorno, asume True (modo desarrollo).
 DEBUG = env.bool('DEBUG', default=True)
 
-# Hosts permitidos (El '*' es útil para Railway/Render al inicio)
-ALLOWED_HOSTS = ['*']
-
-# Si usas Railway, es bueno agregar esto para evitar errores de CSRF en formularios
-CSRF_TRUSTED_ORIGINS = ['https://*.railway.app', 'https://*.up.railway.app']
+# HOSTS PERMITIDOS (Dinámico y Seguro)
+if not DEBUG:
+    ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['.railway.app'])
+    CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=['https://*.railway.app'])
+else:
+    ALLOWED_HOSTS = ['*']
+    CSRF_TRUSTED_ORIGINS = ['https://*.railway.app', 'https://*.up.railway.app']
 
 
 # ==========================================
@@ -83,7 +84,6 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                # Tu procesador de notificaciones
                 'expedientes.context_processors.notificaciones_globales',
             ],
         },
@@ -96,7 +96,6 @@ WSGI_APPLICATION = 'core.wsgi.application'
 # ==========================================
 # 5. BASE DE DATOS (Configuración Híbrida)
 # ==========================================
-# Por defecto usa SQLite (Local)
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -141,31 +140,24 @@ USE_TZ = True
 # 8. ARCHIVOS ESTÁTICOS Y MEDIA (Whitenoise + Cloudinary)
 # ==========================================
 STATIC_URL = 'static/'
-
-# Dónde buscar estáticos en desarrollo
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
-
-# Dónde recolectar estáticos para producción (Railway usará esto)
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-
-# Motor de almacenamiento para producción (Comprime y optimiza)
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # --- CONFIGURACIÓN DE MEDIA (CLOUDINARY) ---
-# Leemos las credenciales del entorno
 CLOUDINARY_STORAGE = {
     'CLOUD_NAME': env('CLOUDINARY_CLOUD_NAME', default=''),
     'API_KEY':    env('CLOUDINARY_API_KEY', default=''),
     'API_SECRET': env('CLOUDINARY_API_SECRET', default=''),
 }
 
-# Si hay credenciales, usamos Cloudinary. Si no, seguimos en local.
-if CLOUDINARY_STORAGE['CLOUD_NAME']:
+MEDIA_URL = '/media/'
+
+# Lógica condicional Correcta: Solo usar Cloudinary si NO es Debug y hay credenciales
+if not DEBUG and CLOUDINARY_STORAGE['CLOUD_NAME']:
     DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-    MEDIA_URL = '/media/'  # Cloudinary manejará la URL real automáticamente
 else:
-    # Configuración Local Clásica
-    MEDIA_URL = '/media/'
+    # Configuración Local
     MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
@@ -174,12 +166,10 @@ else:
 # ==========================================
 EMAIL_BACKEND = "anymail.backends.resend.EmailBackend"
 
-# Configuración de Anymail
 ANYMAIL = {
     "RESEND_API_KEY": env('RESEND_API_KEY', default=''),
 }
 
-# CONFIGURACIÓN DEL REMITENTE
 DEFAULT_FROM_EMAIL = "GESTIONES CORPAD <onboarding@resend.dev>" 
 SERVER_EMAIL = "onboarding@resend.dev" 
 
@@ -189,44 +179,22 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # ==========================================
 # 10. SEGURIDAD PARA PRODUCCIÓN (BLINDAJE)
 # ==========================================
-# Este bloque se activa SOLO si DEBUG=False (en Railway)
-# Arregla la calificación "C" del reporte de seguridad.
-
 if not DEBUG:
-    # 1. Forzar HTTPS siempre
     SECURE_SSL_REDIRECT = True
-    # Confiar en el proxy de Railway
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-    
-    # 2. HSTS (Seguridad Estricta de Transporte)
-    # Obliga al navegador a usar HTTPS por 1 año
     SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
-
-    # 3. Cookies Seguras (Encriptadas)
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
-    
-    # 4. Cabeceras extra contra ataques
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = 'DENY'
 
-    # core/settings.py
 
-# ... al final del archivo ...
-
-# CONFIGURACIÓN FACTURAMA SANDBOX
-# Tu usuario es el que aparece arriba a la derecha en el portal ("Jovani563")
-FACTURAMA_USER = env('FACTURAMA_USER')
-
-# Tu contraseña es la misma con la que entras al portal web
-FACTURAMA_PASS = env('FACTURAMA_PASS')
-
-# Esto le dice a la librería que use el servidor de pruebas (dev.facturama.mx)
+# ==========================================
+# 11. FACTURAMA
+# ==========================================
+FACTURAMA_USER = env('FACTURAMA_USER', default='')
+FACTURAMA_PASS = env('FACTURAMA_PASS', default='')
 FACTURAMA_SANDBOX = True
-
-# settings.py
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')

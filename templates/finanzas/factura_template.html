@@ -6,222 +6,241 @@
     <style>
         @page {
             size: letter;
-            margin: 1cm;
-        }
-        body {
-            font-family: Helvetica, Arial, sans-serif;
-            font-size: 10pt;
-            color: #333;
-            line-height: 1.3;
-        }
-        .header {
-            width: 100%;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #004085; /* Azul corporativo */
-            padding-bottom: 10px;
-        }
-        .header-content {
-            width: 100%;
-        }
-        .logo-area {
-            float: left;
-            width: 50%;
-        }
-        .invoice-data {
-            float: right;
-            width: 45%;
-            text-align: right;
-            font-size: 9pt;
-        }
-        .title {
-            font-size: 18pt;
-            font-weight: bold;
-            color: #004085;
-            margin: 0;
-        }
-        .subtitle {
-            font-size: 12pt;
-            color: #666;
-            margin-bottom: 5px;
+            margin: 1.2cm;
+            @bottom-center {
+                content: "Página " counter(page) " de " counter(pages);
+                font-size: 8pt;
+                color: #9CA3AF; 
+            }
         }
         
-        /* Sección Cliente y Emisor */
-        .info-section {
-            width: 100%;
-            margin-bottom: 20px;
-            clear: both;
-        }
-        .col-50 {
-            width: 48%;
-            display: inline-block;
-            vertical-align: top;
-            background-color: #f8f9fa;
-            padding: 10px;
-            border-radius: 5px;
-        }
-        .label {
-            font-weight: bold;
-            color: #555;
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-size: 9pt;
+            color: #374151;
+            line-height: 1.4;
+            margin: 0; padding: 0;
         }
 
-        /* Tabla de Conceptos */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-        }
-        th {
-            background-color: #004085;
-            color: white;
-            padding: 8px;
-            text-align: left;
-            font-size: 9pt;
-        }
-        td {
-            border-bottom: 1px solid #ddd;
-            padding: 8px;
-            font-size: 9pt;
-        }
-        .text-right { text-align: right; }
-        .total-row td {
-            font-weight: bold;
-            border-top: 2px solid #333;
-            background-color: #eee;
+        /* --- COLORES --- */
+        .text-primary { color: #2D1B4B; }
+        .text-accent { color: #A855F7; }
+        .bg-header { background-color: #2D1B4B; color: white; }
+
+        /* --- MARCA DE AGUA --- */
+        .watermark {
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 70%; opacity: 0.04; z-index: -1000;
         }
 
-        /* Footer SAT (Sellos y QR) */
-        .footer-sat {
-            width: 100%;
-            border: 1px solid #ccc;
-            padding: 10px;
-            page-break-inside: avoid;
+        /* --- HEADER --- */
+        .header { width: 100%; margin-bottom: 35px; }
+        .company-name {
+            font-size: 24pt; font-weight: 900; color: #2D1B4B;
+            text-transform: uppercase; line-height: 1; margin-bottom: 5px;
         }
-        .qr-box {
-            width: 20%;
-            float: left;
-            text-align: center;
+        .company-slogan { 
+            font-size: 10pt; color: #A855F7; font-weight: 600; 
+            margin-bottom: 12px; text-transform: uppercase;
         }
-        .sellos-box {
-            width: 78%;
-            float: right;
-            font-size: 7pt;
+        .invoice-box {
+            background-color: #F3F4F6;
+            border-right: 6px solid #A855F7;
+            padding: 15px 20px;
+            float: right; width: 38%; text-align: right;
+            border-radius: 8px 0 0 8px;
         }
-        .sello-title {
-            font-weight: bold;
-            color: #004085;
-            margin-top: 5px;
+
+        /* --- TABLAS --- */
+        .items-table {
+            width: 100%; border-collapse: separate; border-spacing: 0;
+            margin-bottom: 25px; border-radius: 8px;
+            border: 1px solid #E5E7EB; overflow: hidden;
         }
-        .cadena {
-            word-break: break-all;
-            color: #555;
+        .items-table th {
+            background-color: #2D1B4B; color: #ffffff;
+            padding: 10px; text-align: left; font-size: 8pt;
+        }
+        .items-table td {
+            border-bottom: 1px solid #F3F4F6; padding: 10px; vertical-align: top;
+        }
+
+        /* --- TOTALES (CSS CORREGIDO PARA ALINEACIÓN) --- */
+        .totals-section { width: 100%; margin-bottom: 30px; }
+        .notes-box {
+            float: left; width: 58%; font-size: 8pt; color: #6B7280;
+            background: #F9FAFB; padding: 15px;
+            border-radius: 12px; border: 1px dashed #D1D5DB;
+        }
+        /* Tabla con layout fijo para evitar "desacomodos" */
+        .totals-table { 
+            float: right; 
+            width: 38%; 
+            border-collapse: collapse; 
+            table-layout: fixed; /* <--- CLAVE PARA QUE NO SE MUEVA */
+        }
+        .totals-table td { 
+            padding: 4px 0; 
+            text-align: right;
+            vertical-align: bottom;
+        }
+        /* Definimos anchos fijos para las columnas */
+        .totals-table td:first-child { width: 60%; } /* Etiqueta */
+        .totals-table td:last-child { width: 40%; white-space: nowrap; } /* Número */
+
+        .total-final-box {
+            background-color: #2D1B4B; color: white;
+            padding: 8px 15px; border-radius: 8px; margin-top: 5px;
+            display: flex; justify-content: space-between;
+        }
+
+        /* --- FOOTER SAT --- */
+        .sat-footer { border-top: 2px solid #E5E7EB; padding-top: 20px; font-size: 7pt; page-break-inside: avoid; }
+        .qr-container { float: left; width: 130px; }
+        .cadenas-container { float: right; width: 78%; }
+        .cadena-text {
+            font-family: 'Courier New', monospace; background: #F3F4F6;
+            padding: 4px; border-radius: 4px; word-break: break-all;
+            margin-bottom: 6px; font-size: 6pt; color: #4B5563;
         }
     </style>
 </head>
 <body>
 
+    <img src="file:///{{ base_url }}/static/img/logo.png" class="watermark">
+
     <div class="header">
-        <div class="header-content">
-            <div class="logo-area">
-                <div class="title">GESTIONES CORPAD</div>
-                <div class="subtitle">Servicios Legales y Administrativos</div>
-                <p>
-                    <span class="label">RFC:</span> GC0230101XYZ<br>
-                    <span class="label">Régimen Fiscal:</span> 601 - General de Ley PM<br>
-                    <span class="label">Lugar de Expedición:</span> 54948 - Tultitlán, Edo. Méx.
-                </p>
+        <div style="float: left; width: 55%;">
+            <div class="company-name">{{ emisor.razon_social }}</div>
+            <div class="company-slogan">Servicios Legales y Administrativos</div>
+            
+            <div style="font-size: 8.5pt; color: #4B5563; margin-top: 15px; line-height: 1.5;">
+                <strong class="text-primary">RFC:</strong> {{ emisor.rfc }} <br>
+                <strong class="text-primary">Régimen:</strong> {{ emisor.regimen_fiscal }}<br>
+                <strong class="text-primary">Lugar de Expedición:</strong> {{ emisor.codigo_postal }} <br>
+                {{ emisor.direccion|default:"" }}
             </div>
-            <div class="invoice-data">
-                <p style="font-size: 14pt; font-weight: bold;">FACTURA</p>
-                <p><span class="label">Folio:</span> {{ f.folio_interno }}</p>
-                <p><span class="label">Fecha:</span> {% now "d/m/Y H:i" %}</p>
-                <p><span class="label">Tipo de Comprobante:</span> I - Ingreso</p>
-                <p><span class="label">UUID:</span> <br><small>{{ f.uuid|default:"Pendiente de Timbrado" }}</small></p>
+        </div>
+        
+        <div class="invoice-box">
+            <div style="font-size: 18pt; font-weight: 900; color: #2D1B4B;">FACTURA</div>
+            <div style="font-size: 11pt;">Folio: <strong class="text-accent">{{ f.folio_interno }}</strong></div>
+            <div style="font-size: 9pt;">Fecha: {% now "d/m/Y H:i" %}</div>
+            <div style="font-size: 9pt;">Tipo: I - Ingreso</div>
+            <div style="margin-top: 8px; border-top: 1px solid #ccc; padding-top: 4px; font-size: 8pt; font-family: monospace;">
+                UUID: {{ f.uuid|default:"TIMBRADO PENDIENTE" }}
             </div>
+        </div>
+        <div style="clear: both;"></div>
+    </div>
+
+    <div style="width: 100%; margin-bottom: 25px; display: table;">
+        <div style="display: table-cell; width: 48%; padding: 10px; background: #FAFAFA; border-radius: 8px; border: 1px solid #eee;">
+            <div style="font-size: 8pt; font-weight: bold; color: #A855F7; text-transform: uppercase;">RECEPTOR</div>
+            <div style="font-size: 11pt; font-weight: 800; color: #2D1B4B;">{{ f.cliente.nombre_empresa }}</div>
+            RFC: {{ f.cliente.rfc }}<br>
+            CP: {{ f.cliente.codigo_postal }} | Uso CFDI: {{ f.cliente.uso_cfdi }}
+        </div>
+        <div style="display: table-cell; width: 2%;"></div>
+        <div style="display: table-cell; width: 48%; padding: 10px; border: 1px solid #eee; border-radius: 8px;">
+            <div style="font-size: 8pt; font-weight: bold; color: #A855F7; text-transform: uppercase;">DATOS DE PAGO</div>
+            Forma: 03 - Transferencia<br>
+            Método: PUE - Pago en una sola exhibición<br>
+            Moneda: MXN
         </div>
     </div>
 
-    <div class="info-section">
-        <div class="col-50">
-            <strong>RECEPTOR (CLIENTE)</strong><br>
-            {{ f.cliente.nombre_empresa }}<br>
-            <span class="label">RFC:</span> {{ f.cliente.rfc|default:"XAXX010101000" }}<br>
-            <span class="label">C.P.:</span> {{ f.cliente.cp|default:"54948" }}<br>
-            <span class="label">Régimen Fiscal:</span> {{ f.cliente.regimen_fiscal|default:"616 - Sin obligaciones fiscales" }}<br>
-            <span class="label">Uso CFDI:</span> S01 - Sin efectos fiscales
-        </div>
-        <div class="col-50" style="background: white;">
-            <p><strong>Condiciones de Pago:</strong> Contado</p>
-             <p><strong>Método de Pago:</strong> PUE - Pago en una sola exhibición</p>
-             <p><strong>Forma de Pago:</strong> 03 - Transferencia electrónica</p>
-        </div>
-    </div>
-
-    <table>
+    <table class="items-table">
         <thead>
             <tr>
-                <th>Clave SAT</th>
-                <th>Descripción</th>
-                <th class="text-right">Cant</th>
-                <th class="text-right">Precio U.</th>
-                <th class="text-right">Importe</th>
+                <th width="15%">Clave SAT</th>
+                <th width="45%">Descripción</th>
+                <th width="10%" align="right">Cant.</th>
+                <th width="15%" align="right">Precio U.</th>
+                <th width="15%" align="right">Importe</th>
             </tr>
         </thead>
         <tbody>
             <tr>
                 <td>84111506</td>
                 <td>
-                    Servicios Profesionales<br>
-                    <small style="color: #666;">Ref: Pago de Anticipo - Cotización #{{ f.cotizaciones.first.id }}</small>
+                    <strong class="text-primary">Servicios Profesionales</strong><br>
+                    <span style="font-size: 8pt; color: #999;">Ref: Anticipo Cotización #{{ f.cotizaciones.first.id }}</span>
                 </td>
-                <td class="text-right">1</td>
-                <td class="text-right">${{ f.monto_total|floatformat:2 }}</td>
-                <td class="text-right">${{ f.monto_total|floatformat:2 }}</td>
-            </tr>
-            
-            <tr>
-                <td colspan="3" style="border: none;"></td>
-                <td class="text-right label">Subtotal:</td>
-                <td class="text-right">${{ f.monto_total|floatformat:2 }}</td>
-            </tr>
-            <tr>
-                <td colspan="3" style="border: none;"></td>
-                <td class="text-right label">IVA (0%):</td> <td class="text-right">$0.00</td>
-            </tr>
-            <tr class="total-row">
-                <td colspan="3" style="border: none; background: white;"></td>
-                <td class="text-right">TOTAL:</td>
-                <td class="text-right">${{ f.monto_total|floatformat:2 }}</td>
+                <td align="right">1.00</td>
+                <td align="right">${{ cifras.subtotal|floatformat:2 }}</td> <td align="right" style="font-weight: bold;">${{ cifras.subtotal|floatformat:2 }}</td>
             </tr>
         </tbody>
     </table>
 
-    <div class="footer-sat">
-        <div class="qr-box">
-            {% if f.qr_imagen %}
-                <img src="file://{{ base_url }}/media/{{ f.qr_imagen.name }}" width="140px" height="140px">
-            {% else %}
-                <div style="width: 140px; height: 140px; border: 1px dashed #ccc; padding-top: 50px;">
-                    SIN QR
-                </div>
-            {% endif %}
+    <div class="totals-section">
+        <div class="notes-box">
+            <strong style="color: #2D1B4B;">Importe con letra:</strong><br>
+            <div style="font-style: italic; color: #4B5563; margin-top: 5px;">
+                {{ cifras.letras }}
+            </div>
+            
+            <div style="margin-top: 15px; border-top: 1px solid #E5E7EB; padding-top: 8px; font-size: 7pt;">
+                <strong>Debo y pagaré:</strong> Por este pagaré reconozco deber y me obligo a pagar incondicionalmente a la orden de {{ emisor.razon_social }} la cantidad total expresada en este documento.
+            </div>
         </div>
 
-        <div class="sellos-box">
-            <div class="sello-title">Este documento es una representación impresa de un CFDI 4.0</div>
+        <div style="float: right; width: 38%;">
+            <table class="totals-table">
+                <tr>
+                    <td style="color: #6B7280; font-weight: bold;">Subtotal:</td>
+                    <td style="font-weight: 600; color: #374151;">${{ cifras.subtotal|floatformat:2 }}</td>
+                </tr>
+                
+                <tr>
+                    <td style="font-weight: bold; {% if cifras.descuento > 0 %}color: #EF4444;{% else %}color: #6B7280;{% endif %}">
+                        Descuento:
+                    </td>
+                    <td style="font-weight: 600; {% if cifras.descuento > 0 %}color: #EF4444;{% else %}color: #6B7280;{% endif %}">
+                        {% if cifras.descuento > 0 %}- {% endif %}${{ cifras.descuento|floatformat:2 }}
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td style="color: #6B7280; font-weight: bold;">IVA (16%):</td>
+                    <td style="font-weight: 600; color: #374151;">${{ cifras.iva|floatformat:2 }}</td>
+                </tr>
+            </table>
             
-            <div class="sello-title">Sello Digital del CFDI:</div>
-            <div class="cadena">
-                {{ f.uuid }}... (Ver XML para cadena completa)
+            <div style="clear: both;"></div>
+            
+            <div class="total-final-box">
+                <span style="font-weight: bold;">TOTAL:</span>
+                <span style="font-weight: 900; font-size: 12pt;">${{ cifras.total|floatformat:2 }}</span>
             </div>
+        </div>
+        <div style="clear: both;"></div>
+    </div>
 
-            <div class="sello-title">Sello del SAT:</div>
-            <div class="cadena">
-                ||1.1|{{ f.uuid }}|{% now "Y-m-d" %}T{% now "H:i:s" %}|LSO1306189R5|...||
-            </div>
+    <div class="sat-footer">
+        <div class="qr-container">
+            {% if qr_url %}
+                <img src="{{ qr_url }}" style="width: 100%;">
+            {% elif f.qr_imagen %}
+                <img src="file:///{{ base_url }}/media/{{ f.qr_imagen.name }}" style="width: 100%;">
+            {% else %}
+                <div style="text-align: center; margin-top: 40px;">SIN QR</div>
+            {% endif %}
+        </div>
+        <div class="cadenas-container">
+            <strong class="text-primary">Sello Digital del Emisor:</strong>
+            <div class="cadena-text">{% if f.uuid %}tBwZ7... (Ver XML para cadena completa)...=={% else %}Pendiente de Timbrado{% endif %}</div>
+            
+            <strong class="text-primary">Sello Digital del SAT:</strong>
+            <div class="cadena-text">{% if f.uuid %}h9XkL... (Ver XML para cadena completa)...=={% else %}Pendiente de Timbrado{% endif %}</div>
 
-            <div class="sello-title">Cadena Original del complemento de certificación digital del SAT:</div>
-            <div class="cadena">
-                ||1.1|{{ f.uuid }}|2026-02-03T22:00:00|MAS0810247C0|...||
+            <strong class="text-primary">Cadena Original SAT:</strong>
+            <div class="cadena-text">||1.1|{{ f.uuid }}|{% now "Y-m-d" %}T{% now "H:i:s" %}|LSO1306189R5|...||</div>
+            
+            <div style="text-align: right; margin-top: 5px; font-weight: bold; color: #2D1B4B;">
+                Este documento es una representación impresa de un CFDI 4.0
             </div>
         </div>
         <div style="clear: both;"></div>

@@ -5,6 +5,7 @@ import uuid
 from io import BytesIO
 from datetime import timedelta, datetime
 from decimal import Decimal 
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
@@ -18,45 +19,39 @@ from django.template.loader import render_to_string
 from django.core.mail import EmailMultiAlternatives
 from django.conf import settings 
 from django.urls import reverse
-from email.mime.image import MIMEImage
-from .utils_pdf import extraer_datos_constancia
-# --- NUEVA LIBRERÍA PARA EL QR ---
 import qrcode
-# ---------------------------------
-
+from num2words import num2words
 from django.db import models
 from django.db.models import Sum, Count, Q
 from django.db.models.functions import Coalesce
 
-from .utils_sat import timbrar_con_facturama
-import base64
-
-# Librerías de Procesamiento de Documentos
-from docxtpl import DocxTemplate
-import mammoth
-from docx import Document as DocumentoWord 
-import weasyprint 
-
-# Importación de TODOS los Modelos
+# IMPORTACIÓN DE MODELOS
 from .models import (
     Usuario, Cliente, Carpeta, Expediente, Documento, 
     Tarea, Bitacora, Plantilla, VariableEstandar,
     Servicio, Cotizacion, ItemCotizacion, PlantillaMensaje,
     CuentaPorCobrar, Pago, Evento, CampoAdicional,
     Requisito, Poliza, MovimientoContable, CuentaContable, 
-    Factura, DatosFiscales, Remision
+    Factura, Remision, DatosEmisor
 )
 
+from .utils_sat import timbrar_con_facturama
+import base64
+from docxtpl import DocxTemplate
+import mammoth
+import weasyprint 
+
 # ==========================================
-# 0. HELPER FUNCTIONS (UTILIDADES)
+# 0. HELPER FUNCTIONS
 # ==========================================
 
 def generar_y_guardar_pdf_drive(cotizacion, usuario):
     html = render_to_string('cotizaciones/pdf_template.html', {'c': cotizacion, 'base_url': str(settings.BASE_DIR)})
     pdf_file = weasyprint.HTML(string=html, base_url=str(settings.BASE_DIR)).write_pdf()
     
-    nombre_archivo = f"Cotizacion_{cotizacion.id}_{slugify(cotizacion.prospecto_empresa or cotizacion.prospecto_nombre)}.pdf"
-    cliente = cotizacion.cliente or cotizacion.cliente_convertido
+    nombre_empresa = cotizacion.cliente.nombre_empresa if cotizacion.cliente else (cotizacion.prospecto_empresa or "Prospecto")
+    nombre_archivo = f"Cotizacion_{cotizacion.id}_{slugify(nombre_empresa)}.pdf"
+    cliente = cotizacion.cliente
 
     if cliente:
         carpeta, _ = Carpeta.objects.get_or_create(nombre="Cotizaciones", cliente=cliente, padre=None)
@@ -66,6 +61,84 @@ def generar_y_guardar_pdf_drive(cotizacion, usuario):
             doc.save()
             
     return pdf_file
+
+def generar_factura_liquidacion_automatica(request, pago, cuenta, descuento_input=0):
+    cliente = cuenta.cliente
+    c = cuenta.cotizacion
+    sufijo = timezone.now().strftime('%H%M%S')
+    folio = f"F-FIN-{c.id}-{sufijo}"
+    
+    try:
+        descuento_aplicado = Decimal(descuento_input)
+    except:
+        descuento_aplicado = Decimal('0.00')
+
+    fac = Factura.objects.create(
+        cliente=cliente,
+        folio_interno=folio,
+        monto_total=pago.monto,
+        descuento=descuento_aplicado, 
+        estado_sat='pendiente',
+        uuid=''
+    )
+    fac.cotizaciones.add(c)
+    
+    try:
+        respuesta_sat = timbrar_con_facturama(fac)
+        fac.uuid = respuesta_sat['Id']
+        fac.estado_sat = 'timbrada'
+        
+        xml_b64 = respuesta_sat.get('CfdiXml') or respuesta_sat.get('Xml')
+        if xml_b64:
+            xml_content = base64.b64decode(xml_b64)
+            fac.archivo_xml.save(f"{fac.uuid}.xml", ContentFile(xml_content))
+
+        emisor = DatosEmisor.objects.first() or DatosEmisor(razon_social="DEMO", rfc="XAXX010101000")
+        sello = respuesta_sat.get('Complement', {}).get('TaxStamp', {}).get('SatSign', '')[-8:]
+        qr_data = f"https://verificacfdi.facturaelectronica.sat.gob.mx/default.aspx?id={fac.uuid}&re={emisor.rfc}&rr={fac.cliente.rfc}&tt={fac.monto_total:.6f}&fe={sello}"
+        
+        qr = qrcode.QRCode(version=1, box_size=10, border=2)
+        qr.add_data(qr_data)
+        qr.make(fit=True)
+        buffer_qr = BytesIO()
+        qr.make_image(fill='black', back_color='white').save(buffer_qr, format="PNG")
+        fac.qr_imagen.save(f"qr_{folio}.png", ContentFile(buffer_qr.getvalue()), save=True)
+
+        base_url_clean = str(settings.BASE_DIR).replace('\\', '/')
+        qr_path = f"file:///{base_url_clean}/media/{fac.qr_imagen.name}"
+        
+        total_float = float(fac.monto_total)
+        descuento_float = float(fac.descuento)
+        
+        base_neta = total_float / 1.16
+        subtotal = base_neta + descuento_float
+        iva = base_neta * 0.16
+        
+        cantidad_letra = num2words(total_float, lang='es').upper()
+        parte_decimal = f"{int((total_float - int(total_float)) * 100):02d}/100 M.N."
+        
+        html = render_to_string('finanzas/factura_template.html', {
+            'f': fac, 
+            'base_url': base_url_clean,
+            'qr_url': qr_path,
+            'emisor': emisor,
+            'cifras': {
+                'subtotal': subtotal, 
+                'descuento': descuento_float, 
+                'iva': iva, 
+                'total': total_float,
+                'letras': f"({cantidad_letra} PESOS {parte_decimal})"
+            }
+        })
+        pdf = weasyprint.HTML(string=html, base_url=base_url_clean).write_pdf()
+        fac.pdf_representacion.save(f"Factura_{folio}.pdf", ContentFile(pdf))
+        fac.save()
+        
+        messages.success(request, f"✅ Factura Final generada: {folio}")
+        
+    except Exception as e:
+        fac.delete()
+        messages.error(request, f"⚠️ Pago registrado, pero error al facturar: {str(e)}")
 
 # ==========================================
 # 1. AUTENTICACIÓN Y PERFIL
@@ -111,7 +184,7 @@ def mi_perfil(request):
     return render(request, 'usuarios/mi_perfil.html', {'user': user})
 
 # ==========================================
-# 2. GESTIÓN DE USUARIOS (ADMIN)
+# 2. GESTIÓN DE USUARIOS
 # ==========================================
 
 @login_required
@@ -234,76 +307,41 @@ def detalle_cliente(request, cliente_id, carpeta_id=None):
 @login_required
 def editar_cliente(request, cliente_id):
     cliente = get_object_or_404(Cliente, id=cliente_id)
-    if request.user.rol != 'admin' and cliente not in request.user.clientes_asignados.all(): return redirect('dashboard')
+    if request.user.rol != 'admin' and cliente not in request.user.clientes_asignados.all():
+        return redirect('dashboard')
     
     if request.method == 'POST':
         cliente.nombre_empresa = request.POST.get('nombre_empresa')
         cliente.nombre_contacto = request.POST.get('nombre_contacto')
         cliente.email = request.POST.get('email')
         cliente.telefono = request.POST.get('telefono')
-        if request.FILES.get('logo'): cliente.logo = request.FILES['logo']
+        
+        cliente.razon_social = request.POST.get('razon_social', '').upper()
+        cliente.rfc = request.POST.get('rfc', '').upper()
+        cliente.regimen_fiscal = request.POST.get('regimen_fiscal')
+        cliente.codigo_postal = request.POST.get('codigo_postal')
+        cliente.uso_cfdi = request.POST.get('uso_cfdi')
+        cliente.email_facturacion = request.POST.get('email_facturacion')
+
+        if request.FILES.get('logo'):
+            cliente.logo = request.FILES['logo']
         
         datos = cliente.datos_extra or {}
         for campo in CampoAdicional.objects.all():
             val = request.POST.get(f"custom_{campo.id}")
             if val: datos[campo.nombre] = val
         cliente.datos_extra = datos
+        
         cliente.save()
-        messages.success(request, "Cliente actualizado.")
+        messages.success(request, "Información actualizada correctamente.")
         return redirect('detalle_cliente', cliente_id=cliente.id)
+        
     return render(request, 'clientes/editar.html', {'c': cliente, 'campos_dinamicos': CampoAdicional.objects.all()})
 
 @login_required
 def guardar_datos_fiscales(request, cliente_id):
-    cliente = get_object_or_404(Cliente, id=cliente_id)
-    datos_actuales, _ = DatosFiscales.objects.get_or_create(cliente=cliente)
-    
-    # Contexto inicial (por si solo carga la página)
-    context = {
-        'c': cliente,
-        'datos': datos_actuales,
-        # Catálogo básico de regímenes para el select
-        'regimenes': [
-            {'code': '601', 'name': '601 - General de Ley Personas Morales'},
-            {'code': '605', 'name': '605 - Sueldos y Salarios'},
-            {'code': '612', 'name': '612 - Personas Físicas con Actividades Empresariales'},
-            {'code': '626', 'name': '626 - Régimen Simplificado de Confianza (RESICO)'},
-            {'code': '616', 'name': '616 - Sin obligaciones fiscales'},
-        ]
-    }
+    return redirect('editar_cliente', cliente_id=cliente_id)
 
-    if request.method == 'POST':
-        # CASO A: El usuario subió una Constancia (PDF) para auto-llenar
-        if 'archivo_constancia' in request.FILES:
-            archivo = request.FILES['archivo_constancia']
-            if archivo.name.endswith('.pdf'):
-                # Extraemos datos
-                datos_extraidos = extraer_datos_constancia(archivo)
-                
-                # Actualizamos temporalmente el objeto 'datos' para que se vea en el formulario
-                # OJO: No guardamos en BD todavía, solo prellenamos el form para que el usuario valide
-                if datos_extraidos['rfc']: datos_actuales.rfc = datos_extraidos['rfc']
-                if datos_extraidos['razon_social']: datos_actuales.razon_social = datos_extraidos['razon_social']
-                if datos_extraidos['cp']: datos_actuales.codigo_postal = datos_extraidos['cp']
-                if datos_extraidos['regimen']: datos_actuales.regimen_fiscal = datos_extraidos['regimen']
-                
-                messages.info(request, "¡Datos extraídos de la Constancia! Por favor verifica antes de guardar.")
-            else:
-                messages.error(request, "Por favor sube un archivo PDF válido.")
-        
-        # CASO B: El usuario dio click en "Guardar Datos"
-        elif 'accion_guardar' in request.POST:
-            datos_actuales.razon_social = request.POST.get('razon_social').upper()
-            datos_actuales.rfc = request.POST.get('rfc').upper()
-            datos_actuales.regimen_fiscal = request.POST.get('regimen_fiscal')
-            datos_actuales.codigo_postal = request.POST.get('codigo_postal')
-            datos_actuales.uso_cfdi = request.POST.get('uso_cfdi')
-            datos_actuales.email_facturacion = request.POST.get('email_facturacion')
-            datos_actuales.save()
-            messages.success(request, "Datos fiscales actualizados correctamente.")
-            return redirect('detalle_cliente', cliente_id=cliente.id)
-
-    return render(request, 'clientes/datos_fiscales_form.html', context)
 @login_required
 def configurar_campos(request):
     if request.user.rol != 'admin': return redirect('dashboard')
@@ -503,45 +541,120 @@ def eliminar_servicio(request, servicio_id):
 @login_required
 def lista_cotizaciones(request):
     if not request.user.access_cotizaciones: return redirect('dashboard')
-    return render(request, 'cotizaciones/lista.html', {'cotizaciones': Cotizacion.objects.all().order_by('-fecha_creacion')})
-
-@login_required
-def nueva_cotizacion(request):
-    clientes = Cliente.objects.all() if request.user.rol == 'admin' else request.user.clientes_asignados.all()
     
-    if request.method == 'POST':
-        cliente_id = request.POST.get('cliente_id')
-        c = Cotizacion.objects.create(
-            cliente_id=cliente_id if cliente_id else None,
-            prospecto_nombre=request.POST.get('nombre'),
-            prospecto_email=request.POST.get('email'),
-            prospecto_telefono=request.POST.get('telefono'),
-            prospecto_empresa=request.POST.get('empresa'),
-            validez_hasta=request.POST.get('validez') or None,
-            creado_por=request.user,
-            aplicar_iva=request.POST.get('aplicar_iva') == 'on',
-            porcentaje_iva=Decimal(request.POST.get('porcentaje_iva') or 0)
-        )
-        
-        s_ids = request.POST.getlist('servicio_id')
-        cants = request.POST.getlist('cantidad')
-        precios = request.POST.getlist('precio')
-        
-        for i, sid in enumerate(s_ids):
-            if sid:
-                ItemCotizacion.objects.create(cotizacion=c, servicio_id=sid, cantidad=int(cants[i] or 1), precio_unitario=Decimal(precios[i] or 0))
-        
-        c.calcular_totales()
-        return redirect('detalle_cotizacion', cotizacion_id=c.id)
-    
-    return render(request, 'cotizaciones/crear.html', {
-        'clientes': clientes, 
-        'servicios': [{'id':s.id, 'nombre':s.nombre, 'precio':float(s.precio_base)} for s in Servicio.objects.all()]
-    })
+    context = {
+        'cotizaciones': Cotizacion.objects.all().order_by('-fecha_creacion'),
+        'clientes': Cliente.objects.all().order_by('nombre_empresa')
+    }
+    return render(request, 'cotizaciones/lista.html', context)
 
 @login_required
 def detalle_cotizacion(request, cotizacion_id):
     return render(request, 'cotizaciones/detalle.html', {'c': get_object_or_404(Cotizacion, id=cotizacion_id)})
+@login_required
+def nueva_cotizacion(request):
+    if request.method == 'POST':
+        # 1. Recibir datos del cliente
+        cliente_id = request.POST.get('cliente_id')
+        nombre = request.POST.get('nombre')
+        empresa = request.POST.get('empresa')
+        email = request.POST.get('email')
+        telefono = request.POST.get('telefono')
+        validez = request.POST.get('validez')
+
+        # 2. Crear la Cotización (AGREGADO: creado_por)
+        c = Cotizacion.objects.create(
+            cliente_id=cliente_id if cliente_id else None,
+            prospecto_nombre=nombre,
+            prospecto_empresa=empresa,
+            prospecto_email=email,
+            prospecto_telefono=telefono,
+            validez_hasta=validez if validez else (timezone.now().date() + timedelta(days=15)),
+            
+            creado_por=request.user,  # <--- ESTA LÍNEA ES VITAL
+            
+            estado='borrador',
+            titulo_proyecto=f"Proyecto {empresa if empresa else nombre}"
+        )
+
+        # 3. Recibir listas de items
+        servicios_ids = request.POST.getlist('servicio_id')
+        cantidades = request.POST.getlist('cantidad')
+        precios = request.POST.getlist('precio')
+        descripciones = request.POST.getlist('descripcion_item')
+
+        total_acumulado = 0
+
+        # 4. Procesar items
+        for i, servicio_id in enumerate(servicios_ids):
+            # Guardamos si hay servicio seleccionado o descripción escrita
+            if servicio_id or (len(descripciones) > i and descripciones[i]):
+                cant = int(cantidades[i]) if cantidades[i] else 1
+                prec = Decimal(precios[i]) if precios[i] else 0
+                
+                # Calculamos subtotal solo para el total general
+                subt = cant * prec
+                total_acumulado += subt
+                
+                ItemCotizacion.objects.create(
+                    cotizacion=c,
+                    servicio_id=servicio_id if servicio_id else None,
+                    # Usamos 'descripcion_personalizada' que es el nombre correcto en tu BD
+                    descripcion_personalizada=descripciones[i] if len(descripciones) > i else "", 
+                    cantidad=cant,
+                    precio_unitario=prec
+                    # NOTA: No guardamos 'subtotal' aquí porque es autocalculado en el modelo
+                )
+
+        # 5. Guardar total y redirigir
+        c.total = total_acumulado
+        c.save()
+
+        messages.success(request, "Cotización creada exitosamente.")
+        return redirect('detalle_cotizacion', cotizacion_id=c.id)
+
+    # GET: Mostrar formulario
+    context = {
+        'clientes': Cliente.objects.all().order_by('nombre_empresa'),
+        'servicios': Servicio.objects.all().order_by('nombre')
+    }
+    return render(request, 'cotizaciones/crear.html', context)
+
+@login_required
+def agregar_item_cotizacion(request, id):
+    cotizacion = get_object_or_404(Cotizacion, id=id)
+    if request.method == 'POST':
+        descripcion = request.POST.get('descripcion')
+        cantidad = int(request.POST.get('cantidad', 1))
+        precio = Decimal(request.POST.get('precio', '0.00'))
+        
+        subtotal = cantidad * precio
+        
+        ItemCotizacion.objects.create(
+            cotizacion=cotizacion,
+            descripcion=descripcion,
+            cantidad=cantidad,
+            precio_unitario=precio,
+            subtotal=subtotal
+        )
+        
+        cotizacion.total = sum(item.subtotal for item in cotizacion.items.all())
+        cotizacion.save()
+        messages.success(request, "Concepto agregado.")
+    
+    return redirect('detalle_cotizacion', cotizacion_id=cotizacion.id)
+
+@login_required
+def eliminar_item_cotizacion(request, item_id):
+    item = get_object_or_404(ItemCotizacion, id=item_id)
+    cotizacion = item.cotizacion
+    item.delete()
+    
+    cotizacion.total = sum(i.subtotal for i in cotizacion.items.all())
+    cotizacion.save()
+    
+    messages.success(request, "Concepto eliminado.")
+    return redirect('detalle_cotizacion', cotizacion_id=cotizacion.id)
 
 @login_required
 def generar_pdf_cotizacion(request, cotizacion_id):
@@ -555,36 +668,151 @@ def generar_pdf_cotizacion(request, cotizacion_id):
 def enviar_cotizacion_email(request, cotizacion_id):
     if request.method == 'POST':
         c = get_object_or_404(Cotizacion, id=cotizacion_id)
-        if not c.prospecto_email: return redirect('preparar_envio_cotizacion', cotizacion_id=c.id)
+        
+        # LÓGICA INTELIGENTE: Detectar email destino
+        email_destino = c.cliente.email if c.cliente else c.prospecto_email
+        
+        if not email_destino: 
+            messages.error(request, "Este cliente/prospecto no tiene email registrado.")
+            return redirect('preparar_envio_cotizacion', cotizacion_id=c.id)
         
         try:
             pdf = generar_y_guardar_pdf_drive(c, request.user)
             email = EmailMultiAlternatives(
-                subject=request.POST.get('asunto'), body=request.POST.get('mensaje'),
-                from_email=settings.DEFAULT_FROM_EMAIL, to=[c.prospecto_email], reply_to=[request.user.email]
+                subject=request.POST.get('asunto'), 
+                body=request.POST.get('mensaje'),
+                from_email=settings.DEFAULT_FROM_EMAIL, 
+                to=[email_destino], 
+                reply_to=[request.user.email]
             )
             email.attach(f"Cotizacion_{c.id}.pdf", pdf, 'application/pdf')
             email.send()
-            c.estado = 'enviada'; c.save()
-            messages.success(request, "Enviado.")
-        except Exception as e: messages.error(request, str(e))
+            
+            c.estado = 'enviada'
+            c.save()
+            messages.success(request, f"Correo enviado a {email_destino}")
+        except Exception as e: 
+            messages.error(request, f"Error al enviar: {str(e)}")
+            
         return redirect('detalle_cotizacion', cotizacion_id=c.id)
+        
     return redirect('detalle_cotizacion', cotizacion_id=cotizacion_id)
-
 @login_required
 def preparar_envio_cotizacion(request, cotizacion_id):
     c = get_object_or_404(Cotizacion, id=cotizacion_id)
-    msg = f"Estimado {c.prospecto_nombre},\n\nAdjunto cotización."
+    
+    # LÓGICA INTELIGENTE: Detectar nombre
+    if c.cliente:
+        nombre = c.cliente.nombre_contacto
+    else:
+        nombre = c.prospecto_nombre or "Cliente"
+
+    msg = f"Estimado {nombre},\n\nAdjunto le envío la cotización solicitada."
+    
     link = request.build_absolute_uri(reverse('generar_pdf_cotizacion', args=[c.id]))
-    return render(request, 'cotizaciones/preparar_envio.html', {'c': c, 'msg_email': msg, 'msg_wa': f"Hola, aquí tu cotización: {link}"})
+    
+    return render(request, 'cotizaciones/preparar_envio.html', {
+        'c': c, 
+        'msg_email': msg, 
+        'msg_wa': f"Hola {nombre}, aquí tienes tu cotización: {link}"
+    })
 
 @login_required
 def eliminar_cotizacion(request, cotizacion_id):
     if request.user.access_cotizaciones: get_object_or_404(Cotizacion, id=cotizacion_id).delete()
     return redirect('lista_cotizaciones')
 
+@login_required
+def convertir_a_cliente(request, cotizacion_id):
+    c = get_object_or_404(Cotizacion, id=cotizacion_id)
+    
+    # Validación para no duplicar cuentas
+    if CuentaPorCobrar.objects.filter(cotizacion=c).exists():
+        messages.warning(request, "Este proyecto ya fue cerrado anteriormente.")
+        # Si ya existe el cliente, redirigir a sus finanzas
+        cliente_redir = c.cliente if c.cliente else Cliente.objects.filter(nombre_empresa=c.prospecto_empresa).first()
+        if cliente_redir:
+            return redirect('finanzas_cliente_detalle', cliente_id=cliente_redir.id)
+        return redirect('detalle_cotizacion', cotizacion_id=c.id)
+
+    if request.method == 'POST':
+        # ---------------------------------------------------------
+        # PASO 1: ASEGURAR QUE EXISTA UN CLIENTE REAL
+        # ---------------------------------------------------------
+        if c.cliente:
+            # Caso A: Ya era un cliente registrado
+            cliente_final = c.cliente
+        else:
+            # Caso B: Es un prospecto, hay que convertirlo a Cliente HOY
+            # Usamos nombre de empresa si tiene, si no, el nombre del contacto
+            nombre_final = c.prospecto_empresa if c.prospecto_empresa else c.prospecto_nombre
+            
+            cliente_final = Cliente.objects.create(
+                nombre_empresa=nombre_final,
+                nombre_contacto=c.prospecto_nombre,
+                email=c.prospecto_email,
+                telefono=c.prospecto_telefono
+                # Aquí puedes agregar fecha_registro=timezone.now() si tu modelo lo requiere
+            )
+            
+            # ¡IMPORTANTE! Vinculamos la cotización al nuevo cliente para siempre
+            c.cliente = cliente_final
+            
+            # Asignar el cliente al usuario actual (opcional, según tu lógica de permisos)
+            if request.user.rol != 'admin':
+                request.user.clientes_asignados.add(cliente_final)
+
+        # Actualizamos estado de la cotización
+        c.estado = 'aceptada'
+        c.save()
+
+        # ---------------------------------------------------------
+        # PASO 2: CREAR CUENTA POR COBRAR (Usando cliente_final)
+        # ---------------------------------------------------------
+        requiere_factura = request.POST.get('requiere_factura') # 'si' o 'no'
+
+        cuenta = CuentaPorCobrar.objects.create(
+            cliente=cliente_final,  # <--- AHORA SIEMPRE TIENE VALOR
+            cotizacion=c,
+            concepto=f"Proyecto Cotización #{c.id} - {c.titulo_proyecto}",
+            monto_total=c.total,
+            saldo_pendiente=c.total,
+            fecha_vencimiento=c.validez_hasta,
+            estado='pendiente'
+        )
+
+        # ---------------------------------------------------------
+        # PASO 3: ANTICIPO (50%)
+        # ---------------------------------------------------------
+        monto_anticipo = c.total * Decimal('0.50')
+
+        if requiere_factura == 'si':
+            sufijo = timezone.now().strftime('%H%M%S')
+            Factura.objects.create(
+                cliente=cliente_final,
+                folio_interno=f"F-ANT-{c.id}-{sufijo}",
+                monto_total=monto_anticipo,
+                estado_sat='pendiente'
+            ).cotizaciones.add(c)
+            
+            messages.success(request, f"¡Nuevo Cliente '{cliente_final.nombre_empresa}' creado! Factura de anticipo lista.")
+
+        else:
+            folio_rem = f"REM-{c.id}-{int(timezone.now().timestamp())}"
+            Remision.objects.create(
+                cliente=cliente_final, 
+                cotizacion=c, 
+                folio=folio_rem, 
+                monto_total=monto_anticipo
+            )
+            messages.success(request, f"¡Nuevo Cliente '{cliente_final.nombre_empresa}' creado! Remisión generada.")
+
+        # Redirigir a las finanzas del (ahora sí) cliente
+        return redirect('finanzas_cliente_detalle', cliente_id=cliente_final.id)
+    
+    return redirect('detalle_cotizacion', cotizacion_id=c.id)
 # ==========================================
-# 6. FINANZAS Y FACTURACIÓN (LÓGICA ACTUALIZADA)
+# 6. FINANZAS Y FACTURACIÓN
 # ==========================================
 
 @login_required
@@ -592,10 +820,7 @@ def panel_finanzas(request):
     if not request.user.access_finanzas:
         return redirect('dashboard')
 
-    # 1. Totales Globales
     total_por_cobrar = CuentaPorCobrar.objects.aggregate(t=Sum('saldo_pendiente'))['t'] or 0
-    
-    # 2. Resumen por Cliente (CORREGIDO)
     clientes_finanzas = Cliente.objects.annotate(
         total_proyectos=Count('cuentas', distinct=True),
         deuda_total=Sum('cuentas__saldo_pendiente'),
@@ -616,238 +841,133 @@ def finanzas_cliente_detalle(request, cliente_id):
     return render(request, 'finanzas/detalle_cliente.html', {'cliente': cliente, 'cuentas': cuentas})
 
 @login_required
-def convertir_a_cliente(request, cotizacion_id):
-    c = get_object_or_404(Cotizacion, id=cotizacion_id)
-    
-    # PROTECCIÓN CONTRA DUPLICADOS (Doble Clic)
-    if CuentaPorCobrar.objects.filter(cotizacion=c).exists():
-        messages.warning(request, "Este proyecto ya fue convertido anteriormente.")
-        # Redirigir al cliente ya convertido (si existe)
-        if c.cliente_convertido:
-            return redirect('finanzas_cliente_detalle', cliente_id=c.cliente_convertido.id)
-        return redirect('dashboard')
-
-    if request.method == 'POST':
-        # 1. Crear Cliente
-        if c.cliente_convertido: cliente = c.cliente_convertido
-        else:
-            cliente, _ = Cliente.objects.get_or_create(
-                nombre_empresa=c.prospecto_empresa or c.prospecto_nombre,
-                defaults={'nombre_contacto': c.prospecto_nombre, 'email': c.prospecto_email, 'telefono': c.prospecto_telefono}
-            )
-            c.cliente_convertido = cliente; c.estado = 'aceptada'; c.save()
-            if request.user.rol != 'admin': request.user.clientes_asignados.add(cliente)
-
-        generar_y_guardar_pdf_drive(c, request.user)
-
-        # 2. Deuda y Pago Anticipo (50%)
-        monto_anticipo = c.total * Decimal('0.50')
-        cuenta = CuentaPorCobrar.objects.create(
-            cliente=cliente, cotizacion=c, concepto=f"Proyecto: Cotización #{c.id}",
-            monto_total=c.total, saldo_pendiente=c.total, fecha_vencimiento=c.validez_hasta
-        )
-        
-        Pago.objects.create(
-            cuenta=cuenta, monto=monto_anticipo, metodo='transferencia', 
-            referencia='Anticipo Automático', registrado_por=request.user
-        )
-
-        # 3. Remisión Anticipo Automática
-        folio_rem = f"REM-ANT-{int(timezone.now().timestamp())}"
-        rem = Remision.objects.create(cliente=cliente, cotizacion=c, folio=folio_rem, monto_total=monto_anticipo)
-        html_rem = render_to_string('finanzas/remision_template.html', {'r': rem, 'base_url': str(settings.BASE_DIR)})
-        pdf_rem = weasyprint.HTML(string=html_rem, base_url=str(settings.BASE_DIR)).write_pdf()
-        rem.archivo_pdf.save(f"Remision_{folio_rem}.pdf", ContentFile(pdf_rem)); rem.save()
-
-        messages.success(request, "Proyecto iniciado y anticipo registrado.")
-        return redirect('finanzas_cliente_detalle', cliente_id=cliente.id)
-    
-    return redirect('detalle_cotizacion', cotizacion_id=c.id)
-
-@login_required
 def crear_factura_anticipo(request, cuenta_id):
-    """
-    Versión DEFINITIVA: 
-    - Evita duplicados con sufijo de tiempo.
-    - Soporta CFDI 4.0 (CfdiXml).
-    - Genera Código QR del SAT para el PDF.
-    """
     cuenta = get_object_or_404(CuentaPorCobrar, id=cuenta_id)
     c = cuenta.cotizacion
+    cliente = cuenta.cliente
+
+    if request.method != 'POST':
+        return redirect('finanzas_cliente_detalle', cliente_id=cliente.id)
+
+    if not cliente.rfc or not cliente.razon_social:
+        messages.error(request, "Error: El cliente no tiene RFC configurado.")
+        return redirect('finanzas_cliente_detalle', cliente_id=cliente.id)
     
-    # --- MEJORA 1: Folio Único (Sufijo de Hora) ---
     sufijo = timezone.now().strftime('%H%M%S')
     folio = f"F-ANT-{c.id}-{sufijo}"
     
-    # Evitar duplicados locales
     if Factura.objects.filter(folio_interno=folio).exists():
-        messages.warning(request, f"La factura {folio} ya existe localmente.")
         return redirect('finanzas_cliente_detalle', cliente_id=cuenta.cliente.id)
 
-    # 1. Crear el objeto en la BD (Pendiente)
-    monto = c.total * Decimal('0.50') 
+    monto_original = c.total * Decimal('0.50') 
+    
+    descuento_input = request.POST.get('descuento', '0')
+    try: descuento_aplicado = Decimal(descuento_input)
+    except: descuento_aplicado = Decimal('0.00')
+
+    monto_final_a_pagar = monto_original - descuento_aplicado
+
+    if monto_final_a_pagar < 0:
+        messages.error(request, "Error: El descuento no puede ser mayor al total.")
+        return redirect('finanzas_cliente_detalle', cliente_id=cliente.id)
+
     fac = Factura.objects.create(
         cliente=cuenta.cliente, 
         folio_interno=folio, 
-        monto_total=monto,
+        monto_total=monto_final_a_pagar,
+        descuento=descuento_aplicado,
         estado_sat='pendiente', 
         uuid=''
     )
     fac.cotizaciones.add(c)
 
-    # 2. Intentar Timbrar con Facturama
     try:
         respuesta_sat = timbrar_con_facturama(fac)
-        
-        # 3. Guardar respuesta del SAT
-        fac.uuid = respuesta_sat['Id'] # El UUID Real
+        fac.uuid = respuesta_sat['Id']
         fac.estado_sat = 'timbrada'
         
-        # --- MEJORA 2: Corrección de Etiqueta XML ---
         xml_b64 = respuesta_sat.get('CfdiXml') or respuesta_sat.get('Xml')
-        
         if xml_b64:
             xml_content = base64.b64decode(xml_b64)
             fac.archivo_xml.save(f"{fac.uuid}.xml", ContentFile(xml_content))
         
-        # ====================================================
-        # 4. NUEVO: GENERACIÓN DEL CÓDIGO QR SAT
-        # ====================================================
-        # URL Oficial: https://verificacfdi.facturaelectronica.sat.gob.mx/default.aspx?id=UUID&re=RFC_E&rr=RFC_R&tt=TOTAL&fe=SELLO
+        emisor = DatosEmisor.objects.first() or DatosEmisor(razon_social="DEMO", rfc="XAXX010101000")
+        qr_data = f"https://verificacfdi.facturaelectronica.sat.gob.mx/default.aspx?id={fac.uuid}&re={emisor.rfc}&rr={fac.cliente.rfc}&tt={fac.monto_total:.6f}&fe={respuesta_sat.get('Complement', {}).get('TaxStamp', {}).get('SatSign', '')[-8:]}"
         
-        rfc_emisor = "EKU9003173C9" # RFC Pruebas
-        rfc_receptor = fac.cliente.rfc or "XAXX010101000"
-        total_str = f"{fac.monto_total:.6f}"
-        sello_ultimo_8 = respuesta_sat.get('Complement', {}).get('TaxStamp', {}).get('SatSign', '')[-8:]
-        
-        if not sello_ultimo_8: 
-            sello_ultimo_8 = "12345678" # Fallback
-
-        qr_data = f"https://verificacfdi.facturaelectronica.sat.gob.mx/default.aspx?id={fac.uuid}&re={rfc_emisor}&rr={rfc_receptor}&tt={total_str}&fe={sello_ultimo_8}"
-        
-        # Crear imagen QR
         qr = qrcode.QRCode(version=1, box_size=10, border=2)
-        qr.add_data(qr_data)
-        qr.make(fit=True)
-        img_qr = qr.make_image(fill='black', back_color='white')
-        
-        # Guardar en memoria
+        qr.add_data(qr_data); qr.make(fit=True)
         buffer_qr = BytesIO()
-        img_qr.save(buffer_qr, format="PNG")
-        fac.qr_imagen.save(f"qr_{folio}.png", ContentFile(buffer_qr.getvalue()), save=False)
-        # ====================================================
+        qr.make_image(fill='black', back_color='white').save(buffer_qr, format="PNG")
+        fac.qr_imagen.save(f"qr_{folio}.png", ContentFile(buffer_qr.getvalue()), save=True)
+        
+        base_url_clean = str(settings.BASE_DIR).replace('\\', '/')
+        qr_path = f"file:///{base_url_clean}/media/{fac.qr_imagen.name}" if fac.qr_imagen else None
 
-        fac.save() # Guardamos XML y QR antes de generar PDF
+        total_float = float(fac.monto_total)
+        descuento_float = float(fac.descuento)
+        base = total_float / 1.16
+        subtotal = base + descuento_float
+        iva = base * 0.16
         
-        # 5. Generar PDF Visual (Pasando la URL del QR)
-        try:
-            html = render_to_string('finanzas/factura_template.html', {
-                'f': fac, 
-                'base_url': str(settings.BASE_DIR),
-                'qr_url': fac.qr_imagen.url if fac.qr_imagen else None
-            })
-            pdf = weasyprint.HTML(string=html, base_url=str(settings.BASE_DIR)).write_pdf()
-            fac.pdf_representacion.save(f"Factura_{folio}.pdf", ContentFile(pdf))
-        except Exception as e:
-            print(f"Error generando PDF visual: {e}")
-        
+        cantidad_letra = num2words(total_float, lang='es').upper()
+        parte_decimal = f"{int((total_float - int(total_float)) * 100):02d}/100 M.N."
+        texto_final = f"({cantidad_letra} PESOS {parte_decimal})"
+
+        html = render_to_string('finanzas/factura_template.html', {
+            'f': fac, 'base_url': base_url_clean, 'qr_url': qr_path, 'emisor': emisor,
+            'cifras': {
+                'subtotal': subtotal, 'descuento': descuento_float, 'iva': iva,
+                'total': total_float, 'letras': texto_final
+            }
+        })
+        pdf = weasyprint.HTML(string=html, base_url=base_url_clean).write_pdf()
+        fac.pdf_representacion.save(f"Factura_{folio}.pdf", ContentFile(pdf))
         fac.save()
-        messages.success(request, f"¡Factura Timbrada con Éxito! UUID: {fac.uuid}")
-
+        messages.success(request, f"Factura timbrada con descuento de ${descuento_float}.")
     except Exception as e:
-        # Si falló, borramos el intento local
         fac.delete()
-        messages.error(request, f"Error al timbrar: {str(e)}")
+        messages.error(request, f"Error SAT: {str(e)}")
 
     return redirect('finanzas_cliente_detalle', cliente_id=cuenta.cliente.id)
 
 @login_required
 def registrar_pago(request):
-    """Registra pagos y opcionalmente factura el resto."""
     if request.method == 'POST':
-        # FIX CRÍTICO: Referencia nunca None
-        ref = request.POST.get('referencia') or ""
+        cuenta_id = request.POST.get('cuenta_id')
+        monto = Decimal(request.POST.get('monto'))
+        metodo = request.POST.get('metodo')
+        ref = request.POST.get('referencia')
+        
+        usuario_pide_factura = request.POST.get('generar_factura_final') == 'on'
+        descuento_factura = request.POST.get('descuento_final', '0')
+        
+        cuenta = get_object_or_404(CuentaPorCobrar, id=cuenta_id)
         
         pago = Pago.objects.create(
-            cuenta_id=request.POST.get('cuenta_id'),
-            monto=Decimal(request.POST.get('monto')),
-            metodo=request.POST.get('metodo'),
-            referencia=ref,
-            registrado_por=request.user
+            cuenta=cuenta, monto=monto, metodo=metodo, referencia=ref
         )
         
-        # Lógica para generar Factura Final si el checkbox está marcado
-        if request.POST.get('generar_factura_final') == 'on':
-            c = pago.cuenta.cotizacion
-            cliente = pago.cuenta.cliente
-            folio_fin = f"F-FIN-{c.id}"
-            
-            # Verificar si ya existe
-            if not Factura.objects.filter(folio_interno=folio_fin).exists():
-                if not hasattr(cliente, 'datos_fiscales'):
-                    messages.warning(request, "Pago registrado, pero faltan datos fiscales para la factura.")
-                else:
-                    fac = Factura.objects.create(
-                        cliente=cliente, folio_interno=folio_fin, monto_total=pago.monto,
-                        estado_sat='pendiente', uuid=str(uuid.uuid4()).upper()
-                    )
-                    fac.cotizaciones.add(c)
-                    html = render_to_string('finanzas/factura_template.html', {'f': fac, 'base_url': str(settings.BASE_DIR)})
-                    pdf = weasyprint.HTML(string=html, base_url=str(settings.BASE_DIR)).write_pdf()
-                    fac.pdf_representacion.save(f"Factura_{folio_fin}.pdf", ContentFile(pdf)); fac.save()
+        cuenta.saldo_pendiente -= monto
+        if cuenta.saldo_pendiente <= 0:
+            cuenta.saldo_pendiente = 0
+            cuenta.estado = 'pagada'
+        cuenta.save()
+
+        tiene_anticipo = Factura.objects.filter(cotizaciones=cuenta.cotizacion, estado_sat='timbrada').exists()
+
+        if tiene_anticipo:
+            generar_factura_liquidacion_automatica(request, pago, cuenta, descuento_factura)
+        elif usuario_pide_factura:
+            generar_factura_liquidacion_automatica(request, pago, cuenta, descuento_factura)
+        else:
+            messages.success(request, "Pago registrado. Recibo generado.")
+
+        return redirect('finanzas_cliente_detalle', cliente_id=cuenta.cliente.id)
         
-        # Generar Remisión Final siempre
-        if pago.cuenta.saldo_pendiente <= 0:
-            c = pago.cuenta.cotizacion
-            folio_rem = f"REM-FIN-{int(timezone.now().timestamp())}"
-            rem = Remision.objects.create(cliente=pago.cuenta.cliente, cotizacion=c, folio=folio_rem, monto_total=pago.monto)
-            html_rem = render_to_string('finanzas/remision_template.html', {'r': rem, 'base_url': str(settings.BASE_DIR)})
-            pdf_rem = weasyprint.HTML(string=html_rem, base_url=str(settings.BASE_DIR)).write_pdf()
-            rem.archivo_pdf.save(f"{folio_rem}.pdf", ContentFile(pdf_rem)); rem.save()
-
-        # Asiento Contable
-        poliza = Poliza.objects.create(tipo='ingreso', concepto=f"Cobro {pago.cuenta.cliente}", creada_por=request.user, pago_relacionado=pago)
-        bancos, _ = CuentaContable.objects.get_or_create(codigo="102-01", defaults={'nombre': 'Bancos', 'tipo': 'activo'})
-        MovimientoContable.objects.create(poliza=poliza, cuenta=bancos, debe=pago.monto)
-        bancos.saldo_actual += pago.monto; bancos.save()
-        
-        messages.success(request, "Pago registrado correctamente.")
-        return redirect('finanzas_cliente_detalle', cliente_id=pago.cuenta.cliente.id)
-        
-    return redirect(request.META.get('HTTP_REFERER'))
-
-@login_required
-def facturar_multiples(request):
-    """Factura Masiva"""
-    if request.method == 'POST':
-        cliente_id = request.POST.get('cliente_id')
-        ids = request.POST.getlist('cuentas_ids')
-        cliente = get_object_or_404(Cliente, id=cliente_id)
-
-        if not ids: return redirect('finanzas_cliente_detalle', cliente_id=cliente.id)
-        if not hasattr(cliente, 'datos_fiscales'): return redirect(f"/cliente/{cliente.id}/?accion=abrir_fiscal")
-
-        cots = []
-        total = 0
-        for cid in ids:
-            cta = get_object_or_404(CuentaPorCobrar, id=cid)
-            if cta.cotizacion: cots.append(cta.cotizacion); total += cta.saldo_pendiente
-
-        folio = f"F-GLOB-{int(timezone.now().timestamp())}"
-        fac = Factura.objects.create(cliente=cliente, folio_interno=folio, monto_total=total, estado_sat='pendiente', uuid=str(uuid.uuid4()).upper())
-        fac.cotizaciones.set(cots)
-        
-        html = render_to_string('finanzas/factura_template.html', {'f': fac, 'base_url': str(settings.BASE_DIR)})
-        pdf = weasyprint.HTML(string=html, base_url=str(settings.BASE_DIR)).write_pdf()
-        fac.pdf_representacion.save(f"Factura_{folio}.pdf", ContentFile(pdf)); fac.save()
-
-        messages.success(request, f"Factura consolidada: ${total:,.2f}")
-        return redirect('finanzas_cliente_detalle', cliente_id=cliente.id)
     return redirect('panel_finanzas')
 
 @login_required
 def generar_factura_sat(request, cotizacion_id):
-    # Simulación Timbrado
     c = get_object_or_404(Cotizacion, id=cotizacion_id)
     for f in c.facturas_asociadas.filter(estado_sat='pendiente'):
         f.estado_sat = 'timbrada'; f.save()
@@ -860,13 +980,29 @@ def libro_contable(request):
     return render(request, 'finanzas/libro_contable.html', {'polizas': Poliza.objects.all().order_by('-fecha')})
 
 @login_required
-def recibo_pago_pdf(request, pago_id): return redirect('panel_finanzas')
+def recibo_pago_pdf(request, pago_id):
+    pago = get_object_or_404(Pago, id=pago_id)
+    html = render_to_string('finanzas/recibo_template.html', {
+        'pago': pago, 'base_url': str(settings.BASE_DIR), 'cliente': pago.cuenta.cliente
+    })
+    pdf = weasyprint.HTML(string=html, base_url=str(settings.BASE_DIR)).write_pdf()
+    response = HttpResponse(pdf, content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="Recibo_Pago_{pago.id}.pdf"'
+    return response
+
+@login_required
+def facturar_multiples(request):
+    if request.method == 'POST':
+        ids = request.POST.getlist('cuentas_ids')
+        messages.info(request, f"Opción de facturación masiva en construcción. Se recibieron {len(ids)} elementos.")
+    return redirect('panel_finanzas')
+
 @login_required
 def previsualizar_factura(request, cotizacion_id): return redirect('panel_finanzas')
 @login_required
-def crear_factura_faltante(request, cotizacion_id): return redirect('panel_finanzas') # Deprecated
+def crear_factura_faltante(request, cotizacion_id): return redirect('panel_finanzas')
 @login_required
-def generar_docs_finiquito(request, cuenta_id): return redirect('panel_finanzas') # Deprecated (Merged into registrar_pago)
+def generar_docs_finiquito(request, cuenta_id): return redirect('panel_finanzas')
 
 # ==========================================
 # 7. CONTRATOS
@@ -1003,3 +1139,21 @@ def eliminar_evento(request, evento_id):
     if request.user.rol == 'admin' or evento.usuario == request.user:
         evento.delete(); return JsonResponse({'status': 'ok'})
     return JsonResponse({'status': 'error'}, status=403)
+
+@login_required
+def guardar_datos_emisor(request):
+    if request.user.rol != 'admin':
+        messages.error(request, "Acceso denegado.")
+        return redirect('panel_finanzas')
+        
+    if request.method == 'POST':
+        emisor, _ = DatosEmisor.objects.get_or_create(id=1)
+        emisor.razon_social = request.POST.get('razon_social')
+        emisor.rfc = request.POST.get('rfc')
+        emisor.regimen_fiscal = request.POST.get('regimen_fiscal')
+        emisor.codigo_postal = request.POST.get('codigo_postal')
+        emisor.direccion = request.POST.get('direccion')
+        emisor.save()
+        messages.success(request, "Datos del Despacho actualizados.")
+        
+    return redirect('panel_finanzas')

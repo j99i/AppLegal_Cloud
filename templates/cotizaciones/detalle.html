@@ -7,13 +7,17 @@
             <a href="{% url 'lista_cotizaciones' %}" class="text-gray-500 hover:text-gray-700 text-sm font-bold mb-2 inline-block">
                 <i class="fas fa-arrow-left mr-1"></i> Volver a Cotizaciones
             </a>
-            <h2 class="text-3xl font-black text-[#2D1B4B]">Cotización #{{ c.id }}</h2>
-            <span class="px-3 py-1 rounded-full text-xs font-bold uppercase
-                {% if c.estado == 'aceptada' %}bg-green-100 text-green-600
-                {% elif c.estado == 'rechazada' %}bg-red-100 text-red-500
-                {% else %}bg-yellow-100 text-yellow-600{% endif %}">
-                {{ c.get_estado_display }}
-            </span>
+            <div class="flex items-center gap-3">
+                <h2 class="text-3xl font-black text-[#2D1B4B]">Cotización #{{ c.id }}</h2>
+                <span class="px-3 py-1 rounded-full text-xs font-bold uppercase
+                    {% if c.estado == 'aceptada' %}bg-green-100 text-green-600
+                    {% elif c.estado == 'rechazada' %}bg-red-100 text-red-500
+                    {% elif c.estado == 'enviada' %}bg-blue-100 text-blue-600
+                    {% else %}bg-yellow-100 text-yellow-600{% endif %}">
+                    {{ c.get_estado_display }}
+                </span>
+            </div>
+            <p class="text-sm text-[#A855F7] font-bold">{{ c.titulo_proyecto }}</p>
         </div>
         <div class="text-right">
             <p class="text-xs text-gray-400 font-bold uppercase">Fecha de Creación</p>
@@ -26,16 +30,28 @@
         <div class="p-8 border-b border-gray-100 bg-gray-50/50">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Prospecto / Cliente</p>
-                    <h3 class="text-xl font-black text-[#2D1B4B]">{{ c.prospecto_nombre }}</h3>
-                    {% if c.prospecto_empresa %}
-                    <p class="text-sm font-bold text-gray-600"><i class="fas fa-building mr-1 opacity-50"></i> {{ c.prospecto_empresa }}</p>
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Cliente / Prospecto</p>
+                    <h3 class="text-xl font-black text-[#2D1B4B]">
+                        {{ c.cliente.nombre_empresa|default:c.prospecto_empresa|default:c.prospecto_nombre }}
+                    </h3>
+                    {% if c.cliente and c.cliente.rfc %}
+                        <p class="text-sm font-bold text-gray-600"><i class="fas fa-id-card mr-1 opacity-50"></i> {{ c.cliente.rfc }}</p>
                     {% endif %}
                 </div>
                 <div class="md:text-right">
                     <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Contacto</p>
-                    <p class="text-sm text-gray-600"><i class="fas fa-envelope mr-1 opacity-50"></i> {{ c.prospecto_email }}</p>
-                    <p class="text-sm text-gray-600"><i class="fas fa-phone mr-1 opacity-50"></i> {{ c.prospecto_telefono }}</p>
+                    <p class="text-sm text-gray-600">
+                        <i class="fas fa-user mr-1 opacity-50"></i> 
+                        {{ c.cliente.nombre_contacto|default:c.prospecto_nombre }}
+                    </p>
+                    <p class="text-sm text-gray-600">
+                        <i class="fas fa-envelope mr-1 opacity-50"></i> 
+                        {{ c.cliente.email|default:c.prospecto_email }}
+                    </p>
+                    <p class="text-sm text-gray-600">
+                        <i class="fas fa-phone mr-1 opacity-50"></i> 
+                        {{ c.cliente.telefono|default:c.prospecto_telefono }}
+                    </p>
                 </div>
             </div>
         </div>
@@ -49,35 +65,60 @@
                         <th class="pb-2 font-bold">Descripción</th>
                         <th class="pb-2 font-bold text-right">Precio Unit.</th>
                         <th class="pb-2 font-bold text-right">Total</th>
+                        {% if c.estado != 'aceptada' %}<th class="pb-2 w-10"></th>{% endif %}
                     </tr>
                 </thead>
                 <tbody class="text-gray-600">
                     {% for item in c.items.all %}
-                    <tr class="border-b border-gray-50 last:border-0">
+                    <tr class="border-b border-gray-50 last:border-0 group hover:bg-gray-50 transition-colors">
                         <td class="py-4 font-bold">{{ item.cantidad }}</td>
                         <td class="py-4">
-                            <span class="block font-bold text-[#2D1B4B]">{{ item.servicio.nombre }}</span>
-                            {% if item.descripcion_personalizada %}
-                            <span class="text-xs text-gray-500">{{ item.descripcion_personalizada }}</span>
-                            {% endif %}
-                            
-                            {% if item.valores_adicionales %}
-                            <div class="mt-1 flex flex-wrap gap-1">
-                                {% for k, v in item.valores_adicionales.items %}
-                                <span class="bg-purple-50 text-purple-700 px-2 py-0.5 rounded text-[10px] font-bold">
-                                    {{ k }}: {{ v }}
-                                </span>
-                                {% endfor %}
-                            </div>
-                            {% endif %}
+                            <span class="block font-bold text-[#2D1B4B]">
+                                {% if item.servicio %}{{ item.servicio.nombre }}{% else %}Servicio Personalizado{% endif %}
+                            </span>
+                            <span class="text-xs text-gray-500">
+                                {{ item.descripcion_personalizada|default:item.servicio.descripcion }}
+                            </span>
                         </td>
                         <td class="py-4 text-right">${{ item.precio_unitario|floatformat:2 }}</td>
-                        <td class="py-4 text-right font-bold text-[#2D1B4B]">${{ item.total|floatformat:2 }}</td>
+                        <td class="py-4 text-right font-bold text-[#2D1B4B]">${{ item.subtotal|floatformat:2 }}</td>
+                        
+                        {% if c.estado != 'aceptada' %}
+                        <td class="py-4 text-right">
+                            <form action="{% url 'eliminar_item_cotizacion' item.id %}" method="POST">
+                                {% csrf_token %}
+                                <button type="submit" class="text-gray-300 hover:text-red-500 transition-colors"><i class="fas fa-trash-alt"></i></button>
+                            </form>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="py-8 text-center text-gray-400 italic">No hay items en esta cotización.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
+        
+        {% if c.estado != 'aceptada' %}
+        <div class="bg-[#2D1B4B]/5 p-6 border-t border-[#2D1B4B]/10">
+            <h4 class="text-xs font-bold text-[#2D1B4B] uppercase mb-3 flex items-center gap-2">
+                <i class="fas fa-plus-circle"></i> Agregar Concepto Extra
+            </h4>
+            <form action="{% url 'agregar_item_cotizacion' c.id %}" method="POST" class="flex flex-col md:flex-row gap-3">
+                {% csrf_token %}
+                <input type="text" name="descripcion" placeholder="Descripción del servicio..." class="flex-grow p-2 rounded-lg border border-gray-300 focus:border-[#A855F7] outline-none text-sm" required>
+                <div class="flex gap-2">
+                    <input type="number" name="cantidad" value="1" min="1" class="w-16 p-2 rounded-lg border border-gray-300 focus:border-[#A855F7] outline-none text-center text-sm" required>
+                    <input type="number" name="precio" step="0.01" placeholder="$ Precio" class="w-24 p-2 rounded-lg border border-gray-300 focus:border-[#A855F7] outline-none text-sm" required>
+                    <button type="submit" class="bg-[#2D1B4B] text-white px-4 rounded-lg font-bold text-xs hover:bg-[#A855F7] transition-colors">
+                        AGREGAR
+                    </button>
+                </div>
+            </form>
+        </div>
+        {% endif %}
 
         <div class="bg-gray-800 text-white p-8">
             <div class="flex justify-end">
@@ -86,11 +127,13 @@
                         <span>Subtotal</span>
                         <span>${{ c.subtotal|floatformat:2 }}</span>
                     </div>
+                    {% if c.impuestos > 0 %}
                     <div class="flex justify-between text-sm text-gray-400">
-                        <span>IVA (16%)</span>
+                        <span>IVA</span>
                         <span>${{ c.impuestos|floatformat:2 }}</span>
                     </div>
-                    <div class="flex justify-between text-xl font-black text-white pt-4 border-t border-gray-700 mt-2">
+                    {% endif %}
+                    <div class="flex justify-between text-xl font-black text-white pt-2 border-t border-gray-700 mt-2">
                         <span>TOTAL</span>
                         <span>${{ c.total|floatformat:2 }}</span>
                     </div>
@@ -112,7 +155,7 @@
     </div>
 
     {% if c.estado != 'aceptada' %}
-    <div class="bg-green-50 p-8 rounded-[2rem] border border-green-100 text-center animate__animated animate__fadeInUp">
+    <div class="bg-green-50 p-8 rounded-[2rem] border border-green-100 text-center animate__animated animate__fadeInUp mb-10">
         <h3 class="text-xl font-black text-[#2D1B4B] mb-2">¿El cliente aceptó la propuesta?</h3>
         <p class="text-gray-600 mb-6 text-sm">Al cerrar el trato se crearán las cuentas por cobrar y los expedientes.</p>
         
@@ -122,19 +165,22 @@
     </div>
     {% endif %}
 
-    {% if c.cliente_convertido %}
-    <div class="mt-8 bg-purple-50 p-6 rounded-2xl border border-purple-100 flex flex-col md:flex-row items-center justify-between gap-4">
+    {% if c.cliente_convertido or c.estado == 'aceptada' %}
+    <div class="bg-purple-50 p-6 rounded-2xl border border-purple-100 flex flex-col md:flex-row items-center justify-between gap-4 mb-10">
         <div>
-            <h3 class="font-bold text-[#2D1B4B]">Gestión Fiscal</h3>
-            <p class="text-xs text-gray-500">El cliente ya está activo. ¿Necesitas facturar algo más?</p>
+            <h3 class="font-bold text-[#2D1B4B]">Proyecto Activo</h3>
+            <p class="text-xs text-gray-500">El cliente ya está en seguimiento financiero.</p>
         </div>
         <div class="flex gap-2">
-            <a href="{% url 'detalle_cliente' c.cliente_convertido.id %}" class="bg-white text-[#2D1B4B] px-6 py-3 rounded-xl font-bold shadow-sm hover:shadow-md border border-gray-100 text-xs">
-                <i class="fas fa-user mr-2"></i> Ver Cliente
+            {% if c.cliente %}
+            <a href="{% url 'finanzas_cliente_detalle' c.cliente.id %}" class="bg-white text-[#2D1B4B] px-6 py-3 rounded-xl font-bold shadow-sm hover:shadow-md border border-gray-100 text-xs">
+                <i class="fas fa-coins mr-2"></i> Ver Finanzas
             </a>
-            <a href="{% url 'previsualizar_factura' c.id %}" class="bg-[#2D1B4B] text-white px-6 py-3 rounded-xl font-bold shadow-md hover:bg-[#4c2e7e] text-xs">
-                <i class="fas fa-file-invoice mr-2 text-yellow-400"></i> Nueva Factura
+            {% elif c.cliente_convertido %}
+            <a href="{% url 'finanzas_cliente_detalle' c.cliente_convertido.id %}" class="bg-white text-[#2D1B4B] px-6 py-3 rounded-xl font-bold shadow-sm hover:shadow-md border border-gray-100 text-xs">
+                <i class="fas fa-coins mr-2"></i> Ver Finanzas
             </a>
+            {% endif %}
         </div>
     </div>
     {% endif %}

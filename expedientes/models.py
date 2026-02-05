@@ -32,6 +32,7 @@ class Usuario(AbstractUser):
     access_agenda = models.BooleanField(default=True)
 
 class Cliente(models.Model):
+    # Datos Generales
     nombre_empresa = models.CharField(max_length=200)
     nombre_contacto = models.CharField(max_length=200)
     email = models.EmailField()
@@ -40,6 +41,15 @@ class Cliente(models.Model):
     fecha_registro = models.DateTimeField(auto_now_add=True)
     datos_extra = models.JSONField(default=dict, blank=True) # Campos dinámicos
 
+    # --- DATOS FISCALES INTEGRADOS ---
+    razon_social = models.CharField(max_length=255, blank=True, null=True)
+    rfc = models.CharField(max_length=20, blank=True, null=True)
+    regimen_fiscal = models.CharField(max_length=100, blank=True, null=True) # Código SAT (ej. 601)
+    codigo_postal = models.CharField(max_length=10, blank=True, null=True)
+    uso_cfdi = models.CharField(max_length=100, default='G03') # Código SAT
+    email_facturacion = models.EmailField(blank=True, null=True)
+    facturama_id = models.CharField(max_length=100, blank=True, null=True) # ID para API Facturama
+
     def __str__(self):
         return self.nombre_empresa
     
@@ -47,15 +57,6 @@ class Cliente(models.Model):
     def saldo_total_pendiente(self):
         total = self.cuentas.aggregate(t=models.Sum('saldo_pendiente'))['t']
         return total or 0
-
-class DatosFiscales(models.Model):
-    cliente = models.OneToOneField(Cliente, on_delete=models.CASCADE, related_name='datos_fiscales')
-    razon_social = models.CharField(max_length=255)
-    rfc = models.CharField(max_length=20)
-    regimen_fiscal = models.CharField(max_length=100) # Código SAT (ej. 601)
-    codigo_postal = models.CharField(max_length=10)
-    uso_cfdi = models.CharField(max_length=100, default='G03') # Código SAT
-    email_facturacion = models.EmailField(blank=True, null=True)
 
 class CampoAdicional(models.Model):
     nombre = models.CharField(max_length=100)
@@ -139,6 +140,7 @@ class Cotizacion(models.Model):
     prospecto_empresa = models.CharField(max_length=200, blank=True, null=True)
     prospecto_email = models.EmailField(blank=True, null=True)
     prospecto_telefono = models.CharField(max_length=20, blank=True, null=True)
+    titulo_proyecto = models.CharField(max_length=200, default="Nuevo Proyecto Legal", verbose_name="Nombre del Proyecto")
     
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     validez_hasta = models.DateField(null=True, blank=True)
@@ -263,7 +265,10 @@ class Factura(models.Model):
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
     cotizaciones = models.ManyToManyField(Cotizacion, related_name='facturas_asociadas')
     folio_interno = models.CharField(max_length=50, unique=True)
-    monto_total = models.DecimalField(max_digits=10, decimal_places=2)
+    monto_total = models.DecimalField(max_digits=10, decimal_places=2) # Total Final a Pagar
+    
+    # NUEVO CAMPO PARA DESCUENTOS
+    descuento = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     
     # Datos del SAT
     uuid = models.CharField(max_length=50, blank=True, null=True)
@@ -271,7 +276,6 @@ class Factura(models.Model):
     
     # Archivos
     pdf_representacion = models.FileField(upload_to='pdf_sat/%Y/%m/', null=True, blank=True)
-    # IMPORTANTE: Estos dos campos son necesarios para el código QR y XML que ya tenemos
     archivo_xml = models.FileField(upload_to='xml_sat/%Y/%m/', null=True, blank=True)
     qr_imagen = models.ImageField(upload_to='facturas/qr/', blank=True, null=True)
 
@@ -279,7 +283,6 @@ class Factura(models.Model):
 
     def __str__(self):
         return f"{self.folio_interno} - {self.cliente}"
-
 # ==========================================
 # 7. AGENDA
 # ==========================================
@@ -302,3 +305,21 @@ class Evento(models.Model):
             'personal': '#10b981'
         }
         return colores.get(self.tipo, '#6b7280')
+    
+# En expedientes/models.py (Agrega esto al final)
+
+class DatosEmisor(models.Model):
+    razon_social = models.CharField(max_length=255, default="MI DESPACHO S.A. DE C.V.")
+    rfc = models.CharField(max_length=13, default="AAA010101AAA")
+    regimen_fiscal = models.CharField(max_length=100, default="601")
+    codigo_postal = models.CharField(max_length=5, default="00000")
+    direccion = models.CharField(max_length=255, blank=True, null=True)
+    
+    # Singleton: Para asegurar que solo exista 1 registro
+    def save(self, *args, **kwargs):
+        if not self.pk and DatosEmisor.objects.exists():
+            return # Evita crear más de uno
+        return super(DatosEmisor, self).save(*args, **kwargs)
+
+    def __str__(self):
+        return self.razon_social
