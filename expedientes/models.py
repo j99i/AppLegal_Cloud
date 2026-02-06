@@ -201,24 +201,54 @@ class PlantillaMensaje(models.Model):
     imagen_cabecera = models.ImageField(upload_to='plantillas_img/', blank=True, null=True)
 
 class Cotizacion(models.Model):
-    ESTADOS = (('borrador', 'Borrador'), ('enviada', 'Enviada'), ('aceptada', 'Aceptada'), ('rechazada', 'Rechazada'))
-    prospecto_nombre = models.CharField(max_length=200)
-    prospecto_email = models.EmailField()
-    prospecto_telefono = models.CharField(max_length=20)
-    prospecto_empresa = models.CharField(max_length=200, blank=True)
+    ESTADOS = (
+        ('borrador', 'Borrador'),
+        ('enviada', 'Enviada'),
+        ('aprobada', 'Aprobada'),
+        ('rechazada', 'Rechazada'),
+    )
+
+    folio = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    
+    # Datos básicos del Cliente
+    prospecto_empresa = models.CharField(max_length=200, blank=True, null=True, verbose_name="Empresa")
+    prospecto_nombre = models.CharField(max_length=200, verbose_name="Nombre del Contacto")
+    prospecto_email = models.EmailField(blank=True, null=True)
+    prospecto_telefono = models.CharField(max_length=20, blank=True, null=True)
+    
+    # --- NUEVOS CAMPOS ---
+    prospecto_direccion = models.TextField(verbose_name="Dirección Fiscal Completa", blank=True, null=True)
+    prospecto_cargo = models.CharField(max_length=150, verbose_name="Cargo del Contacto", blank=True, null=True, help_text="Ej. Director General")
+    descuento = models.DecimalField(max_digits=12, decimal_places=2, default=0.00, verbose_name="Descuento Aplicado ($)")
+
+    # Totales
+    subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    total = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    
+    # Metadatos
+    creado_por = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     validez_hasta = models.DateField(null=True, blank=True)
     estado = models.CharField(max_length=20, choices=ESTADOS, default='borrador')
-    subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    impuestos = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    creado_por = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True)
-    cliente_convertido = models.ForeignKey(Cliente, on_delete=models.SET_NULL, null=True, blank=True)
 
+    def __str__(self):
+        return f"Cotización #{self.id} - {self.prospecto_empresa or self.prospecto_nombre}"
+
+    # --- ESTA ES LA FUNCIÓN QUE FALTABA ---
     def calcular_totales(self):
-        self.subtotal = sum(item.total for item in self.items.all())
-        self.impuestos = self.subtotal * Decimal('0.16')
-        self.total = self.subtotal + self.impuestos
+        # 1. Sumar todos los items (cantidad * precio)
+        suma_items = sum(item.cantidad * item.precio_unitario for item in self.items.all())
+        
+        # 2. Asignar al subtotal
+        self.subtotal = suma_items
+        
+        # 3. Restar el descuento
+        self.total = self.subtotal - self.descuento
+        
+        # 4. Evitar negativos
+        if self.total < 0:
+            self.total = 0
+            
         self.save()
 
 class ItemCotizacion(models.Model):
@@ -227,6 +257,7 @@ class ItemCotizacion(models.Model):
     descripcion_personalizada = models.TextField(blank=True)
     cantidad = models.IntegerField(default=1)
     precio_unitario = models.DecimalField(max_digits=10, decimal_places=2)
+    subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     total = models.DecimalField(max_digits=10, decimal_places=2)
     # Guarda lo que el abogado llenó: {'Juzgado': 'Cuarto Civil', ...}
     valores_adicionales = models.JSONField(default=dict, blank=True) 

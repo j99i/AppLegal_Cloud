@@ -44,6 +44,8 @@ from .models import (
     CuentaPorCobrar, Pago, Evento, CampoAdicional
 )
 
+from decimal import Decimal
+
 # ==========================================
 # 1. AUTENTICACIÓN Y PERFIL
 # ==========================================
@@ -709,50 +711,87 @@ def lista_cotizaciones(request):
     if not request.user.access_cotizaciones: return redirect('dashboard')
     return render(request, 'cotizaciones/lista.html', {'cotizaciones': Cotizacion.objects.all().order_by('-fecha_creacion')})
 
+# En expedientes/views.py
+
 @login_required
 def nueva_cotizacion(request):
-    if not request.user.access_cotizaciones: return redirect('dashboard')
     if request.method == 'POST':
-        c = Cotizacion.objects.create(
-            prospecto_nombre=request.POST.get('nombre'),
-            prospecto_email=request.POST.get('email'),
-            prospecto_telefono=request.POST.get('telefono'),
-            prospecto_empresa=request.POST.get('empresa'),
-            validez_hasta=request.POST.get('validez') or None,
-            creado_por=request.user
-        )
+        # 1. Obtener datos del cliente
+        prospecto_empresa = request.POST.get('prospecto_empresa')
+        prospecto_nombre = request.POST.get('prospecto_nombre')
+        prospecto_email = request.POST.get('prospecto_email')
+        prospecto_telefono = request.POST.get('prospecto_telefono')
         
-        s_ids = request.POST.getlist('servicio_id')
-        cants = request.POST.getlist('cantidad')
-        precios = request.POST.getlist('precio')
-        extras_json = request.POST.getlist('valores_adicionales_json[]')
+        # Nuevos campos
+        prospecto_direccion = request.POST.get('prospecto_direccion')
+        prospecto_cargo = request.POST.get('prospecto_cargo')
+        descuento_str = request.POST.get('descuento', '0')
+        validez = request.POST.get('validez_hasta')
+        
+        # --- CORRECCIÓN: USAR DECIMAL EN LUGAR DE FLOAT ---
+        try:
+            # Convertimos directamente el string a Decimal
+            descuento = Decimal(descuento_str) if descuento_str else Decimal('0.00')
+        except:
+            descuento = Decimal('0.00')
+        # --------------------------------------------------
 
-        for i in range(len(s_ids)):
-            if s_ids[i]:
-                item = ItemCotizacion.objects.create(
-                    cotizacion=c, 
-                    servicio_id=s_ids[i], 
-                    cantidad=int(cants[i] or 1),
-                    precio_unitario=Decimal(precios[i] or 0)
+        # 2. Crear la Cotización
+        cotizacion = Cotizacion.objects.create(
+            prospecto_empresa=prospecto_empresa,
+            prospecto_nombre=prospecto_nombre,
+            prospecto_email=prospecto_email,
+            prospecto_telefono=prospecto_telefono,
+            prospecto_direccion=prospecto_direccion,
+            prospecto_cargo=prospecto_cargo,
+            descuento=descuento,
+            validez_hasta=validez if validez else None,
+            creado_por=request.user,
+            subtotal=Decimal('0.00'),
+            total=Decimal('0.00')
+        )
+
+        # 3. Procesar los Servicios
+        servicios_ids = request.POST.getlist('servicios_seleccionados')
+        cantidades = request.POST.getlist('cantidades')
+        precios = request.POST.getlist('precios_personalizados')
+        descripciones = request.POST.getlist('descripciones_personalizadas')
+
+        for s_id, cant, prec, desc in zip(servicios_ids, cantidades, precios, descripciones):
+            if s_id:
+                servicio = get_object_or_404(Servicio, id=s_id)
+                cantidad = int(cant)
+                
+                # --- CORRECCIÓN: USAR DECIMAL PARA PRECIOS ---
+                try:
+                    precio_unitario = Decimal(prec)
+                except:
+                    precio_unitario = Decimal('0.00')
+                
+                # Calculamos subtotal de línea para guardarlo
+                subtotal_linea = cantidad * precio_unitario
+                # ---------------------------------------------
+                
+                # Crear el Item (asegurando guardar el subtotal)
+                ItemCotizacion.objects.create(
+                    cotizacion=cotizacion,
+                    servicio=servicio,
+                    cantidad=cantidad,
+                    precio_unitario=precio_unitario,
+                    subtotal=subtotal_linea, 
+                    descripcion_personalizada=desc
                 )
-                if i < len(extras_json) and extras_json[i]:
-                    try:
-                        item.valores_adicionales = json.loads(extras_json[i])
-                        item.save()
-                    except: pass
-        c.calcular_totales()
-        return redirect('detalle_cotizacion', cotizacion_id=c.id)
-    
-    # --- CORRECCIÓN AQUÍ: Enviamos una lista de diccionarios limpia ---
-    servicios_data = []
-    for s in Servicio.objects.all():
-        servicios_data.append({
-            'id': s.id,
-            'nombre': s.nombre,
-            'precio': float(s.precio_base)
-        })
-    
-    return render(request, 'cotizaciones/crear.html', {'servicios': servicios_data})
+        
+        # Forzar recálculo final (por si acaso)
+        cotizacion.calcular_totales()
+
+        messages.success(request, 'Cotización creada exitosamente.')
+        return redirect('detalle_cotizacion', cotizacion_id=cotizacion.id)
+
+    # GET
+    servicios = Servicio.objects.all()
+    return render(request, 'cotizaciones/crear.html', {'servicios': servicios})
+
 @login_required
 def detalle_cotizacion(request, cotizacion_id):
     c = get_object_or_404(Cotizacion, id=cotizacion_id)
