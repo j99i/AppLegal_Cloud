@@ -716,27 +716,23 @@ def lista_cotizaciones(request):
 @login_required
 def nueva_cotizacion(request):
     if request.method == 'POST':
-        # 1. Obtener datos del cliente
+        # Captura de datos del cliente
         prospecto_empresa = request.POST.get('prospecto_empresa')
         prospecto_nombre = request.POST.get('prospecto_nombre')
         prospecto_email = request.POST.get('prospecto_email')
         prospecto_telefono = request.POST.get('prospecto_telefono')
-        
-        # Nuevos campos
         prospecto_direccion = request.POST.get('prospecto_direccion')
         prospecto_cargo = request.POST.get('prospecto_cargo')
-        descuento_str = request.POST.get('descuento', '0')
         validez = request.POST.get('validez_hasta')
         
-        # --- CORRECCIÓN: USAR DECIMAL EN LUGAR DE FLOAT ---
+        # Captura del porcentaje de descuento
+        porcentaje_str = request.POST.get('porcentaje_descuento', '0')
         try:
-            # Convertimos directamente el string a Decimal
-            descuento = Decimal(descuento_str) if descuento_str else Decimal('0.00')
+            porcentaje_descuento = Decimal(porcentaje_str)
         except:
-            descuento = Decimal('0.00')
-        # --------------------------------------------------
+            porcentaje_descuento = Decimal('0.00')
 
-        # 2. Crear la Cotización
+        # 1. Crear la cabecera de la Cotización
         cotizacion = Cotizacion.objects.create(
             prospecto_empresa=prospecto_empresa,
             prospecto_nombre=prospecto_nombre,
@@ -744,14 +740,12 @@ def nueva_cotizacion(request):
             prospecto_telefono=prospecto_telefono,
             prospecto_direccion=prospecto_direccion,
             prospecto_cargo=prospecto_cargo,
-            descuento=descuento,
+            porcentaje_descuento=porcentaje_descuento,
             validez_hasta=validez if validez else None,
-            creado_por=request.user,
-            subtotal=Decimal('0.00'),
-            total=Decimal('0.00')
+            creado_por=request.user
         )
 
-        # 3. Procesar los Servicios
+        # 2. Procesar los servicios seleccionados
         servicios_ids = request.POST.getlist('servicios_seleccionados')
         cantidades = request.POST.getlist('cantidades')
         precios = request.POST.getlist('precios_personalizados')
@@ -762,36 +756,30 @@ def nueva_cotizacion(request):
                 servicio = get_object_or_404(Servicio, id=s_id)
                 cantidad = int(cant)
                 
-                # --- CORRECCIÓN: USAR DECIMAL PARA PRECIOS ---
                 try:
-                    precio_unitario = Decimal(prec)
+                    precio_u = Decimal(prec)
                 except:
-                    precio_unitario = Decimal('0.00')
+                    precio_u = Decimal('0.00')
                 
-                # Calculamos subtotal de línea para guardarlo
-                subtotal_linea = cantidad * precio_unitario
-                # ---------------------------------------------
-                
-                # Crear el Item (asegurando guardar el subtotal)
+                # Crear el Item (el subtotal del item se puede calcular en el save del item o aquí)
                 ItemCotizacion.objects.create(
                     cotizacion=cotizacion,
                     servicio=servicio,
                     cantidad=cantidad,
-                    precio_unitario=precio_unitario,
-                    subtotal=subtotal_linea, 
+                    precio_unitario=precio_u,
+                    subtotal=cantidad * precio_u,
                     descripcion_personalizada=desc
                 )
         
-        # Forzar recálculo final (por si acaso)
+        # 3. Recalcular totales finales una vez creados todos los ítems
         cotizacion.calcular_totales()
 
-        messages.success(request, 'Cotización creada exitosamente.')
+        messages.success(request, 'Cotización generada correctamente.')
         return redirect('detalle_cotizacion', cotizacion_id=cotizacion.id)
 
-    # GET
+    # Si es GET, mostrar servicios activos
     servicios = Servicio.objects.all()
     return render(request, 'cotizaciones/crear.html', {'servicios': servicios})
-
 @login_required
 def detalle_cotizacion(request, cotizacion_id):
     c = get_object_or_404(Cotizacion, id=cotizacion_id)

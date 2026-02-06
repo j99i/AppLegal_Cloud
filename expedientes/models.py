@@ -6,6 +6,7 @@ from django.core.validators import FileExtensionValidator
 from django.utils import timezone
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.conf import settings
 # ==========================================
 # 1. USUARIOS
 # ==========================================
@@ -185,20 +186,19 @@ class VariableEstandar(models.Model):
 # ==========================================
 class Servicio(models.Model):
     nombre = models.CharField(max_length=200)
-    descripcion = models.TextField(blank=True)
+    descripcion = models.TextField(blank=True, null=True)
     precio_base = models.DecimalField(max_digits=10, decimal_places=2)
-    # Guarda el "Molde" de campos: [{'nombre': 'Juzgado', 'tipo': 'text'}, ...]
-    campos_dinamicos = models.JSONField(default=list, blank=True) 
+    campos_dinamicos = models.JSONField(default=dict, blank=True)
 
     def __str__(self):
         return self.nombre
-
 class PlantillaMensaje(models.Model):
     TIPOS = (('email', 'Correo'), ('whatsapp', 'WhatsApp'))
     tipo = models.CharField(max_length=20, choices=TIPOS)
     asunto = models.CharField(max_length=200, blank=True)
     cuerpo = models.TextField()
     imagen_cabecera = models.ImageField(upload_to='plantillas_img/', blank=True, null=True)
+
 
 class Cotizacion(models.Model):
     ESTADOS = (
@@ -210,23 +210,25 @@ class Cotizacion(models.Model):
 
     folio = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     
-    # Datos básicos del Cliente
+    # Datos del Cliente
     prospecto_empresa = models.CharField(max_length=200, blank=True, null=True, verbose_name="Empresa")
     prospecto_nombre = models.CharField(max_length=200, verbose_name="Nombre del Contacto")
     prospecto_email = models.EmailField(blank=True, null=True)
     prospecto_telefono = models.CharField(max_length=20, blank=True, null=True)
-    
-    # --- NUEVOS CAMPOS ---
     prospecto_direccion = models.TextField(verbose_name="Dirección Fiscal Completa", blank=True, null=True)
-    prospecto_cargo = models.CharField(max_length=150, verbose_name="Cargo del Contacto", blank=True, null=True, help_text="Ej. Director General")
-    descuento = models.DecimalField(max_digits=12, decimal_places=2, default=0.00, verbose_name="Descuento Aplicado ($)")
+    prospecto_cargo = models.CharField(max_length=150, verbose_name="Cargo", blank=True, null=True)
+    
+    # Lógica de Descuento
+    porcentaje_descuento = models.DecimalField(max_digits=5, decimal_places=2, default=0.00, verbose_name="Descuento (%)")
+    descuento = models.DecimalField(max_digits=12, decimal_places=2, default=0.00, verbose_name="Descuento ($)")
 
     # Totales
     subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     total = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     
     # Metadatos
-    creado_por = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True)
+    # Nota: Cambia 'Usuario' por settings.AUTH_USER_MODEL si usas el modelo de Django por defecto
+    creado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     validez_hasta = models.DateField(null=True, blank=True)
     estado = models.CharField(max_length=20, choices=ESTADOS, default='borrador')
@@ -234,39 +236,30 @@ class Cotizacion(models.Model):
     def __str__(self):
         return f"Cotización #{self.id} - {self.prospecto_empresa or self.prospecto_nombre}"
 
-    # --- ESTA ES LA FUNCIÓN QUE FALTABA ---
     def calcular_totales(self):
-        # 1. Sumar todos los items (cantidad * precio)
+        """Calcula el subtotal, el monto del descuento y el total final."""
+        # 1. Sumar todos los items (cantidad * precio_unitario)
         suma_items = sum(item.cantidad * item.precio_unitario for item in self.items.all())
+        self.subtotal = Decimal(suma_items)
         
-        # 2. Asignar al subtotal
-        self.subtotal = suma_items
-        
-        # 3. Restar el descuento
+        # 2. Calcular monto de descuento basado en el porcentaje
+        if self.porcentaje_descuento > 0:
+            self.descuento = self.subtotal * (self.porcentaje_descuento / Decimal('100'))
+        else:
+            self.descuento = Decimal('0.00')
+            
+        # 3. Total final
         self.total = self.subtotal - self.descuento
         
-        # 4. Evitar negativos
-        if self.total < 0:
+        if self.total < 0: 
             self.total = 0
             
-        self.save()
-
-class ItemCotizacion(models.Model):
-    cotizacion = models.ForeignKey(Cotizacion, related_name='items', on_delete=models.CASCADE)
-    servicio = models.ForeignKey(Servicio, on_delete=models.SET_NULL, null=True)
-    descripcion_personalizada = models.TextField(blank=True)
-    cantidad = models.IntegerField(default=1)
-    precio_unitario = models.DecimalField(max_digits=10, decimal_places=2)
-    subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
-    total = models.DecimalField(max_digits=10, decimal_places=2)
-    # Guarda lo que el abogado llenó: {'Juzgado': 'Cuarto Civil', ...}
-    valores_adicionales = models.JSONField(default=dict, blank=True) 
-
-    def save(self, *args, **kwargs):
-        self.total = self.cantidad * self.precio_unitario
-        super().save(*args, **kwargs)
-        self.cotizacion.calcular_totales()
-
+        # Actualizamos la base de datos directamente para evitar recursión
+        Cotizacion.objects.filter(id=self.id).update(
+            subtotal=self.subtotal,
+            descuento=self.descuento,
+            total=self.total
+        )
 # ==========================================
 # 6. FINANZAS
 # ==========================================
@@ -332,3 +325,20 @@ def crear_carpetas_base(sender, instance, created, **kwargs):
                 cliente=instance,
                 es_expediente=False
             )
+class ItemCotizacion(models.Model):
+    cotizacion = models.ForeignKey(Cotizacion, related_name='items', on_delete=models.CASCADE)
+    servicio = models.ForeignKey(Servicio, on_delete=models.CASCADE)
+    cantidad = models.PositiveIntegerField(default=1)
+    precio_unitario = models.DecimalField(max_digits=10, decimal_places=2)
+    subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    descripcion_personalizada = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.servicio.nombre} x {self.cantidad}"
+
+    def save(self, *args, **kwargs):
+        # Calcular el subtotal del item antes de guardar
+        self.subtotal = Decimal(self.cantidad) * Decimal(self.precio_unitario)
+        super().save(*args, **kwargs)
+        # Al guardar un item, le pedimos a la cotización que recalcule sus totales
+        self.cotizacion.calcular_totales()
