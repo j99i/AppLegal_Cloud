@@ -18,6 +18,8 @@ from django.utils.text import slugify
 from django.template.loader import render_to_string
 from django.core.mail import EmailMultiAlternatives
 from django.conf import settings 
+from django.utils.html import strip_tags
+from email.mime.image import MIMEImage
 # Importante para serializar los servicios en la nueva cotización
 from django.core.serializers import serialize 
 from .models import Cliente
@@ -822,68 +824,72 @@ def convertir_a_cliente(request, cotizacion_id):
 # ----------------------------------------------------
 @login_required
 def enviar_cotizacion_email(request, cotizacion_id):
-    import weasyprint 
+    cotizacion = get_object_or_404(Cotizacion, id=cotizacion_id)
     
     if request.method == 'POST':
-        c = get_object_or_404(Cotizacion, id=cotizacion_id)
+        asunto = request.POST.get('asunto')
+        mensaje_usuario = request.POST.get('mensaje')
         
-        # 1. Lógica de Nombres Inteligentes
-        nombre_cliente = c.prospecto_empresa if c.prospecto_empresa else c.prospecto_nombre
-        fecha_str = timezone.now().strftime("%d-%m-%Y")
+        # Datos de la Firma Personalizable
+        firma_nombre = request.POST.get('firma_nombre', 'Lic. Maribel Aldana Santos')
+        firma_cargo = request.POST.get('firma_cargo', 'Gestiones Corpad | Directora General')
+        usar_logo_default = request.POST.get('usar_logo_default') == 'on'
         
-        # "Cotización_CocaCola_29-01-2026.pdf" (El slugify limpia espacios y caracteres raros)
-        nombre_archivo_pdf = f"Cotizacion_{slugify(nombre_cliente)}_{fecha_str}.pdf"
-        asunto_default = f"Cotización {nombre_cliente}"
+        # 1. Renderizar el PDF (para adjuntarlo)
+        html_string = render_to_string('cotizaciones/pdf_template.html', {'c': cotizacion})
+        html = weasyprint.HTML(string=html_string, base_url=request.build_absolute_uri())
+        pdf_file = html.write_pdf()
 
-        # 2. Configuración Email
-        email_destino = c.prospecto_email
-        email_abogado = request.user.email
-        # Resend requiere un remitente verificado (o onboarding@resend.dev si es prueba)
-        remitente_oficial = settings.DEFAULT_FROM_EMAIL 
+        # 2. Construir el Cuerpo del Correo (HTML)
+        # Aquí incrustamos tu mensaje y la firma editable
+        html_content = f"""
+        <html>
+            <body style="font-family: Arial, sans-serif; color: #333;">
+                <div style="padding: 20px;">
+                    <p style="white-space: pre-line;">{mensaje_usuario}</p>
+                    <br><br>
+                    <div style="border-top: 1px solid #ddd; padding-top: 20px; display: flex; align-items: center;">
+                        {'<img src="cid:logo_firma" style="width: 50px; height: 50px; border-radius: 50%; margin-right: 15px;">' if usar_logo_default else ''}
+                        <div>
+                            <strong style="font-size: 14px; color: #2D1B4B; display: block;">{firma_nombre}</strong>
+                            <span style="font-size: 12px; color: #666;">{firma_cargo}</span>
+                        </div>
+                    </div>
+                </div>
+            </body>
+        </html>
+        """
+        text_content = strip_tags(html_content)
 
-        if not email_destino:
-            messages.error(request, "El cliente no tiene email registrado.")
-            return redirect('detalle_cotizacion', cotizacion_id=cotizacion_id)
+        # 3. Configurar el Email
+        email = EmailMultiAlternatives(
+            subject=asunto,
+            body=text_content,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[cotizacion.prospecto_email]
+        )
+        email.attach_alternative(html_content, "text/html")
 
-        asunto = request.POST.get('asunto', asunto_default)
-        mensaje = request.POST.get('mensaje', 'Adjunto encontrará la propuesta de servicios legales solicitada.')
+        # 4. Adjuntar PDF
+        filename = f"Cotizacion_{cotizacion.id}.pdf"
+        email.attach(filename, pdf_file, 'application/pdf')
 
-        try:
-            # 3. Generar PDF (Usando BASE_DIR para evitar bloqueos)
-            html = render_to_string('cotizaciones/pdf_template.html', {
-                'c': c, 
-                'base_url': str(settings.BASE_DIR) 
-            })
-            
-            pdf_file = weasyprint.HTML(
-                string=html, 
-                base_url=str(settings.BASE_DIR)
-            ).write_pdf()
+        # 5. Adjuntar Logo como imagen en línea (CID) si se solicitó
+        if usar_logo_default:
+            # Ruta a tu logo estático (Asegúrate de que la ruta sea correcta en tu PC)
+            logo_path = os.path.join(settings.BASE_DIR, 'static', 'img', 'logo.png') 
+            if os.path.exists(logo_path):
+                with open(logo_path, 'rb') as f:
+                    logo_data = f.read()
+                    logo = MIMEImage(logo_data)
+                    logo.add_header('Content-ID', '<logo_firma>')
+                    email.attach(logo)
 
-            # 4. Construir el Correo
-            email = EmailMultiAlternatives(
-                subject=asunto,
-                body=mensaje,
-                from_email=remitente_oficial,
-                to=[email_destino],
-                reply_to=[email_abogado] if email_abogado else None
-            )
-            
-            # Adjuntamos el PDF con el nuevo nombre cool
-            email.attach(nombre_archivo_pdf, pdf_file, 'application/pdf')
-            
-            email.send()
-
-            c.estado = 'enviada'
-            c.save()
-            messages.success(request, f"Cotización enviada a {nombre_cliente} ({email_destino}).")
-
-        except Exception as e:
-            print(f"Error enviando: {e}")
-            messages.error(request, f"Error técnico: {str(e)}")
-
+        # Enviar
+        email.send()
+        messages.success(request, f'Correo enviado exitosamente a {cotizacion.prospecto_email}')
+        
     return redirect('detalle_cotizacion', cotizacion_id=cotizacion_id)
-
 @login_required
 def eliminar_cotizacion(request, cotizacion_id):
     if not request.user.access_cotizaciones:

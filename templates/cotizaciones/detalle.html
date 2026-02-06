@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="max-w-6xl mx-auto animate__animated animate__fadeIn">
+<div class="max-w-6xl mx-auto animate__animated animate__fadeIn relative">
     
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
@@ -16,13 +16,16 @@
                     {{ c.get_estado_display }}
                 </span>
             </div>
-            
             <p class="text-gray-500 font-bold mt-1 text-sm">
                 {{ c.prospecto_nombre }} <span class="text-gray-300">|</span> {{ c.prospecto_empresa }}
             </p>
         </div>
         
         <div class="flex gap-2">
+            <a href="{% url 'pdf_cotizacion' c.id %}" target="_blank" class="bg-red-50 text-red-500 px-4 py-3 rounded-xl font-bold text-xs hover:bg-red-100 transition-colors border border-red-100 flex items-center gap-2">
+                <i class="fas fa-file-pdf"></i> PDF
+            </a>
+
             {% if c.estado != 'aceptada' %}
             <a href="{% url 'convertir_cliente' c.id %}" onclick="return confirm('¿Aceptar cotización y crear expediente de cliente?')" class="bg-green-500 text-white px-6 py-3 rounded-xl font-black text-xs shadow-lg hover:bg-green-600 hover:-translate-y-1 transition-all flex items-center gap-2">
                 <i class="fas fa-user-check"></i> CONVERTIR A CLIENTE
@@ -53,9 +56,6 @@
                         </div>
                     {% endif %}
                 </div>
-                <a href="{% url 'pdf_cotizacion' c.id %}" target="_blank" class="bg-red-50 text-red-500 px-5 py-3 rounded-xl font-bold text-xs hover:bg-red-100 transition-colors border border-red-100 shadow-sm hover:shadow-md">
-                    <i class="fas fa-file-pdf mr-2"></i> VER PDF
-                </a>
             </div>
 
             <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
@@ -88,90 +88,179 @@
 
         <div class="space-y-6">
             
-            <div class="bg-gradient-to-br from-[#25D366]/10 to-green-50 p-6 rounded-[2rem] border border-[#25D366]/20 relative overflow-hidden transition-all hover:shadow-md">
-                <div class="absolute top-0 right-0 p-4 opacity-10">
-                    <i class="fab fa-whatsapp text-6xl text-green-700"></i>
-                </div>
+            <div class="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm text-center">
+                <h3 class="font-bold text-[#2D1B4B] mb-2">Enviar Propuesta</h3>
+                <p class="text-xs text-gray-400 mb-6">Seleccione un canal para redactar el mensaje.</p>
 
-                <h3 class="font-black text-green-800 flex items-center gap-2 mb-2 relative z-10">
-                    <i class="fab fa-whatsapp text-2xl"></i> Enviar Cotización
-                </h3>
-                <p class="text-xs text-green-700 mb-4 relative z-10 font-medium">Comparte el enlace o archivo directamente.</p>
-
-                <label class="text-[10px] font-bold text-green-800 uppercase relative z-10">Mensaje</label>
-                <select id="ws-template" class="w-full p-2 rounded-lg border-0 bg-white/80 mb-3 text-sm font-bold text-gray-600 relative z-10 shadow-sm outline-none focus:ring-2 focus:ring-green-200">
-                    <option value="default">Formal ("Le comparto...")</option>
-                    <option value="casual">Casual ("Aquí tienes...")</option>
-                </select>
-
-                <button onclick="procesarEnvioWhatsApp()" class="w-full bg-[#25D366] text-white font-bold py-3 rounded-xl shadow-lg hover:bg-[#20bd5a] transition-all relative z-10 flex justify-center items-center gap-2 transform active:scale-95">
-                    <span>ENVIAR AHORA</span> <i class="fas fa-paper-plane"></i>
+                <button onclick="abrirModal('modal-whatsapp')" class="w-full bg-[#25D366] hover:bg-[#1DA851] text-white font-bold py-4 rounded-xl shadow-lg mb-4 flex items-center justify-center gap-3 transition-all transform hover:-translate-y-1">
+                    <i class="fab fa-whatsapp text-2xl"></i>
+                    <div class="text-left leading-tight">
+                        <span class="block text-[10px] opacity-80 uppercase">Enviar por</span>
+                        <span class="text-sm">WhatsApp</span>
+                    </div>
                 </button>
-            </div>
 
-            <div class="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm transition-all hover:shadow-md">
-                <h3 class="font-black text-[#2D1B4B] flex items-center gap-2 mb-4">
-                    <i class="fas fa-envelope text-xl text-[#A855F7]"></i> Correo Electrónico
-                </h3>
-                <form action="{% url 'enviar_cotizacion_email' c.id %}" method="POST" class="space-y-3">
-                    {% csrf_token %}
-                    <div>
-                        <label class="text-[10px] font-bold text-gray-400 uppercase">Asunto</label>
-                        <input type="text" name="asunto" class="w-full p-2.5 bg-gray-50 rounded-xl font-bold text-sm border border-gray-200 focus:border-[#A855F7] outline-none text-gray-700" value="Propuesta: {{ c.titulo }}" required>
+                <button onclick="abrirModal('modal-email')" class="w-full bg-[#2D1B4B] hover:bg-[#432C6E] text-white font-bold py-4 rounded-xl shadow-lg flex items-center justify-center gap-3 transition-all transform hover:-translate-y-1">
+                    <i class="fas fa-envelope text-xl"></i>
+                    <div class="text-left leading-tight">
+                        <span class="block text-[10px] opacity-80 uppercase">Enviar por</span>
+                        <span class="text-sm">Correo Electrónico</span>
                     </div>
-                    <div>
-                        <label class="text-[10px] font-bold text-gray-400 uppercase">Mensaje</label>
-                        <textarea name="mensaje" rows="4" class="w-full p-3 bg-gray-50 rounded-xl text-xs font-medium border border-gray-200 focus:border-[#A855F7] outline-none resize-none" placeholder="Escribe el mensaje...">Estimado/a {{ c.prospecto_nombre }},&#10;&#10;Adjunto encontrará la propuesta solicitada: {{ c.titulo }}.&#10;&#10;Quedo a la espera de sus comentarios.</textarea>
-                    </div>
-                    <button type="submit" class="w-full bg-[#2D1B4B] text-white font-bold py-3 rounded-xl shadow-lg hover:bg-[#A855F7] transition-all transform active:scale-95">
-                        ENVIAR CORREO
-                    </button>
-                </form>
+                </button>
             </div>
 
         </div>
     </div>
 </div>
 
+<div id="modal-whatsapp" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/50 backdrop-blur-sm animate__animated animate__fadeIn">
+    <div class="bg-white w-full max-w-md rounded-[2rem] shadow-2xl overflow-hidden m-4 transform transition-all scale-100">
+        <div class="bg-[#25D366] p-4 flex justify-between items-center text-white">
+            <h3 class="font-bold flex items-center gap-2"><i class="fab fa-whatsapp"></i> Redactar WhatsApp</h3>
+            <button onclick="cerrarModal('modal-whatsapp')" class="hover:bg-white/20 rounded-full w-8 h-8 flex items-center justify-center"><i class="fas fa-times"></i></button>
+        </div>
+        
+        <div class="p-6 space-y-4">
+            <div>
+                <label class="text-[10px] font-bold text-gray-400 uppercase mb-1">Plantilla</label>
+                <select id="ws-template-select" onchange="cargarPlantillaWhatsApp()" class="w-full p-2 bg-gray-50 rounded-lg text-sm border border-gray-200 outline-none">
+                    <option value="formal">Formal ("Le comparto...")</option>
+                    <option value="casual">Casual ("Aquí tienes...")</option>
+                </select>
+            </div>
+            
+            <div>
+                <label class="text-[10px] font-bold text-gray-400 uppercase mb-1">Mensaje (Editable)</label>
+                <textarea id="ws-message-body" rows="5" class="w-full p-3 bg-green-50 rounded-xl text-sm text-gray-700 border border-green-100 focus:border-[#25D366] outline-none resize-none"></textarea>
+                <p class="text-[10px] text-gray-400 mt-1">* El enlace al PDF se añade al final automáticamente.</p>
+            </div>
+
+            <button onclick="enviarWhatsAppFinal()" class="w-full bg-[#25D366] text-white font-bold py-3 rounded-xl shadow-lg hover:bg-[#1DA851] transition-all">
+                ABRIR WHATSAPP WEB
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="modal-email" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/50 backdrop-blur-sm animate__animated animate__fadeIn">
+    <div class="bg-white w-full max-w-lg rounded-[2rem] shadow-2xl overflow-hidden m-4">
+        
+        <div class="bg-[#2D1B4B] p-4 flex justify-between items-center text-white">
+            <h3 class="font-bold flex items-center gap-2"><i class="fas fa-envelope"></i> Redactar Correo</h3>
+            <button onclick="cerrarModal('modal-email')" class="hover:bg-white/20 rounded-full w-8 h-8 flex items-center justify-center"><i class="fas fa-times"></i></button>
+        </div>
+
+        <form action="{% url 'enviar_cotizacion_email' c.id %}" method="POST">
+            {% csrf_token %}
+            <div class="p-6 space-y-4">
+                
+                <div>
+                    <label class="text-[10px] font-bold text-gray-400 uppercase mb-1">Asunto</label>
+                    <input type="text" name="asunto" value="Propuesta: {{ c.titulo }}" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-sm border border-gray-200 focus:border-[#A855F7] outline-none">
+                </div>
+                
+                <div>
+                    <label class="text-[10px] font-bold text-gray-400 uppercase mb-1">Mensaje</label>
+                    <textarea name="mensaje" rows="5" class="w-full p-3 bg-gray-50 rounded-t-xl text-sm text-gray-700 border border-gray-200 focus:border-[#A855F7] outline-none resize-none">Estimado/a {{ c.prospecto_nombre }},&#10;&#10;Adjunto a este correo encontrará la propuesta detallada para el proyecto: {{ c.titulo }}.&#10;&#10;Quedo a su entera disposición para cualquier duda.</textarea>
+                    
+                    <div class="bg-gray-100 p-4 rounded-b-xl border-x border-b border-gray-200">
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="text-[9px] font-bold text-gray-400 uppercase">Configurar Firma</span>
+                            <label class="flex items-center gap-2 cursor-pointer bg-white px-2 py-1 rounded border border-gray-200">
+                                <input type="checkbox" name="usar_logo_default" checked class="accent-[#2D1B4B]"> 
+                                <span class="text-[10px] font-bold text-[#2D1B4B]">Incluir Logo</span>
+                            </label>
+                        </div>
+                        
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-[#2D1B4B] rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-sm">
+                                GC
+                            </div>
+                            
+                            <div class="w-full space-y-2">
+                                <input type="text" name="firma_nombre" value="Lic. Maribel Aldana Santos" 
+                                       class="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-[11px] font-bold text-[#2D1B4B] placeholder-gray-400 focus:border-[#A855F7] outline-none shadow-sm"
+                                       placeholder="Nombre Completo">
+                                
+                                <input type="text" name="firma_cargo" value="Gestiones Corpad | Directora General" 
+                                       class="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-[10px] text-gray-500 placeholder-gray-400 focus:border-[#A855F7] outline-none shadow-sm"
+                                       placeholder="Cargo / Puesto">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-2 text-[10px] text-gray-400 justify-end items-center">
+                    <i class="fas fa-paperclip"></i> <span>Se adjuntará: <strong>Cotizacion.pdf</strong></span>
+                </div>
+
+                <button type="submit" class="w-full bg-[#2D1B4B] text-white font-bold py-3 rounded-xl shadow-lg hover:bg-[#A855F7] transition-all flex justify-center items-center gap-2">
+                    <span>ENVIAR CORREO</span> <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
-    function procesarEnvioWhatsApp() {
-        // Datos limpios
-        const telefono = "{{ c.prospecto_telefono }}".replace(/[^0-9]/g, '');
-        const nombre = "{{ c.prospecto_nombre }}";
-        const total = "{{ c.total|floatformat:2 }}";
-        const titulo = "{{ c.titulo }}"; 
+    // --- VARIABLES GLOBALES ---
+    const datosCotizacion = {
+        nombre: "{{ c.prospecto_nombre }}",
+        titulo: "{{ c.titulo }}",
+        total: "{{ c.total|floatformat:2 }}",
+        telefono: "{{ c.prospecto_telefono }}".replace(/[^0-9]/g, ''),
+        urlPdf: window.location.origin + "{% url 'pdf_cotizacion' c.id %}"
+    };
+
+    // --- FUNCIONES DE MODALES ---
+    function abrirModal(id) {
+        document.getElementById(id).classList.remove('hidden');
+        if(id === 'modal-whatsapp') cargarPlantillaWhatsApp();
+    }
+
+    function cerrarModal(id) {
+        document.getElementById(id).classList.add('hidden');
+    }
+
+    // --- FUNCIONES WHATSAPP ---
+    function cargarPlantillaWhatsApp() {
+        const tipo = document.getElementById('ws-template-select').value;
+        const textarea = document.getElementById('ws-message-body');
+        
+        let texto = "";
+        if (tipo === 'formal') {
+            texto = `Hola *${datosCotizacion.nombre}*, espero que estés bien.\n\nTe comparto la propuesta de *${datosCotizacion.titulo}* ($${datosCotizacion.total}).\n\nPuedes revisar el documento aquí:`;
+        } else {
+            texto = `Hola *${datosCotizacion.nombre}*, aquí te dejo la cotización pendiente de *${datosCotizacion.titulo}* ($${datosCotizacion.total}).\n\nLink:`;
+        }
+        textarea.value = texto;
+    }
+
+    function enviarWhatsAppFinal() {
+        const mensajeUsuario = document.getElementById('ws-message-body').value;
+        const mensajeFinal = `${mensajeUsuario} ${datosCotizacion.urlPdf}`;
         
         const esProduccion = window.location.hostname !== '127.0.0.1' && window.location.hostname !== 'localhost';
-        const urlPdf = window.location.origin + "{% url 'pdf_cotizacion' c.id %}";
-
-        const tipo = document.getElementById('ws-template').value;
-        let mensaje = "";
 
         if (esProduccion) {
-            // ENLACE (Nube)
-            if (tipo === 'default') {
-                mensaje = `👋 Hola *${nombre}*, te comparto la propuesta de *${titulo}* ($${total}).\n\n📄 *Ver documento:* ${urlPdf}`;
-            } else {
-                mensaje = `Hola *${nombre}*, aquí te dejo la cotización de *${titulo}*: ${urlPdf}`;
-            }
-            window.open(`https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`, '_blank');
-
+            window.open(`https://wa.me/${datosCotizacion.telefono}?text=${encodeURIComponent(mensajeFinal)}`, '_blank');
         } else {
-            // DESCARGA (Local)
-            alert("⚠️ Modo Local: Descargando PDF para envío manual.");
+            alert("⚠️ Modo Local: Se descargará el PDF, pero se abrirá WhatsApp con tu texto.");
             
-            const linkDescarga = document.createElement('a');
-            linkDescarga.href = "{% url 'pdf_cotizacion' c.id %}";
-            linkDescarga.download = `Cotizacion_${titulo.replace(/ /g,"_")}.pdf`;
-            document.body.appendChild(linkDescarga);
-            linkDescarga.click();
-            document.body.removeChild(linkDescarga);
-
-            mensaje = `Hola *${nombre}*, te adjunto el archivo PDF de la cotización: *${titulo}*.`;
+            // Descargar
+            const link = document.createElement('a');
+            link.href = "{% url 'pdf_cotizacion' c.id %}";
+            link.download = `Cotizacion_${datosCotizacion.titulo}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Abrir WhatsApp
             setTimeout(() => {
-                window.open(`https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`, '_blank');
+                window.open(`https://wa.me/${datosCotizacion.telefono}?text=${encodeURIComponent(mensajeFinal)}`, '_blank');
             }, 1000);
         }
+        cerrarModal('modal-whatsapp');
     }
 </script>
 {% endblock %}
