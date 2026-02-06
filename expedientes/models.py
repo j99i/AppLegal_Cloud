@@ -7,6 +7,7 @@ from django.utils import timezone
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.conf import settings
+
 # ==========================================
 # 1. USUARIOS
 # ==========================================
@@ -71,7 +72,7 @@ class CampoAdicional(models.Model):
     obligatorio = models.BooleanField(default=False)
 
 # ==========================================
-# 3. DRIVE
+# 3. DRIVE Y ARCHIVOS
 # ==========================================
 class Carpeta(models.Model):
     nombre = models.CharField(max_length=255, db_index=True)
@@ -122,7 +123,6 @@ class Carpeta(models.Model):
         
         for req in lista_req:
             # Buscamos si existe un documento que empiece con este nombre exacto
-            # Usamos filter().first() para evitar errores si hay duplicados
             doc = self.documentos.filter(nombre_archivo__iexact=req).first()
             
             if doc:
@@ -131,6 +131,19 @@ class Carpeta(models.Model):
                 detalle.append({'nombre': req, 'estado': 'missing', 'doc': None})
                 
         return detalle
+
+# MODELO NUEVO PARA GESTIÓN DE ARCHIVOS (PDFs, etc.)
+class Archivo(models.Model):
+    nombre = models.CharField(max_length=200)
+    # Relación con la carpeta definida arriba
+    carpeta = models.ForeignKey(Carpeta, on_delete=models.CASCADE, related_name='archivos')
+    # 'upload_to' es obligatorio, pero nuestra vista controla la ruta final manualmente
+    archivo = models.FileField(upload_to='temp_uploads/') 
+    subido_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    fecha_subida = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.nombre
 
 class Expediente(models.Model):
     ESTADOS = (('abierto', 'Abierto'), ('pausado', 'En Pausa'), ('finalizado', 'Finalizado'))
@@ -143,6 +156,7 @@ class Expediente(models.Model):
     prioridad = models.IntegerField(choices=((1, 'Baja'), (2, 'Media'), (3, 'Crítica')), default=2)
     creado_el = models.DateTimeField(auto_now_add=True)
 
+# Modelo Legacy (Mantener por compatibilidad si ya tienes datos)
 class Documento(models.Model):
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='documentos_cliente')
     carpeta = models.ForeignKey(Carpeta, on_delete=models.CASCADE, related_name='documentos', null=True, blank=True)
@@ -192,13 +206,13 @@ class Servicio(models.Model):
 
     def __str__(self):
         return self.nombre
+
 class PlantillaMensaje(models.Model):
     TIPOS = (('email', 'Correo'), ('whatsapp', 'WhatsApp'))
     tipo = models.CharField(max_length=20, choices=TIPOS)
     asunto = models.CharField(max_length=200, blank=True)
     cuerpo = models.TextField()
     imagen_cabecera = models.ImageField(upload_to='plantillas_img/', blank=True, null=True)
-
 
 class Cotizacion(models.Model):
     ESTADOS = (
@@ -227,12 +241,14 @@ class Cotizacion(models.Model):
     total = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     
     # Metadatos
-    # Nota: Cambia 'Usuario' por settings.AUTH_USER_MODEL si usas el modelo de Django por defecto
     creado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     validez_hasta = models.DateField(null=True, blank=True)
     estado = models.CharField(max_length=20, choices=ESTADOS, default='borrador')
-
+    
+    # Relación con cliente convertido
+    cliente_convertido = models.ForeignKey('Cliente', on_delete=models.SET_NULL, null=True, blank=True)
+    
     def __str__(self):
         return f"Cotización #{self.id} - {self.prospecto_empresa or self.prospecto_nombre}"
 
@@ -254,12 +270,31 @@ class Cotizacion(models.Model):
         if self.total < 0: 
             self.total = 0
             
-        # Actualizamos la base de datos directamente para evitar recursión
+        # Actualizamos la base de datos directamente
         Cotizacion.objects.filter(id=self.id).update(
             subtotal=self.subtotal,
             descuento=self.descuento,
             total=self.total
         )
+
+class ItemCotizacion(models.Model):
+    cotizacion = models.ForeignKey(Cotizacion, related_name='items', on_delete=models.CASCADE)
+    servicio = models.ForeignKey(Servicio, on_delete=models.CASCADE)
+    cantidad = models.PositiveIntegerField(default=1)
+    precio_unitario = models.DecimalField(max_digits=10, decimal_places=2)
+    subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    descripcion_personalizada = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.servicio.nombre} x {self.cantidad}"
+
+    def save(self, *args, **kwargs):
+        # Calcular el subtotal del item antes de guardar
+        self.subtotal = Decimal(self.cantidad) * Decimal(self.precio_unitario)
+        super().save(*args, **kwargs)
+        # Al guardar un item, le pedimos a la cotización que recalcule sus totales
+        self.cotizacion.calcular_totales()
+
 # ==========================================
 # 6. FINANZAS
 # ==========================================
@@ -314,31 +349,17 @@ class Evento(models.Model):
         colores = {'audiencia': '#ef4444', 'vencimiento': '#f59e0b', 'reunion': '#3b82f6', 'tramite': '#10b981', 'personal': '#6b7280'}
         return colores.get(self.tipo, '#3b82f6')
 
-# Signal para crear carpetas base automáticamente al crear un cliente
+# ==========================================
+# 8. SIGNALS
+# ==========================================
 @receiver(post_save, sender=Cliente)
 def crear_carpetas_base(sender, instance, created, **kwargs):
     if created:
-        carpetas_nombres = ['LICENCIA', 'FUNCIONAMIENTO', 'PROTECCIÓN CIVIL']
+        carpetas_nombres = ['LICENCIA', 'FUNCIONAMIENTO', 'PROTECCIÓN CIVIL', 'Cotizaciones']
         for nombre in carpetas_nombres:
-            Carpeta.objects.create(
+            # Usamos get_or_create para evitar duplicados si se corre varias veces
+            Carpeta.objects.get_or_create(
                 nombre=nombre,
                 cliente=instance,
-                es_expediente=False
+                defaults={'es_expediente': False}
             )
-class ItemCotizacion(models.Model):
-    cotizacion = models.ForeignKey(Cotizacion, related_name='items', on_delete=models.CASCADE)
-    servicio = models.ForeignKey(Servicio, on_delete=models.CASCADE)
-    cantidad = models.PositiveIntegerField(default=1)
-    precio_unitario = models.DecimalField(max_digits=10, decimal_places=2)
-    subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
-    descripcion_personalizada = models.TextField(blank=True, null=True)
-
-    def __str__(self):
-        return f"{self.servicio.nombre} x {self.cantidad}"
-
-    def save(self, *args, **kwargs):
-        # Calcular el subtotal del item antes de guardar
-        self.subtotal = Decimal(self.cantidad) * Decimal(self.precio_unitario)
-        super().save(*args, **kwargs)
-        # Al guardar un item, le pedimos a la cotización que recalcule sus totales
-        self.cotizacion.calcular_totales()

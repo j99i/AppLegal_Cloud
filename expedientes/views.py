@@ -44,7 +44,7 @@ from .models import (
     Usuario, Cliente, Carpeta, Expediente, Documento, 
     Tarea, Bitacora, Plantilla, VariableEstandar,
     Servicio, Cotizacion, ItemCotizacion, PlantillaMensaje,
-    CuentaPorCobrar, Pago, Evento, CampoAdicional
+    CuentaPorCobrar, Pago, Evento, CampoAdicional,Archivo,
 )
 
 from decimal import Decimal
@@ -809,17 +809,91 @@ def generar_pdf_cotizacion(request, cotizacion_id):
 @login_required
 def convertir_a_cliente(request, cotizacion_id):
     c = get_object_or_404(Cotizacion, id=cotizacion_id)
-    if c.cliente_convertido: return redirect('detalle_cliente', cliente_id=c.cliente_convertido.id)
-    cli = Cliente.objects.create(nombre_empresa=c.prospecto_empresa or c.prospecto_nombre, nombre_contacto=c.prospecto_nombre, email=c.prospecto_email, telefono=c.prospecto_telefono)
-    if request.user.rol != 'admin': request.user.clientes_asignados.add(cli)
-    Carpeta.objects.create(nombre="Documentos Generales", cliente=cli)
-    Carpeta.objects.create(nombre="Contratos", cliente=cli)
-    CuentaPorCobrar.objects.create(cliente=cli, cotizacion=c, concepto=f"Cotización #{c.id}", monto_total=c.total, saldo_pendiente=c.total, fecha_vencimiento=c.validez_hasta)
-    c.estado, c.cliente_convertido = 'aceptada', cli
-    c.save()
-    return redirect('panel_finanzas')
+    
+    # 1. Validación: Si ya es cliente, redirigir
+    if c.cliente_convertido:
+        messages.warning(request, f"Esta cotización ya pertenece al cliente {c.cliente_convertido}")
+        return redirect('detalle_cliente', cliente_id=c.cliente_convertido.id)
 
-# ----------------------------------------------------
+    # 2. Buscar o Crear Cliente
+    nombre_busqueda = c.prospecto_empresa if c.prospecto_empresa else c.prospecto_nombre
+    cli = Cliente.objects.filter(nombre_empresa__iexact=nombre_busqueda).first()
+
+    if not cli:
+        # Crear Cliente Nuevo
+        cli = Cliente.objects.create(
+            nombre_empresa=nombre_busqueda,
+            nombre_contacto=c.prospecto_nombre,
+            email=c.prospecto_email,
+            telefono=c.prospecto_telefono,
+            datos_extra={'direccion': c.prospecto_direccion, 'cargo': c.prospecto_cargo}
+        )
+        # Asignar permisos si no es admin
+        if request.user.rol != 'admin':
+            request.user.clientes_asignados.add(cli)
+        
+        # El Signal en models.py YA CREÓ las carpetas (LICENCIA, FUNCIONAMIENTO, Cotizaciones),
+        # así que no necesitamos crearlas manualmente aquí.
+
+    # 3. Buscar la Carpeta "Cotizaciones" en la Base de Datos
+    # Usamos get_or_create por seguridad, por si el signal falló o es un cliente viejo
+    carpeta_db, _ = Carpeta.objects.get_or_create(
+        nombre="Cotizaciones",
+        cliente=cli,
+        defaults={'es_expediente': False}
+    )
+
+    # 4. Generar el PDF en memoria
+    html_string = render_to_string('cotizaciones/pdf_template.html', {'c': c})
+    html = weasyprint.HTML(string=html_string, base_url=request.build_absolute_uri())
+    pdf_content = html.write_pdf()
+
+    # 5. PREPARAR RUTA FÍSICA (OneDrive)
+    # Limpiamos el nombre para que no tenga caracteres raros
+    nombre_cliente_safe = slugify(cli.nombre_empresa).replace("-", "_").upper()
+    nombre_archivo = f"Cotizacion_{c.id}_{slugify(c.titulo or 'v1')}.pdf"
+
+    # Ruta relativa para la BD: expedientes/CLIENTE/Cotizaciones/archivo.pdf
+    ruta_relativa = os.path.join('expedientes', nombre_cliente_safe, 'Cotizaciones', nombre_archivo)
+    
+    # Ruta absoluta para guardar el archivo: C:/Users/.../media/expedientes/...
+    ruta_absoluta = os.path.join(settings.MEDIA_ROOT, ruta_relativa)
+
+    # Crear directorios físicos si no existen
+    os.makedirs(os.path.dirname(ruta_absoluta), exist_ok=True)
+
+    # 6. GUARDAR EL ARCHIVO FÍSICO
+    with open(ruta_absoluta, 'wb') as f:
+        f.write(pdf_content)
+
+    # 7. CREAR EL REGISTRO EN LA BASE DE DATOS (Para que aparezca en la App)
+    # Verificamos si ya existe para no duplicarlo
+    if not Archivo.objects.filter(carpeta=carpeta_db, nombre=nombre_archivo).exists():
+        Archivo.objects.create(
+            nombre=f"Cotización #{c.id} - {c.titulo or ''}",
+            carpeta=carpeta_db,
+            archivo=ruta_relativa, # Aquí le decimos a Django dónde está el archivo
+            subido_por=request.user
+        )
+
+    # 8. Finanzas
+    CuentaPorCobrar.objects.create(
+        cliente=cli,
+        cotizacion=c,
+        concepto=f"Cotización #{c.id}",
+        monto_total=c.total,
+        saldo_pendiente=c.total,
+        fecha_vencimiento=c.validez_hasta or timezone.now().date()
+    )
+
+    # 9. Actualizar Cotización
+    c.estado = 'aceptada'
+    c.cliente_convertido = cli
+    c.save()
+
+    messages.success(request, "Proceso completado. El PDF se ha guardado en la carpeta 'Cotizaciones'.")
+    return redirect('detalle_cliente', cliente_id=cli.id)
+
 # FUNCIÓN DE CORREO ACTUALIZADA (RESEND + NOMBRE INTELIGENTE)
 # ----------------------------------------------------
 @login_required
