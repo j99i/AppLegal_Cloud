@@ -1,5 +1,6 @@
 import os
 import json
+import uuid
 import zipfile
 from io import BytesIO
 from datetime import timedelta
@@ -716,7 +717,10 @@ def lista_cotizaciones(request):
 @login_required
 def nueva_cotizacion(request):
     if request.method == 'POST':
-        # Captura de datos del cliente
+        # 1. Captura del Título del Proyecto (Nuevo)
+        titulo = request.POST.get('titulo')
+        
+        # 2. Datos del Cliente
         prospecto_empresa = request.POST.get('prospecto_empresa')
         prospecto_nombre = request.POST.get('prospecto_nombre')
         prospecto_email = request.POST.get('prospecto_email')
@@ -725,15 +729,21 @@ def nueva_cotizacion(request):
         prospecto_cargo = request.POST.get('prospecto_cargo')
         validez = request.POST.get('validez_hasta')
         
-        # Captura del porcentaje de descuento
+        # 3. Lógica del Título Automático (si el usuario no escribió nada)
+        if not titulo:
+            cliente_ref = prospecto_empresa if prospecto_empresa else prospecto_nombre
+            titulo = f"Cotización para {cliente_ref} - {uuid.uuid4().hex[:4].upper()}"
+
+        # 4. Captura del Porcentaje (Decimal)
         porcentaje_str = request.POST.get('porcentaje_descuento', '0')
         try:
             porcentaje_descuento = Decimal(porcentaje_str)
         except:
             porcentaje_descuento = Decimal('0.00')
 
-        # 1. Crear la cabecera de la Cotización
+        # 5. Crear el objeto Cotización
         cotizacion = Cotizacion.objects.create(
+            titulo=titulo,
             prospecto_empresa=prospecto_empresa,
             prospecto_nombre=prospecto_nombre,
             prospecto_email=prospecto_email,
@@ -745,7 +755,7 @@ def nueva_cotizacion(request):
             creado_por=request.user
         )
 
-        # 2. Procesar los servicios seleccionados
+        # 6. Procesar los Servicios (Items)
         servicios_ids = request.POST.getlist('servicios_seleccionados')
         cantidades = request.POST.getlist('cantidades')
         precios = request.POST.getlist('precios_personalizados')
@@ -761,25 +771,25 @@ def nueva_cotizacion(request):
                 except:
                     precio_u = Decimal('0.00')
                 
-                # Crear el Item (el subtotal del item se puede calcular en el save del item o aquí)
+                # Creamos el ítem (el subtotal se calcula solo en el modelo)
                 ItemCotizacion.objects.create(
                     cotizacion=cotizacion,
                     servicio=servicio,
                     cantidad=cantidad,
                     precio_unitario=precio_u,
-                    subtotal=cantidad * precio_u,
                     descripcion_personalizada=desc
                 )
         
-        # 3. Recalcular totales finales una vez creados todos los ítems
+        # 7. Forzar cálculo final y guardar
         cotizacion.calcular_totales()
 
-        messages.success(request, 'Cotización generada correctamente.')
+        messages.success(request, 'Cotización creada exitosamente.')
         return redirect('detalle_cotizacion', cotizacion_id=cotizacion.id)
 
-    # Si es GET, mostrar servicios activos
+    # GET: Mostrar formulario
     servicios = Servicio.objects.all()
     return render(request, 'cotizaciones/crear.html', {'servicios': servicios})
+
 @login_required
 def detalle_cotizacion(request, cotizacion_id):
     c = get_object_or_404(Cotizacion, id=cotizacion_id)
@@ -1148,3 +1158,24 @@ def generador_qr(request):
         'color_fill': color_fill,
         'color_back': color_back
     })
+@login_required
+def buscar_cliente_api(request):
+    query = request.GET.get('q', '')
+    if len(query) < 2:
+        return JsonResponse([], safe=False)
+    
+    # Buscamos en cotizaciones anteriores empresas que se parezcan
+    # Usamos 'distinct' para no traer repetidos
+    resultados = Cotizacion.objects.filter(
+        Q(prospecto_empresa__icontains=query) | 
+        Q(prospecto_nombre__icontains=query)
+    ).values(
+        'prospecto_empresa', 
+        'prospecto_nombre', 
+        'prospecto_email', 
+        'prospecto_telefono',
+        'prospecto_direccion',
+        'prospecto_cargo'
+    ).distinct()[:5] # Limitamos a 5 sugerencias
+
+    return JsonResponse(list(resultados), safe=False)

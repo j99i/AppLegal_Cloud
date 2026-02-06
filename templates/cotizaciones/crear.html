@@ -7,15 +7,24 @@
     <form method="POST" id="form-cotizacion" class="space-y-8">
         {% csrf_token %}
 
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-            <div>
-                <h2 class="text-3xl font-black text-[#2D1B4B]">Nueva Cotización</h2>
-                <p class="text-gray-400 text-sm">Gestione los honorarios y servicios para el cliente.</p>
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
+            <div class="w-full md:w-2/3">
+                <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Nombre del Proyecto / Cotización</label>
+                <div class="relative group">
+                    <i class="fas fa-pen absolute left-0 top-3 text-gray-300 group-hover:text-[#A855F7] transition-colors"></i>
+                    <input type="text" name="titulo" 
+                           class="w-full bg-transparent border-b-2 border-gray-200 text-2xl md:text-3xl font-black text-[#2D1B4B] placeholder-gray-300 focus:border-[#A855F7] focus:outline-none py-2 pl-8 transition-all"
+                           placeholder="Ej. Licencia 2026 - Coca Cola" autofocus>
+                </div>
+                <p class="text-gray-400 text-xs mt-2">Este nombre aparecerá en el listado principal para fácil identificación.</p>
             </div>
-            <div class="flex gap-3">
-                <a href="{% url 'lista_cotizaciones' %}" class="px-6 py-3 bg-gray-100 text-gray-500 rounded-xl font-bold hover:bg-gray-200 transition-colors">Cancelar</a>
+
+            <div class="flex gap-3 w-full md:w-auto justify-end">
+                <a href="{% url 'lista_cotizaciones' %}" class="px-6 py-3 bg-gray-100 text-gray-500 rounded-xl font-bold hover:bg-gray-200 transition-colors">
+                    Cancelar
+                </a>
                 <button type="submit" class="px-8 py-3 bg-[#A855F7] text-white rounded-xl font-bold hover:bg-[#9333EA] shadow-lg transition-transform hover:scale-105 flex items-center gap-2">
-                    <i class="fas fa-check-circle"></i> GENERAR COTIZACIÓN
+                    <i class="fas fa-save"></i> GUARDAR
                 </button>
             </div>
         </div>
@@ -28,29 +37,54 @@
                     <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-[#2D1B4B] to-[#A855F7]"></div>
                     
                     <h3 class="text-lg font-bold text-[#2D1B4B] mb-6 flex items-center gap-2">
-                        <i class="fas fa-user-tie text-[#A855F7]"></i> Datos del Prospecto
+                        <i class="fas fa-user-tie text-[#A855F7]"></i> Datos del Cliente
                     </h3>
                     
                     <div class="space-y-4">
-                        <div>
+                        
+                        <div class="relative">
                             <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Empresa / Razón Social</label>
-                            <input type="text" name="prospecto_empresa" class="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-[#A855F7] outline-none font-bold text-[#2D1B4B]" placeholder="Nombre de la empresa">
+                            <input type="text" id="input-empresa" name="prospecto_empresa" autocomplete="off"
+                                   class="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-[#A855F7] focus:ring-2 focus:ring-purple-50 outline-none font-bold text-[#2D1B4B] transition-all placeholder-gray-400" 
+                                   placeholder="Buscar o escribir nueva...">
+                            
+                            <ul id="lista-sugerencias" class="hidden absolute z-50 w-full bg-white border border-gray-100 rounded-xl shadow-2xl mt-1 max-h-60 overflow-y-auto animate__animated animate__fadeIn">
+                                </ul>
                         </div>
 
                         <div>
                             <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Nombre del Contacto *</label>
-                            <input type="text" name="prospecto_nombre" required class="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-[#A855F7] outline-none font-bold text-[#2D1B4B]" placeholder="Nombre del cliente">
+                            <input type="text" name="prospecto_nombre" required class="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-[#A855F7] outline-none font-bold text-[#2D1B4B]" placeholder="Nombre del contacto">
                         </div>
 
                         <div>
                             <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Cargo / Puesto</label>
-                            <input type="text" name="prospecto_cargo" class="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-[#A855F7] outline-none text-gray-600" placeholder="Ej. Director General">
+                            <input type="text" name="prospecto_cargo" class="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-[#A855F7] outline-none text-gray-600" placeholder="Ej. Representante Legal">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Email</label>
+                                <input type="email" name="prospecto_email" class="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-[#A855F7] outline-none text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Teléfono</label>
+                                <input type="text" name="prospecto_telefono" class="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-[#A855F7] outline-none text-sm">
+                            </div>
                         </div>
 
                         <div>
                             <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Dirección Fiscal</label>
-                            <textarea name="prospecto_direccion" rows="3" class="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-[#A855F7] outline-none text-sm resize-none" placeholder="Calle, Número, Colonia..."></textarea>
+                            <textarea name="prospecto_direccion" rows="3" class="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-[#A855F7] outline-none text-sm resize-none" placeholder="Calle, Número, C.P..."></textarea>
                         </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100">
+                     <h3 class="text-sm font-bold text-[#2D1B4B] mb-4">Opciones</h3>
+                     <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Vigencia de la oferta</label>
+                        <input type="date" name="validez_hasta" class="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 text-sm font-bold text-[#2D1B4B]">
                     </div>
                 </div>
             </div>
@@ -60,17 +94,17 @@
                 <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 min-h-[500px] flex flex-col">
                     <div class="flex justify-between items-center mb-6">
                         <h3 class="text-lg font-bold text-[#2D1B4B] flex items-center gap-2">
-                            <i class="fas fa-briefcase text-[#A855F7]"></i> Servicios a Cotizar
+                            <i class="fas fa-list-ul text-[#A855F7]"></i> Conceptos a Cotizar
                         </h3>
-                        <button type="button" onclick="agregarServicio()" class="px-4 py-2 bg-[#2D1B4B] text-white rounded-xl text-xs font-bold hover:bg-[#3E2C5E] transition-all">
-                            + AÑADIR CONCEPTO
+                        <button type="button" onclick="agregarServicio()" class="px-4 py-2 bg-[#2D1B4B] text-white rounded-xl text-xs font-bold hover:bg-[#3E2C5E] transition-all shadow-md transform hover:-translate-y-0.5">
+                            + AGREGAR SERVICIO
                         </button>
                     </div>
 
                     <div id="contenedor-items" class="space-y-4 flex-1">
                         <div class="text-center text-gray-300 py-10" id="empty-state">
-                            <i class="fas fa-folder-open text-4xl mb-2"></i>
-                            <p>No hay servicios agregados aún.</p>
+                            <i class="fas fa-calculator text-4xl mb-2"></i>
+                            <p>Agregue servicios para comenzar el cálculo.</p>
                         </div>
                     </div>
 
@@ -86,7 +120,7 @@
                                 <span class="text-xs font-bold text-[#A855F7] uppercase">Descuento (%):</span>
                                 <div class="relative w-28">
                                     <input type="number" name="porcentaje_descuento" id="input-porcentaje" value="0" step="0.1" min="0" max="100" 
-                                           class="w-full p-2 pr-8 text-right bg-white border border-[#A855F7] rounded-xl text-sm font-black text-[#A855F7] focus:ring-2 focus:ring-purple-200 outline-none" 
+                                           class="w-full p-2 pr-8 text-right bg-white border border-[#A855F7] rounded-xl text-sm font-black text-[#A855F7] focus:ring-2 focus:ring-purple-200 outline-none shadow-sm" 
                                            oninput="calcularTotales()">
                                     <span class="absolute right-3 top-2 text-[#A855F7] font-bold">%</span>
                                 </div>
@@ -96,7 +130,7 @@
                                 <span class="text-sm font-black text-[#2D1B4B] uppercase">TOTAL ESTIMADO:</span>
                                 <span class="text-3xl font-black text-[#2D1B4B]" id="lbl-total">$0.00</span>
                             </div>
-                            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">* Precios sujetos a I.V.A.</p>
+                            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">* Precios más I.V.A.</p>
                         </div>
                     </div>
                 </div>
@@ -107,31 +141,31 @@
 </div>
 
 <template id="template-item">
-    <div class="item-fila bg-white p-5 rounded-2xl border border-gray-100 shadow-sm relative animate__animated animate__fadeInUp">
-        <button type="button" onclick="eliminarItem(this)" class="absolute -top-2 -right-2 w-8 h-8 bg-red-50 text-red-500 rounded-full hover:bg-red-500 hover:text-white transition-all shadow-sm">
+    <div class="item-fila bg-white p-5 rounded-2xl border border-gray-100 shadow-sm relative animate__animated animate__fadeInUp transition-all hover:shadow-md">
+        <button type="button" onclick="eliminarItem(this)" class="absolute -top-2 -right-2 w-8 h-8 bg-red-50 text-red-500 rounded-full hover:bg-red-500 hover:text-white transition-all shadow-sm flex items-center justify-center">
             <i class="fas fa-times"></i>
         </button>
 
         <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
             <div class="md:col-span-6">
                 <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Servicio / Trámite</label>
-                <select name="servicios_seleccionados" class="w-full p-2.5 bg-gray-50 rounded-xl border border-gray-100 text-sm font-bold text-[#2D1B4B] outline-none select-servicio" onchange="cargarDatosServicio(this)">
+                <select name="servicios_seleccionados" class="w-full p-2.5 bg-gray-50 rounded-xl border border-gray-100 text-sm font-bold text-[#2D1B4B] outline-none select-servicio focus:ring-2 focus:ring-purple-50" onchange="cargarDatosServicio(this)">
                     <option value="">-- Seleccionar --</option>
                     {% for s in servicios %}
                     <option value="{{ s.id }}" data-precio="{{ s.precio_base }}" data-desc="{{ s.descripcion }}">{{ s.nombre }}</option>
                     {% endfor %}
                 </select>
-                <textarea name="descripciones_personalizadas" rows="2" class="w-full mt-2 p-2 bg-gray-50 rounded-xl border-none text-xs text-gray-500 txt-desc" placeholder="Detalles adicionales..."></textarea>
+                <textarea name="descripciones_personalizadas" rows="2" class="w-full mt-2 p-2 bg-gray-50 rounded-xl border-none text-xs text-gray-500 txt-desc resize-none focus:ring-2 focus:ring-purple-50" placeholder="Descripción personalizada..."></textarea>
             </div>
 
             <div class="md:col-span-2">
                 <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Cant.</label>
-                <input type="number" name="cantidades" value="1" min="1" class="w-full p-2.5 bg-gray-50 rounded-xl border-none text-sm font-black text-center input-cant" oninput="calcularFila(this)">
+                <input type="number" name="cantidades" value="1" min="1" class="w-full p-2.5 bg-gray-50 rounded-xl border-none text-sm font-black text-center input-cant focus:ring-2 focus:ring-purple-50" oninput="calcularFila(this)">
             </div>
 
             <div class="md:col-span-2">
                 <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Precio Unit.</label>
-                <input type="number" name="precios_personalizados" step="0.01" class="w-full p-2.5 bg-gray-50 rounded-xl border-none text-sm font-black text-right input-precio" oninput="calcularFila(this)">
+                <input type="number" name="precios_personalizados" step="0.01" class="w-full p-2.5 bg-gray-50 rounded-xl border-none text-sm font-black text-right input-precio focus:ring-2 focus:ring-purple-50" oninput="calcularFila(this)">
             </div>
 
             <div class="md:col-span-2 text-right pt-6">
@@ -143,6 +177,7 @@
 </template>
 
 <script>
+    // --- FUNCIONES DE CÁLCULO Y FILAS ---
     function agregarServicio() {
         const emptyState = document.getElementById('empty-state');
         if (emptyState) emptyState.classList.add('hidden');
@@ -206,14 +241,82 @@
         let totalFinal = subtotalGeneral - montoDescuento;
         if(totalFinal < 0) totalFinal = 0;
 
-        // 5. Actualizar interfaz
+        // 5. Actualizar etiquetas
         document.getElementById('lbl-subtotal').textContent = '$' + subtotalGeneral.toLocaleString('es-MX', {minimumFractionDigits: 2});
         document.getElementById('lbl-total').textContent = '$' + totalFinal.toLocaleString('es-MX', {minimumFractionDigits: 2});
     }
 
-    // Inicializar con una fila vacía para mejor UX
     window.onload = function() {
         agregarServicio();
     };
+
+
+    // --- BUSCADOR INTELIGENTE (AUTOCOMPLETADO) ---
+    const inputEmpresa = document.getElementById('input-empresa');
+    const listaSugerencias = document.getElementById('lista-sugerencias');
+
+    inputEmpresa.addEventListener('input', async function() {
+        const query = this.value;
+        
+        if (query.length < 2) {
+            listaSugerencias.classList.add('hidden');
+            return;
+        }
+
+        try {
+            // Asegúrate de tener la ruta en urls.py: path('api/buscar-cliente/', ...)
+            const response = await fetch(`/api/buscar-cliente/?q=${query}`);
+            const datos = await response.json();
+
+            listaSugerencias.innerHTML = '';
+
+            if (datos.length > 0) {
+                listaSugerencias.classList.remove('hidden');
+                
+                datos.forEach(cliente => {
+                    const li = document.createElement('li');
+                    li.className = "p-3 hover:bg-purple-50 cursor-pointer border-b border-gray-50 last:border-0 transition-colors flex items-center gap-3";
+                    
+                    li.innerHTML = `
+                        <div class="bg-purple-100 text-[#A855F7] w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0">
+                            <i class="fas fa-history"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-gray-700 leading-tight">${cliente.prospecto_empresa || 'Sin Empresa'}</p>
+                            <p class="text-xs text-gray-400">${cliente.prospecto_nombre}</p>
+                        </div>
+                    `;
+
+                    // Al hacer clic, rellenar los datos
+                    li.onclick = () => {
+                        inputEmpresa.value = cliente.prospecto_empresa;
+                        document.querySelector('[name="prospecto_nombre"]').value = cliente.prospecto_nombre || '';
+                        document.querySelector('[name="prospecto_email"]').value = cliente.prospecto_email || '';
+                        document.querySelector('[name="prospecto_telefono"]').value = cliente.prospecto_telefono || '';
+                        document.querySelector('[name="prospecto_cargo"]').value = cliente.prospecto_cargo || '';
+                        document.querySelector('[name="prospecto_direccion"]').value = cliente.prospecto_direccion || '';
+                        
+                        listaSugerencias.classList.add('hidden');
+                        
+                        // Efecto visual
+                        inputEmpresa.classList.add('bg-purple-100');
+                        setTimeout(() => inputEmpresa.classList.remove('bg-purple-100'), 400);
+                    };
+
+                    listaSugerencias.appendChild(li);
+                });
+            } else {
+                listaSugerencias.classList.add('hidden');
+            }
+        } catch (error) {
+            console.error('Error buscando clientes:', error);
+        }
+    });
+
+    document.addEventListener('click', function(e) {
+        if (!inputEmpresa.contains(e.target) && !listaSugerencias.contains(e.target)) {
+            listaSugerencias.classList.add('hidden');
+        }
+    });
 </script>
 {% endblock %}

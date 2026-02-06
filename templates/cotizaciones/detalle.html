@@ -5,13 +5,21 @@
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
             <div class="flex items-center gap-3">
-                <h2 class="text-3xl font-black text-[#2D1B4B]">Cotización #{{ c.id|stringformat:"04d" }}</h2>
+                <h2 class="text-3xl font-black text-[#2D1B4B]">
+                    {{ c.titulo }}
+                </h2>
+                
                 <span class="px-3 py-1 rounded-full text-xs font-bold uppercase 
-                    {% if c.estado == 'borrador' %}bg-gray-200 text-gray-600{% elif c.estado == 'aceptada' %}bg-green-100 text-green-700{% else %}bg-blue-100 text-blue-700{% endif %}">
+                    {% if c.estado == 'borrador' %}bg-gray-200 text-gray-600
+                    {% elif c.estado == 'aceptada' %}bg-green-100 text-green-700
+                    {% else %}bg-blue-100 text-blue-700{% endif %}">
                     {{ c.get_estado_display }}
                 </span>
             </div>
-            <p class="text-gray-500 font-bold mt-1">{{ c.prospecto_nombre }} <span class="text-gray-300">|</span> {{ c.prospecto_empresa }}</p>
+            
+            <p class="text-gray-500 font-bold mt-1 text-sm">
+                {{ c.prospecto_nombre }} <span class="text-gray-300">|</span> {{ c.prospecto_empresa }}
+            </p>
         </div>
         
         <div class="flex gap-2">
@@ -33,11 +41,20 @@
             
             <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex justify-between items-center">
                 <div>
-                    <p class="text-xs font-bold text-gray-400 uppercase">Total Estimado</p>
+                    <p class="text-xs font-bold text-gray-400 uppercase">Monto Final</p>
                     <p class="text-3xl font-black text-[#2D1B4B]">${{ c.total|floatformat:2 }}</p>
+                    
+                    {% if c.porcentaje_descuento > 0 %}
+                        <div class="flex items-center gap-2 mt-1">
+                            <span class="bg-purple-100 text-[#A855F7] text-[10px] font-bold px-2 py-0.5 rounded">
+                                -{{ c.porcentaje_descuento }}% DCTO
+                            </span>
+                            <span class="text-xs text-gray-400 line-through">${{ c.subtotal|floatformat:2 }}</span>
+                        </div>
+                    {% endif %}
                 </div>
-                <a href="{% url 'pdf_cotizacion' c.id %}" target="_blank" class="bg-red-50 text-red-500 px-5 py-3 rounded-xl font-bold text-xs hover:bg-red-100 transition-colors border border-red-100">
-                    <i class="fas fa-file-pdf mr-2"></i> VER PDF OFICIAL
+                <a href="{% url 'pdf_cotizacion' c.id %}" target="_blank" class="bg-red-50 text-red-500 px-5 py-3 rounded-xl font-bold text-xs hover:bg-red-100 transition-colors border border-red-100 shadow-sm hover:shadow-md">
+                    <i class="fas fa-file-pdf mr-2"></i> VER PDF
                 </a>
             </div>
 
@@ -45,21 +62,23 @@
                 <h3 class="font-bold text-[#2D1B4B] mb-4">Detalle de Servicios</h3>
                 <table class="w-full text-left border-collapse">
                     <thead>
-                        <tr class="text-xs text-gray-400 border-b">
+                        <tr class="text-xs text-gray-400 border-b border-gray-100">
                             <th class="py-2 font-black uppercase">Servicio</th>
                             <th class="py-2 font-black uppercase text-center">Cant.</th>
-                            <th class="py-2 font-black uppercase text-right">Total</th>
+                            <th class="py-2 font-black uppercase text-right">Importe</th>
                         </tr>
                     </thead>
                     <tbody class="text-sm">
                         {% for item in c.items.all %}
-                        <tr class="border-b border-gray-50 last:border-0">
-                            <td class="py-4">
+                        <tr class="border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors">
+                            <td class="py-4 pr-4">
                                 <p class="font-bold text-[#2D1B4B]">{{ item.servicio.nombre }}</p>
-                                <p class="text-xs text-gray-500">{{ item.descripcion_personalizada }}</p>
+                                <p class="text-xs text-gray-500 mt-1 leading-relaxed">
+                                    {{ item.descripcion_personalizada|default:item.servicio.descripcion }}
+                                </p>
                             </td>
                             <td class="py-4 text-center font-bold text-gray-600">{{ item.cantidad }}</td>
-                            <td class="py-4 text-right font-bold text-[#2D1B4B]">${{ item.total|floatformat:2 }}</td>
+                            <td class="py-4 text-right font-bold text-[#2D1B4B]">${{ item.subtotal|floatformat:2 }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -69,7 +88,7 @@
 
         <div class="space-y-6">
             
-            <div class="bg-gradient-to-br from-[#25D366]/10 to-green-50 p-6 rounded-[2rem] border border-[#25D366]/20 relative overflow-hidden">
+            <div class="bg-gradient-to-br from-[#25D366]/10 to-green-50 p-6 rounded-[2rem] border border-[#25D366]/20 relative overflow-hidden transition-all hover:shadow-md">
                 <div class="absolute top-0 right-0 p-4 opacity-10">
                     <i class="fab fa-whatsapp text-6xl text-green-700"></i>
                 </div>
@@ -77,29 +96,35 @@
                 <h3 class="font-black text-green-800 flex items-center gap-2 mb-2 relative z-10">
                     <i class="fab fa-whatsapp text-2xl"></i> Enviar Cotización
                 </h3>
-                <p class="text-xs text-green-700 mb-4 relative z-10">Si la app está en la nube se envía el LINK. En local se descarga el archivo.</p>
+                <p class="text-xs text-green-700 mb-4 relative z-10 font-medium">Comparte el enlace o archivo directamente.</p>
 
-                <label class="text-[10px] font-bold text-green-800 uppercase relative z-10">Plantilla de Mensaje</label>
-                <select id="ws-template" class="w-full p-2 rounded-lg border-0 bg-white/80 mb-3 text-sm font-bold text-gray-600 relative z-10 shadow-sm outline-none">
-                    <option value="default">Mensaje Formal Estándar</option>
-                    <option value="casual">Mensaje Rápido / Casual</option>
+                <label class="text-[10px] font-bold text-green-800 uppercase relative z-10">Mensaje</label>
+                <select id="ws-template" class="w-full p-2 rounded-lg border-0 bg-white/80 mb-3 text-sm font-bold text-gray-600 relative z-10 shadow-sm outline-none focus:ring-2 focus:ring-green-200">
+                    <option value="default">Formal ("Le comparto...")</option>
+                    <option value="casual">Casual ("Aquí tienes...")</option>
                 </select>
 
-                <button onclick="procesarEnvioWhatsApp()" class="w-full bg-[#25D366] text-white font-bold py-3 rounded-xl shadow-lg hover:bg-[#20bd5a] transition-all relative z-10 flex justify-center items-center gap-2">
-                    <span>ENVIAR WHATSAPP</span> <i class="fas fa-external-link-alt"></i>
+                <button onclick="procesarEnvioWhatsApp()" class="w-full bg-[#25D366] text-white font-bold py-3 rounded-xl shadow-lg hover:bg-[#20bd5a] transition-all relative z-10 flex justify-center items-center gap-2 transform active:scale-95">
+                    <span>ENVIAR AHORA</span> <i class="fas fa-paper-plane"></i>
                 </button>
             </div>
 
-            <div class="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm">
+            <div class="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm transition-all hover:shadow-md">
                 <h3 class="font-black text-[#2D1B4B] flex items-center gap-2 mb-4">
-                    <i class="fas fa-envelope text-xl text-[#A855F7]"></i> Enviar por Correo
+                    <i class="fas fa-envelope text-xl text-[#A855F7]"></i> Correo Electrónico
                 </h3>
                 <form action="{% url 'enviar_cotizacion_email' c.id %}" method="POST" class="space-y-3">
                     {% csrf_token %}
-                    <input type="text" name="asunto" placeholder="Asunto del Correo" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-sm border border-gray-200 focus:border-[#A855F7] outline-none" value="Propuesta de Servicios Legales - AppLegal" required>
-                    <textarea name="mensaje" rows="4" class="w-full p-3 bg-gray-50 rounded-xl text-sm font-medium border border-gray-200 focus:border-[#A855F7] outline-none" placeholder="Escribe el mensaje...">Estimado/a {{ c.prospecto_nombre }},&#10;&#10;Adjunto a este correo encontrará la cotización detallada de los servicios solicitados.&#10;&#10;Quedo atento a cualquier duda.</textarea>
-                    <button type="submit" class="w-full bg-[#2D1B4B] text-white font-bold py-3 rounded-xl shadow-lg hover:bg-[#A855F7] transition-all">
-                        ENVIAR PDF ADJUNTO
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-400 uppercase">Asunto</label>
+                        <input type="text" name="asunto" class="w-full p-2.5 bg-gray-50 rounded-xl font-bold text-sm border border-gray-200 focus:border-[#A855F7] outline-none text-gray-700" value="Propuesta: {{ c.titulo }}" required>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-400 uppercase">Mensaje</label>
+                        <textarea name="mensaje" rows="4" class="w-full p-3 bg-gray-50 rounded-xl text-xs font-medium border border-gray-200 focus:border-[#A855F7] outline-none resize-none" placeholder="Escribe el mensaje...">Estimado/a {{ c.prospecto_nombre }},&#10;&#10;Adjunto encontrará la propuesta solicitada: {{ c.titulo }}.&#10;&#10;Quedo a la espera de sus comentarios.</textarea>
+                    </div>
+                    <button type="submit" class="w-full bg-[#2D1B4B] text-white font-bold py-3 rounded-xl shadow-lg hover:bg-[#A855F7] transition-all transform active:scale-95">
+                        ENVIAR CORREO
                     </button>
                 </form>
             </div>
@@ -110,51 +135,41 @@
 
 <script>
     function procesarEnvioWhatsApp() {
-        // Datos
+        // Datos limpios
         const telefono = "{{ c.prospecto_telefono }}".replace(/[^0-9]/g, '');
         const nombre = "{{ c.prospecto_nombre }}";
         const total = "{{ c.total|floatformat:2 }}";
-        const folio = "{{ c.id|stringformat:'04d' }}";
+        const titulo = "{{ c.titulo }}"; 
         
-        // Detectamos si estamos en producción o en local
         const esProduccion = window.location.hostname !== '127.0.0.1' && window.location.hostname !== 'localhost';
-        
-        // Generamos la URL del PDF (usando el dominio actual)
         const urlPdf = window.location.origin + "{% url 'pdf_cotizacion' c.id %}";
 
         const tipo = document.getElementById('ws-template').value;
         let mensaje = "";
 
         if (esProduccion) {
-            // ESTRATEGIA A: Enviar LINK (Rápido y Automático)
+            // ENLACE (Nube)
             if (tipo === 'default') {
-                mensaje = `👋 Hola *${nombre}*, te comparto la cotización *#${folio}* por un valor de *$${total}*.\n\n` +
-                          `📄 *Puedes verla aquí:* ${urlPdf}\n\n` +
-                          `Quedo atento.`;
+                mensaje = `👋 Hola *${nombre}*, te comparto la propuesta de *${titulo}* ($${total}).\n\n📄 *Ver documento:* ${urlPdf}`;
             } else {
-                mensaje = `Hola *${nombre}*, aquí tienes la cotización: ${urlPdf} ($${total}).`;
+                mensaje = `Hola *${nombre}*, aquí te dejo la cotización de *${titulo}*: ${urlPdf}`;
             }
-            
-            // Abrimos WhatsApp Directamente
-            const url = `https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`;
-            window.open(url, '_blank');
+            window.open(`https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`, '_blank');
 
         } else {
-            // ESTRATEGIA B: Descargar Archivo (Solo Localhost)
-            alert("⚠️ Al estar en modo local, descargaremos el PDF para que lo adjuntes manualmente.");
-            
-            mensaje = `Hola *${nombre}*, te adjunto la cotización *#${folio}*.`;
+            // DESCARGA (Local)
+            alert("⚠️ Modo Local: Descargando PDF para envío manual.");
             
             const linkDescarga = document.createElement('a');
             linkDescarga.href = "{% url 'pdf_cotizacion' c.id %}";
-            linkDescarga.download = `Cotizacion_${folio}.pdf`;
+            linkDescarga.download = `Cotizacion_${titulo.replace(/ /g,"_")}.pdf`;
             document.body.appendChild(linkDescarga);
             linkDescarga.click();
             document.body.removeChild(linkDescarga);
 
+            mensaje = `Hola *${nombre}*, te adjunto el archivo PDF de la cotización: *${titulo}*.`;
             setTimeout(() => {
-                const url = `https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`;
-                window.open(url, '_blank');
+                window.open(`https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`, '_blank');
             }, 1000);
         }
     }

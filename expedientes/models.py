@@ -209,7 +209,7 @@ class Cotizacion(models.Model):
     )
 
     folio = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
-    
+    titulo = models.CharField(max_length=255, verbose_name="Título del Proyecto", blank=True, null=True, help_text="Ej. Renovación de Licencias 2026")
     # Datos del Cliente
     prospecto_empresa = models.CharField(max_length=200, blank=True, null=True, verbose_name="Empresa")
     prospecto_nombre = models.CharField(max_length=200, verbose_name="Nombre del Contacto")

@@ -93,6 +93,7 @@ urlpatterns = [
     path('herramientas/qr/', views.generador_qr, name='generador_qr'),
     # En la sección de DRIVE
     path('archivo/mover/<int:archivo_id>/', views.mover_archivo_drive, name='mover_archivo_drive'),
+    path('api/buscar-cliente/', views.buscar_cliente_api, name='buscar_cliente_api'),
     # MEDIA PARCHE
     re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
 ]
