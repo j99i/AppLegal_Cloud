@@ -17,9 +17,15 @@
                 
                 {% if not carpeta_actual %}
                     {% if user.can_edit_client or user.rol == 'admin' %}
-                    <a href="{% url 'editar_cliente' cliente.id %}" class="inline-flex items-center gap-1 text-[10px] font-bold text-[#A855F7] hover:underline mt-1 bg-purple-50 px-2 py-1 rounded-md">
-                        <i class="fas fa-pen"></i> Editar Información
-                    </a>
+                    <div class="flex flex-wrap items-center mt-2">
+                        <a href="{% url 'editar_cliente' cliente.id %}" class="inline-flex items-center gap-1 text-[10px] font-bold text-[#A855F7] hover:underline bg-purple-50 px-2 py-1 rounded-md mr-2">
+                            <i class="fas fa-pen"></i> Editar Información
+                        </a>
+
+                        <a href="{% url 'enviar_recordatorio' cliente.id %}" onclick="return confirm('¿Estás seguro de enviar el correo de recordatorio al cliente? Se le notificará sobre los documentos marcados en ROJO.')" class="inline-flex items-center gap-1 text-[10px] font-bold text-white hover:bg-orange-600 bg-orange-500 px-3 py-1 rounded-md shadow-md transition-colors">
+                            <i class="fas fa-bell"></i> Recordar Faltantes
+                        </a>
+                    </div>
                     {% endif %}
                 {% endif %}
             </div>
@@ -80,17 +86,69 @@
         </div>
 
         <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 min-h-[500px]">
+            
             {% if carpetas %}
-            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                 {% for carpeta in carpetas %}
-                <div class="group relative">
-                    <a href="{% url 'detalle_carpeta' cliente.id carpeta.id %}" class="block bg-purple-50 p-4 rounded-xl text-center hover:bg-purple-100 transition-all">
-                        <i class="fas fa-folder text-4xl text-purple-300 group-hover:text-purple-500 mb-2"></i>
-                        <p class="text-xs font-bold text-[#2D1B4B] truncate">{{ carpeta.nombre }}</p>
-                    </a>
-                    {% if user.can_delete_client or user.rol == 'admin' %}
-                    <a href="{% url 'eliminar_carpeta' carpeta.id %}" onclick="return confirm('¿Borrar?')" class="absolute top-1 right-1 text-red-300 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100"><i class="fas fa-times-circle"></i></a>
+                <div class="bg-gray-50 rounded-xl p-4 border border-gray-200 shadow-sm relative transition-all hover:shadow-md">
+                    
+                    <div class="flex items-center justify-between mb-4 pb-2 border-b border-gray-200">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-folder text-2xl text-[#2D1B4B]"></i>
+                            <a href="{% url 'detalle_carpeta' cliente.id carpeta.id %}" class="font-black text-[#2D1B4B] uppercase text-sm hover:underline">{{ carpeta.nombre }}</a>
+                        </div>
+                        {% if user.can_delete_client or user.rol == 'admin' %}
+                        <a href="{% url 'eliminar_carpeta' carpeta.id %}" onclick="return confirm('¿Borrar carpeta?')" class="text-gray-300 hover:text-red-500"><i class="fas fa-times"></i></a>
+                        {% endif %}
+                    </div>
+
+                    {% with detalle=carpeta.obtener_detalle_cumplimiento %}
+                    {% if detalle %}
+                        <div class="space-y-2 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
+                            {% for item in detalle %}
+                            <div class="flex justify-between items-center bg-white p-2 rounded-lg border 
+                                        {% if item.estado == 'ok' %}border-green-200 bg-green-50{% else %}border-red-100 bg-red-50{% endif %}">
+                                
+                                <div class="flex items-center gap-2 overflow-hidden">
+                                    {% if item.estado == 'ok' %}
+                                        <div class="w-5 h-5 rounded-full bg-green-500 text-white flex items-center justify-center text-[10px] shrink-0 shadow-sm">
+                                            <i class="fas fa-check"></i>
+                                        </div>
+                                    {% else %}
+                                        <div class="w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center text-[10px] shrink-0 shadow-sm animate-pulse">
+                                            <i class="fas fa-times"></i>
+                                        </div>
+                                    {% endif %}
+                                    <span class="text-[10px] font-bold text-gray-600 leading-tight truncate" title="{{ item.nombre }}">
+                                        {{ item.nombre }}
+                                    </span>
+                                </div>
+
+                                <div class="shrink-0 flex gap-1">
+                                    {% if item.estado == 'ok' %}
+                                        <button onclick="abrirPreview('{{ item.doc.id }}')" class="w-6 h-6 rounded bg-white text-gray-500 border border-gray-200 hover:text-[#A855F7] flex items-center justify-center transition-colors">
+                                            <i class="fas fa-eye text-[10px]"></i>
+                                        </button>
+                                        <a href="{% url 'eliminar_archivo_drive' item.doc.id %}" onclick="return confirm('¿Eliminar documento? Volverá a estado ROJO.')" class="w-6 h-6 rounded bg-white text-red-300 border border-gray-200 hover:text-red-500 flex items-center justify-center transition-colors">
+                                            <i class="fas fa-trash text-[10px]"></i>
+                                        </a>
+                                    {% else %}
+                                        <button onclick="abrirModalRequisito('{{ carpeta.id }}', '{{ item.nombre }}')" class="px-2 py-1 bg-[#2D1B4B] text-white text-[9px] font-bold rounded hover:bg-[#A855F7] transition-colors shadow-sm">
+                                            SUBIR
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-6 text-gray-400 text-xs">
+                            <i class="fas fa-folder-open text-3xl mb-2 opacity-30"></i>
+                            <p>Carpeta general</p>
+                            <a href="{% url 'detalle_carpeta' cliente.id carpeta.id %}" class="text-[#A855F7] hover:underline mt-2 inline-block font-bold">Ver contenido</a>
+                        </div>
                     {% endif %}
+                    {% endwith %}
                 </div>
                 {% endfor %}
             </div>
@@ -100,6 +158,7 @@
                 {% csrf_token %}
                 <input type="hidden" name="accion" id="input-accion">
                 {% if documentos %}
+                <h3 class="text-sm font-bold text-gray-400 uppercase mb-4 mt-8 border-b pb-2">Archivos Sueltos / Otros</h3>
                 <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="text-xs text-gray-400 border-b border-gray-100">
@@ -137,7 +196,6 @@
 
     <div id="rec-content" class="hidden animate__animated animate__fadeIn">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-            
             <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
                 <div class="flex justify-between items-center mb-6">
                     <h3 class="text-lg font-bold text-[#2D1B4B]"><i class="fas fa-tasks mr-2 text-orange-500"></i> Tareas Pendientes</h3>
@@ -162,7 +220,6 @@
                     {% endfor %}
                 </div>
             </div>
-
             <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
                 <h3 class="text-lg font-bold text-[#2D1B4B] mb-6"><i class="fas fa-calendar-alt mr-2 text-blue-500"></i> Eventos Próximos</h3>
                 <div class="space-y-3">
@@ -182,7 +239,6 @@
                     {% endfor %}
                 </div>
             </div>
-
         </div>
     </div>
 
@@ -228,20 +284,49 @@
 
 <div id="modal-tarea" class="fixed inset-0 bg-[#2D1B4B]/90 hidden items-center justify-center z-50"><div class="bg-white p-8 rounded-[2rem] w-full max-w-sm m-4 shadow-2xl"><button onclick="document.getElementById('modal-tarea').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400"><i class="fas fa-times"></i></button><h3 class="text-xl font-black text-[#2D1B4B] mb-4">Nueva Tarea</h3><form action="{% url 'gestionar_tarea' cliente.id %}" method="POST">{% csrf_token %}<input type="text" name="titulo" class="w-full p-3 bg-gray-50 rounded-xl font-bold border-none mb-4" placeholder="Título de la tarea" required><input type="date" name="fecha_limite" class="w-full p-3 bg-gray-50 rounded-xl font-bold border-none mb-4" required><select name="prioridad" class="w-full p-3 bg-gray-50 rounded-xl font-bold border-none mb-4"><option value="alta">Alta Prioridad</option><option value="media" selected>Media</option><option value="baja">Baja</option></select><button type="submit" class="w-full bg-[#2D1B4B] text-white py-3 rounded-xl font-bold hover:bg-[#A855F7] transition-colors">GUARDAR</button></form></div></div>
 
+<div id="modal-requisito" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 animate__animated animate__fadeIn">
+    <div class="bg-white p-8 rounded-[2rem] w-full max-w-sm m-4 shadow-2xl relative">
+        <button onclick="cerrarModalRequisito()" class="absolute top-6 right-6 text-gray-400 hover:text-red-500 transition-colors"><i class="fas fa-times text-xl"></i></button>
+        
+        <h3 class="text-lg font-black text-[#2D1B4B] mb-2">Subir Documento Requerido</h3>
+        <p id="lbl-requisito" class="text-sm font-bold text-[#A855F7] mb-6 uppercase border-b pb-2"></p>
+        
+        <form id="form-requisito" method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="hidden" name="nombre_requisito" id="input-req-nombre">
+            
+            <label class="block mb-6 cursor-pointer">
+                <span class="text-xs font-bold text-gray-400 mb-2 block">Selecciona el archivo:</span>
+                <input type="file" name="archivo" required
+                    class="block w-full text-sm text-gray-500
+                    file:mr-4 file:py-3 file:px-4
+                    file:rounded-xl file:border-0
+                    file:text-xs file:font-bold
+                    file:bg-purple-50 file:text-[#A855F7]
+                    hover:file:bg-purple-100 transition-all
+                "/>
+            </label>
+
+            <button type="submit" class="w-full bg-[#2D1B4B] text-white py-3 rounded-xl font-bold hover:bg-green-500 transition-colors flex items-center justify-center gap-2 shadow-lg">
+                <i class="fas fa-cloud-upload-alt"></i> CARGAR Y VALIDAR
+            </button>
+        </form>
+    </div>
+</div>
+
 <script>
     function switchTab(id) {
         ['drive', 'rec', 'history'].forEach(t => {
             document.getElementById(t + '-content').classList.add('hidden');
-            // Quitamos clases de color
             document.getElementById(t + '-tab').classList.remove('border-[#A855F7]', 'text-[#2D1B4B]');
             document.getElementById(t + '-tab').classList.add('text-gray-400', 'border-transparent');
         });
         document.getElementById(id + '-content').classList.remove('hidden');
-        // Agregamos clases de color NUEVAS
         document.getElementById(id + '-tab').classList.add('border-[#A855F7]', 'text-[#2D1B4B]');
         document.getElementById(id + '-tab').classList.remove('text-gray-400', 'border-transparent');
     }
-    // Funciones Masivas y Preview (Mantener las previas)
+
+    // Funciones Masivas y Preview
     function toggleTodos(s) { document.querySelectorAll('.doc-check').forEach(c => c.checked = s.checked); verificarSeleccion(); }
     function verificarSeleccion() { 
         const c = document.querySelectorAll('.doc-check:checked').length; 
@@ -251,6 +336,7 @@
     }
     function ejecutarMasivo(a) { if(a==='eliminar' && !confirm('¿Seguro?'))return; document.getElementById('input-accion').value=a; document.getElementById('form-masivo').submit(); }
     function cerrarMasivo() { document.querySelectorAll('.doc-check').forEach(c => c.checked=false); verificarSeleccion(); }
+    
     function abrirPreview(id) {
         const m=document.getElementById('modal-preview'), b=document.getElementById('preview-body');
         m.classList.remove('hidden'); m.classList.add('flex');
@@ -267,5 +353,27 @@
     function cerrarPreview() { document.getElementById('modal-preview').classList.add('hidden'); }
     function modalCrearCarpeta() { document.getElementById('modal-carpeta').classList.remove('hidden'); document.getElementById('modal-carpeta').classList.add('flex'); }
     function modalSubirArchivo() { document.getElementById('modal-archivo').classList.remove('hidden'); document.getElementById('modal-archivo').classList.add('flex'); }
+
+    // --- LÓGICA DE REQUISITOS (CORREGIDA) ---
+    function abrirModalRequisito(carpetaId, nombreRequisito) {
+        const modal = document.getElementById('modal-requisito');
+        const form = document.getElementById('form-requisito');
+        const label = document.getElementById('lbl-requisito');
+        const input = document.getElementById('input-req-nombre');
+
+        // URL corregida: Sin prefijos extraños
+        form.action = `/drive/subir-requisito/${carpetaId}/`;
+        
+        label.innerText = nombreRequisito;
+        input.value = nombreRequisito;
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    function cerrarModalRequisito() {
+        document.getElementById('modal-requisito').classList.add('hidden');
+        document.getElementById('modal-requisito').classList.remove('flex');
+    }
 </script>
 {% endblock %}

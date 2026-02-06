@@ -41,6 +41,7 @@ urlpatterns = [
     path('expediente/crear/<uuid:cliente_id>/', views.crear_expediente, name='crear_expediente'),
     path('archivo/subir/<uuid:cliente_id>/', views.subir_archivo_drive, name='subir_archivo_drive'),
     path('archivo/eliminar/<int:archivo_id>/', views.eliminar_archivo_drive, name='eliminar_archivo_drive'),
+    path('drive/subir-requisito/<int:carpeta_id>/', views.subir_archivo_requisito, name='subir_archivo_requisito'),
     path('drive/zip/<int:carpeta_id>/', views.descargar_carpeta_zip, name='descargar_carpeta_zip'),
     path('drive/acciones-masivas/', views.acciones_masivas_drive, name='acciones_masivas_drive'),
     path('drive/preview/<int:documento_id>/', views.preview_archivo, name='preview_archivo'),
@@ -55,6 +56,7 @@ urlpatterns = [
     path('contratos/generar/<uuid:cliente_id>/', views.generador_contratos, name='generador_contratos'),
     path('contratos/visor/<int:documento_id>/', views.visor_docx, name='visor_docx'),
     path('plantillas/subir/', views.subir_plantilla, name='subir_plantilla'),
+    path('plantillas/eliminar/<int:plantilla_id>/', views.eliminar_plantilla, name='eliminar_plantilla'),
     
     # HERRAMIENTAS Y API
     path('herramientas/disenador/', views.diseñador_plantillas, name='diseñador_plantillas'),
@@ -72,22 +74,22 @@ urlpatterns = [
     path('cotizaciones/<int:cotizacion_id>/pdf/', views.generar_pdf_cotizacion, name='pdf_cotizacion'),
     path('cotizaciones/<int:cotizacion_id>/convertir/', views.convertir_a_cliente, name='convertir_cliente'),
     path('cotizaciones/<int:cotizacion_id>/enviar-email/', views.enviar_cotizacion_email, name='enviar_cotizacion_email'),
+    path('cotizaciones/eliminar/<int:cotizacion_id>/', views.eliminar_cotizacion, name='eliminar_cotizacion'),
 
     # FINANZAS
     path('finanzas/', views.panel_finanzas, name='panel_finanzas'),
     path('finanzas/pagar/', views.registrar_pago, name='registrar_pago'),
     path('finanzas/recibo/<int:pago_id>/', views.recibo_pago_pdf, name='recibo_pago_pdf'),
-
+    
     # AGENDA
     path('agenda/', views.agenda_legal, name='agenda_legal'),
     path('agenda/api/', views.api_eventos, name='api_eventos'),
     path('agenda/crear/', views.crear_evento, name='crear_evento'),
     path('agenda/eliminar/<int:evento_id>/', views.eliminar_evento, name='eliminar_evento'),
     path('agenda/mover/', views.mover_evento_api, name='mover_evento_api'),
-    path('plantillas/eliminar/<int:plantilla_id>/', views.eliminar_plantilla, name='eliminar_plantilla'),
-# En expedientes/urls.py
-
-    path('cotizaciones/eliminar/<int:cotizacion_id>/', views.eliminar_cotizacion, name='eliminar_cotizacion'), 
+    # PARCHE DE EMERGENCIA: Acepta la ruta vieja por si el navegador tiene caché
+    path('expedientes/drive/subir-requisito/<int:carpeta_id>/', views.subir_archivo_requisito),
+    path('cliente/<uuid:cliente_id>/enviar-recordatorio/', views.enviar_recordatorio_documentacion, name='enviar_recordatorio'),
     # MEDIA PARCHE
     re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
 ]

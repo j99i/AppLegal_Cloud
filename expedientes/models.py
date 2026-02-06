@@ -4,7 +4,8 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.core.validators import FileExtensionValidator
 from django.utils import timezone
-
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 # ==========================================
 # 1. USUARIOS
 # ==========================================
@@ -77,6 +78,58 @@ class Carpeta(models.Model):
     padre = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='subcarpetas')
     es_expediente = models.BooleanField(default=False)
     creada_el = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.nombre} - {self.cliente.nombre_empresa}"
+
+    def obtener_detalle_cumplimiento(self):
+        """
+        Devuelve una lista de diccionarios con el estado de cada requisito 
+        específico para las carpetas especiales.
+        """
+        requisitos = {
+            'LICENCIA': [
+                'CONSTANCIA DE SITUACIÓN FISCAL', 'ACTA CONSTITUTIVA', 'PODER NOTARIAL',
+                'INE DEL REPRESENTANTE LEGAL', 'CONTRATO DE ARRENDAMIENTO', 
+                'LICENCIA DE USO DE SUELO', 'VISTO BUENO Y PAGO DE DERECHOS 2025'
+            ],
+            'PROTECCIÓN CIVIL': [
+                'CONSTANCIA DE SITUACIÓN FISCAL', 'ACTA CONSTITUTIVA', 'PODER NOTARIAL',
+                'INE DEL REPRESENTANTE LEGAL', 'CONTRATO DE ARRENDAMIENTO', 
+                'LICENCIA DE USO DE SUELO', 'RESPONSIVA Y DICTAMEN DE EXTINTORES',
+                'RESPONSIVA DE ALERTAMIENTO SISMICO', 'DICTAMEN DE INSTALACIONES ELÉCTRICAS',
+                'DICTAMEN ESTRUCTURAL', 'DICTAMEN DE GAS', 'DICTAMEN DE PROTECCIÓN CIVIL 2025'
+            ],
+            'FUNCIONAMIENTO': [
+                'CONSTANCIA DE SITUACIÓN FISCAL', 'ACTA CONSTITUTIVA', 'PODER NOTARIAL',
+                'INE DEL REPRESENTANTE LEGAL', 'CONTRATO DE ARRENDAMIENTO', 
+                'LICENCIA DE USO DE SUELO', 'RECIBO DE PAGO PREDIAL Y AGUA',
+                'AVISO DE FUNCIONAMIENTO (COFEPRIS)', 'DICTAMEN DE GIRO', 
+                'IMPACTO ESTATAL', 'VISTO BUENO EN MEDIO AMBIENTE', 
+                'DICTAMEN DE PROTECCIÓN CIVIL', 'LICENCIA DE FUNCIONAMIENTO 2025'
+            ]
+        }
+
+        nombre_key = self.nombre.upper()
+        
+        # Si la carpeta no está en la lista de requisitos, retornamos None
+        if nombre_key not in requisitos:
+            return None
+
+        lista_req = requisitos[nombre_key]
+        detalle = []
+        
+        for req in lista_req:
+            # Buscamos si existe un documento que empiece con este nombre exacto
+            # Usamos filter().first() para evitar errores si hay duplicados
+            doc = self.documentos.filter(nombre_archivo__iexact=req).first()
+            
+            if doc:
+                detalle.append({'nombre': req, 'estado': 'ok', 'doc': doc})
+            else:
+                detalle.append({'nombre': req, 'estado': 'missing', 'doc': None})
+                
+        return detalle
 
 class Expediente(models.Model):
     ESTADOS = (('abierto', 'Abierto'), ('pausado', 'En Pausa'), ('finalizado', 'Finalizado'))
@@ -236,3 +289,15 @@ class Evento(models.Model):
     def color_hex(self):
         colores = {'audiencia': '#ef4444', 'vencimiento': '#f59e0b', 'reunion': '#3b82f6', 'tramite': '#10b981', 'personal': '#6b7280'}
         return colores.get(self.tipo, '#3b82f6')
+
+# Signal para crear carpetas base automáticamente al crear un cliente
+@receiver(post_save, sender=Cliente)
+def crear_carpetas_base(sender, instance, created, **kwargs):
+    if created:
+        carpetas_nombres = ['LICENCIA', 'FUNCIONAMIENTO', 'PROTECCIÓN CIVIL']
+        for nombre in carpetas_nombres:
+            Carpeta.objects.create(
+                nombre=nombre,
+                cliente=instance,
+                es_expediente=False
+            )

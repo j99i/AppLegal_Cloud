@@ -19,12 +19,18 @@ from django.core.mail import EmailMultiAlternatives
 from django.conf import settings 
 # Importante para serializar los servicios en la nueva cotización
 from django.core.serializers import serialize 
-
+from .models import Cliente
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib import messages
+from .models import Carpeta, Documento, Cliente
 # Librerías para Documentos
 from docxtpl import DocxTemplate
 import mammoth
 from docx import Document as DocumentoWord 
 import weasyprint 
+from django.core.mail import send_mail
+
+
 
 # Importación de Modelos
 from .models import (
@@ -947,3 +953,97 @@ def eliminar_plantilla(request, plantilla_id):
     
     # Intentar volver a la página anterior
     return redirect(request.META.get('HTTP_REFERER', 'dashboard'))
+def subir_archivo_requisito(request, carpeta_id):
+    if request.method == 'POST':
+        carpeta = get_object_or_404(Carpeta, id=carpeta_id)
+        archivo = request.FILES.get('archivo')
+        nombre_requisito = request.POST.get('nombre_requisito') # Aquí recibimos "ACTA CONSTITUTIVA", etc.
+
+        if archivo and nombre_requisito:
+            # 1. Borrar si ya existía uno anterior con ese nombre (para reemplazar)
+            Documento.objects.filter(carpeta=carpeta, nombre_archivo=nombre_requisito).delete()
+
+            # 2. Crear el nuevo documento renombrado
+            nuevo_doc = Documento(
+                cliente=carpeta.cliente,
+                carpeta=carpeta,
+                archivo=archivo,
+                nombre_archivo=nombre_requisito, # ¡Aquí ocurre la magia del renombrado!
+                subido_por=request.user
+            )
+            nuevo_doc.save()
+            messages.success(request, f'Se cargó correctamente: {nombre_requisito}')
+        else:
+            messages.error(request, 'Error al subir el archivo.')
+            
+        return redirect('detalle_cliente', cliente_id=carpeta.cliente.id)
+    return redirect('dashboard')
+def enviar_recordatorio_documentacion(request, cliente_id):
+    cliente = get_object_or_404(Cliente, id=cliente_id)
+    
+    # 1. Escaneamos qué falta (Solo lo que está en Rojo)
+    faltantes_por_carpeta = {}
+    total_faltantes = 0
+    
+    for carpeta in cliente.carpetas_drive.all():
+        detalle = carpeta.obtener_detalle_cumplimiento()
+        if detalle:
+            # Filtramos solo los que tienen estado 'missing'
+            items_rojos = [item['nombre'] for item in detalle if item['estado'] == 'missing']
+            if items_rojos:
+                faltantes_por_carpeta[carpeta.nombre] = items_rojos
+                total_faltantes += len(items_rojos)
+    
+    # 2. Si no falta nada, avisamos y no enviamos correo
+    if total_faltantes == 0:
+        messages.success(request, "¡Este cliente ya tiene toda su documentación completa! No es necesario enviar recordatorios.")
+        return redirect('detalle_cliente', cliente_id=cliente.id)
+
+    # 3. Redacción del Correo Formal
+    asunto = f"Pendientes de Documentación - {cliente.nombre_empresa} - AppLegal"
+    
+    mensaje = f"""
+Estimado(a) {cliente.nombre_contacto},
+
+Esperamos que este correo le encuentre bien.
+
+Le escribimos para darle seguimiento a su expediente de regularización. Para poder avanzar con los trámites ante las autoridades correspondientes, hemos detectado que aún tenemos algunos documentos pendientes de recibir.
+
+A continuación, le compartimos el listado de los requisitos faltantes organizados por carpeta:
+------------------------------------------------------------
+"""
+
+    for nombre_carpeta, documentos in faltantes_por_carpeta.items():
+        mensaje += f"\n📂 {nombre_carpeta}:\n"
+        for doc in documentos:
+            mensaje += f"   [ ] {doc}\n"
+
+    mensaje += f"""
+------------------------------------------------------------
+
+Le agradeceríamos mucho si pudiera compartirnos estos archivos a la brevedad posible, ya sea subiéndolos directamente a la plataforma o respondiendo a este correo.
+
+Si tiene alguna duda sobre algún requisito en específico, quedamos totalmente a sus órdenes para apoyarle.
+
+Atentamente,
+
+Gestiones Cordpad
+"""
+
+    # 4. Envío del Correo
+    try:
+        if cliente.email:
+            send_mail(
+                asunto,
+                mensaje,
+                settings.DEFAULT_FROM_EMAIL, # Asegúrate de tener esto configurado en settings.py
+                [cliente.email],
+                fail_silently=False,
+            )
+            messages.success(request, f"✅ Se envió el recordatorio a {cliente.email} con {total_faltantes} documentos faltantes.")
+        else:
+            messages.warning(request, "⚠️ El cliente no tiene un correo electrónico registrado.")
+    except Exception as e:
+        messages.error(request, f"❌ Error al enviar el correo: {str(e)}")
+
+    return redirect('detalle_cliente', cliente_id=cliente.id)
