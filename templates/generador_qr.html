@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto animate__animated animate__fadeIn">
+
+    <div class="mb-8 flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl bg-[#2D1B4B] flex items-center justify-center text-white text-xl shadow-lg">
+            <i class="fas fa-qrcode"></i>
+        </div>
+        <div>
+            <h2 class="text-3xl font-black text-[#2D1B4B]">Generador de QR</h2>
+            <p class="text-gray-400 text-sm">Crea códigos QR personalizados para tus clientes o documentos.</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <div class="lg:col-span-1">
+            <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100 h-full">
+                <form method="POST" action="{% url 'generador_qr' %}">
+                    {% csrf_token %}
+                    
+                    <div class="mb-6">
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Contenido o Enlace</label>
+                        <textarea name="data" rows="4" class="w-full p-4 bg-gray-50 rounded-xl border border-gray-200 focus:border-[#A855F7] focus:ring-2 focus:ring-purple-100 outline-none text-[#2D1B4B] font-medium resize-none transition-all" placeholder="Ej. https://applegal.com/documento/123" required>{{ data_input }}</textarea>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 mb-8">
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Color del QR</label>
+                            <div class="flex items-center gap-2 bg-gray-50 p-2 rounded-xl border border-gray-200">
+                                <input type="color" name="color_fill" value="{{ color_fill }}" class="w-8 h-8 rounded-lg cursor-pointer border-none bg-transparent">
+                                <span class="text-xs font-bold text-gray-500">Puntos</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Fondo</label>
+                            <div class="flex items-center gap-2 bg-gray-50 p-2 rounded-xl border border-gray-200">
+                                <input type="color" name="color_back" value="{{ color_back }}" class="w-8 h-8 rounded-lg cursor-pointer border-none bg-transparent">
+                                <span class="text-xs font-bold text-gray-500">Fondo</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full bg-[#2D1B4B] hover:bg-[#A855F7] text-white py-4 rounded-xl font-bold shadow-lg transition-all transform hover:scale-[1.02] flex items-center justify-center gap-2">
+                        <i class="fas fa-magic"></i> GENERAR CÓDIGO
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="lg:col-span-2">
+            <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100 h-full flex flex-col items-center justify-center relative overflow-hidden">
+                
+                {% if qr_url %}
+                    <div class="bg-white p-4 rounded-2xl shadow-xl border border-gray-100 mb-8 animate__animated animate__zoomIn">
+                        <img src="{{ qr_url }}" alt="Código QR Generado" class="w-64 h-64 object-contain rounded-lg">
+                    </div>
+
+                    <div class="flex gap-4">
+                        <a href="{{ qr_url }}" download="codigo_qr_applegal.png" class="bg-green-500 hover:bg-green-600 text-white px-8 py-3 rounded-xl font-bold shadow-md transition-colors flex items-center gap-2">
+                            <i class="fas fa-download"></i> DESCARGAR PNG
+                        </a>
+                        <button onclick="window.print()" class="bg-gray-100 hover:bg-gray-200 text-[#2D1B4B] px-6 py-3 rounded-xl font-bold transition-colors">
+                            <i class="fas fa-print"></i>
+                        </button>
+                    </div>
+
+                    <p class="mt-8 text-xs text-gray-400 text-center max-w-md">
+                        Este código QR redirige a: <br> 
+                        <span class="text-[#A855F7] font-bold">{{ data_input|truncatechars:50 }}</span>
+                    </p>
+                {% else %}
+                    <div class="text-center opacity-30">
+                        <i class="fas fa-qrcode text-9xl text-gray-300 mb-4 block"></i>
+                        <p class="text-xl font-bold text-[#2D1B4B]">Listo para crear</p>
+                        <p class="text-sm text-gray-400">Ingresa un enlace a la izquierda para ver la magia.</p>
+                    </div>
+                {% endif %}
+
+                <div class="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-purple-50 rounded-full blur-3xl -z-10"></div>
+                <div class="absolute bottom-0 left-0 -mb-10 -ml-10 w-40 h-40 bg-blue-50 rounded-full blur-3xl -z-10"></div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

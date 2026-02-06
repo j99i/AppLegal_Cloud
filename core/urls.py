@@ -90,6 +90,9 @@ urlpatterns = [
     # PARCHE DE EMERGENCIA: Acepta la ruta vieja por si el navegador tiene caché
     path('expedientes/drive/subir-requisito/<int:carpeta_id>/', views.subir_archivo_requisito),
     path('cliente/<uuid:cliente_id>/enviar-recordatorio/', views.enviar_recordatorio_documentacion, name='enviar_recordatorio'),
+    path('herramientas/qr/', views.generador_qr, name='generador_qr'),
+    # En la sección de DRIVE
+    path('archivo/mover/<int:archivo_id>/', views.mover_archivo_drive, name='mover_archivo_drive'),
     # MEDIA PARCHE
     re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
 ]

@@ -21,7 +21,6 @@
                         <a href="{% url 'editar_cliente' cliente.id %}" class="inline-flex items-center gap-1 text-[10px] font-bold text-[#A855F7] hover:underline bg-purple-50 px-2 py-1 rounded-md mr-2">
                             <i class="fas fa-pen"></i> Editar Información
                         </a>
-
                         <a href="{% url 'enviar_recordatorio' cliente.id %}" onclick="return confirm('¿Estás seguro de enviar el correo de recordatorio al cliente? Se le notificará sobre los documentos marcados en ROJO.')" class="inline-flex items-center gap-1 text-[10px] font-bold text-white hover:bg-orange-600 bg-orange-500 px-3 py-1 rounded-md shadow-md transition-colors">
                             <i class="fas fa-bell"></i> Recordar Faltantes
                         </a>
@@ -111,31 +110,22 @@
                                 
                                 <div class="flex items-center gap-2 overflow-hidden">
                                     {% if item.estado == 'ok' %}
-                                        <div class="w-5 h-5 rounded-full bg-green-500 text-white flex items-center justify-center text-[10px] shrink-0 shadow-sm">
-                                            <i class="fas fa-check"></i>
-                                        </div>
+                                        <div class="w-5 h-5 rounded-full bg-green-500 text-white flex items-center justify-center text-[10px] shrink-0 shadow-sm"><i class="fas fa-check"></i></div>
                                     {% else %}
-                                        <div class="w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center text-[10px] shrink-0 shadow-sm animate-pulse">
-                                            <i class="fas fa-times"></i>
-                                        </div>
+                                        <div class="w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center text-[10px] shrink-0 shadow-sm animate-pulse"><i class="fas fa-times"></i></div>
                                     {% endif %}
-                                    <span class="text-[10px] font-bold text-gray-600 leading-tight truncate" title="{{ item.nombre }}">
-                                        {{ item.nombre }}
-                                    </span>
+                                    <span class="text-[10px] font-bold text-gray-600 leading-tight truncate" title="{{ item.nombre }}">{{ item.nombre }}</span>
                                 </div>
 
                                 <div class="shrink-0 flex gap-1">
                                     {% if item.estado == 'ok' %}
-                                        <button onclick="abrirPreview('{{ item.doc.id }}')" class="w-6 h-6 rounded bg-white text-gray-500 border border-gray-200 hover:text-[#A855F7] flex items-center justify-center transition-colors">
-                                            <i class="fas fa-eye text-[10px]"></i>
-                                        </button>
-                                        <a href="{% url 'eliminar_archivo_drive' item.doc.id %}" onclick="return confirm('¿Eliminar documento? Volverá a estado ROJO.')" class="w-6 h-6 rounded bg-white text-red-300 border border-gray-200 hover:text-red-500 flex items-center justify-center transition-colors">
-                                            <i class="fas fa-trash text-[10px]"></i>
-                                        </a>
+                                        <button onclick="abrirPreview('{{ item.doc.id }}')" class="w-6 h-6 rounded bg-white text-gray-500 border border-gray-200 hover:text-[#A855F7] flex items-center justify-center transition-colors"><i class="fas fa-eye text-[10px]"></i></button>
+                                        
+                                        <button onclick="abrirModalMover('{{ item.doc.id }}', '{{ item.doc.nombre_archivo }}')" class="w-6 h-6 rounded bg-white text-blue-400 border border-gray-200 hover:text-blue-600 flex items-center justify-center transition-colors"><i class="fas fa-exchange-alt text-[10px]"></i></button>
+                                        
+                                        <a href="{% url 'eliminar_archivo_drive' item.doc.id %}" onclick="return confirm('¿Eliminar documento? Volverá a estado ROJO.')" class="w-6 h-6 rounded bg-white text-red-300 border border-gray-200 hover:text-red-500 flex items-center justify-center transition-colors"><i class="fas fa-trash text-[10px]"></i></a>
                                     {% else %}
-                                        <button onclick="abrirModalRequisito('{{ carpeta.id }}', '{{ item.nombre }}')" class="px-2 py-1 bg-[#2D1B4B] text-white text-[9px] font-bold rounded hover:bg-[#A855F7] transition-colors shadow-sm">
-                                            SUBIR
-                                        </button>
+                                        <button onclick="abrirModalRequisito('{{ carpeta.id }}', '{{ item.nombre }}')" class="px-2 py-1 bg-[#2D1B4B] text-white text-[9px] font-bold rounded hover:bg-[#A855F7] transition-colors shadow-sm">SUBIR</button>
                                     {% endif %}
                                 </div>
                             </div>
@@ -180,6 +170,10 @@
                             <td class="py-3 text-right">
                                 <button type="button" onclick="abrirPreview('{{ doc.id }}')" class="text-gray-400 hover:text-[#A855F7] mx-1"><i class="fas fa-eye"></i></button>
                                 <a href="{{ doc.archivo.url }}" download class="text-gray-400 hover:text-[#2D1B4B] mx-1"><i class="fas fa-download"></i></a>
+                                <button type="button" onclick="abrirModalMover('{{ doc.id }}', '{{ doc.nombre_archivo }}')" class="text-blue-400 hover:text-blue-600 mx-1"><i class="fas fa-exchange-alt"></i></button>
+                                {% if user.can_delete_client or user.rol == 'admin' %}
+                                <a href="{% url 'eliminar_archivo_drive' doc.id %}" onclick="return confirm('¿Estás seguro de eliminar este archivo?')" class="text-red-300 hover:text-red-500 mx-1"><i class="fas fa-trash"></i></a>
+                                {% endif %}
                             </td>
                         </tr>
                         {% endfor %}
@@ -255,14 +249,12 @@
                         <td class="py-3"><span class="bg-gray-100 px-2 py-1 rounded text-[10px] font-bold">{{ b.accion|upper }}</span></td>
                         <td class="py-3 text-gray-600 text-xs">{{ b.descripcion }}</td>
                     </tr>
-                    {% empty %}
-                    <tr><td colspan="4" class="text-center text-gray-400 py-4">Sin registros.</td></tr>
-                    {% endfor %}
+                    {% empty %}<tr><td colspan="4" class="text-center text-gray-400 py-4">Sin registros.</td></tr>{% endfor %}
                 </tbody>
             </table>
         </div>
     </div>
-
+    
     <div id="barra-masiva" class="hidden fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-[#2D1B4B] text-white px-6 py-3 rounded-full shadow-2xl items-center gap-6 z-40">
         <span class="font-bold text-sm"><span id="conteo-sel">0</span> seleccionados</span>
         <div class="flex gap-2">
@@ -273,42 +265,38 @@
         </div>
         <button onclick="cerrarMasivo()" class="text-gray-400 hover:text-white"><i class="fas fa-times"></i></button>
     </div>
-
 </div>
 
 <div id="modal-preview" class="fixed inset-0 bg-black/90 hidden items-center justify-center z-50"><div class="bg-white w-full max-w-5xl h-[85vh] rounded-xl overflow-hidden relative flex flex-col shadow-2xl"><div class="bg-[#2D1B4B] p-4 flex justify-between items-center shrink-0"><h3 id="preview-title" class="text-white font-bold truncate">Vista Previa</h3><div class="flex gap-4"><a id="preview-download" href="#" download class="text-white hover:text-[#A855F7]"><i class="fas fa-download"></i></a><button onclick="cerrarPreview()" class="text-white hover:text-red-500"><i class="fas fa-times text-xl"></i></button></div></div><div id="preview-body" class="flex-1 bg-gray-100 overflow-auto flex items-center justify-center p-4"></div></div></div>
-
 <div id="modal-carpeta" class="fixed inset-0 bg-[#2D1B4B]/90 hidden items-center justify-center z-50"><div class="bg-white p-8 rounded-[2rem] w-full max-w-sm m-4 shadow-2xl"><button onclick="document.getElementById('modal-carpeta').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400"><i class="fas fa-times"></i></button><h3 class="text-xl font-black text-[#2D1B4B] mb-4">Nueva Carpeta</h3><form action="{% url 'crear_carpeta' cliente.id %}" method="POST">{% csrf_token %}{% if carpeta_actual %}<input type="hidden" name="padre_id" value="{{ carpeta_actual.id }}">{% endif %}<input type="text" name="nombre" class="w-full p-3 bg-gray-50 rounded-xl font-bold border-none mb-4" placeholder="Nombre..." required><button type="submit" class="w-full bg-[#2D1B4B] text-white py-3 rounded-xl font-bold hover:bg-[#A855F7] transition-colors">CREAR</button></form></div></div>
-
 <div id="modal-archivo" class="fixed inset-0 bg-[#2D1B4B]/90 hidden items-center justify-center z-50"><div class="bg-white p-8 rounded-[2rem] w-full max-w-sm m-4 shadow-2xl"><button onclick="document.getElementById('modal-archivo').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400"><i class="fas fa-times"></i></button><h3 class="text-xl font-black text-[#2D1B4B] mb-4">Subir Archivos</h3><form action="{% url 'subir_archivo_drive' cliente.id %}" method="POST" enctype="multipart/form-data">{% csrf_token %}{% if carpeta_actual %}<input type="hidden" name="carpeta_id" value="{{ carpeta_actual.id }}">{% endif %}<input type="file" name="archivo" multiple class="w-full p-3 bg-gray-50 rounded-xl mb-4"><button type="submit" class="w-full bg-[#2D1B4B] text-white py-3 rounded-xl font-bold hover:bg-[#A855F7] transition-colors">SUBIR</button></form></div></div>
-
 <div id="modal-tarea" class="fixed inset-0 bg-[#2D1B4B]/90 hidden items-center justify-center z-50"><div class="bg-white p-8 rounded-[2rem] w-full max-w-sm m-4 shadow-2xl"><button onclick="document.getElementById('modal-tarea').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400"><i class="fas fa-times"></i></button><h3 class="text-xl font-black text-[#2D1B4B] mb-4">Nueva Tarea</h3><form action="{% url 'gestionar_tarea' cliente.id %}" method="POST">{% csrf_token %}<input type="text" name="titulo" class="w-full p-3 bg-gray-50 rounded-xl font-bold border-none mb-4" placeholder="Título de la tarea" required><input type="date" name="fecha_limite" class="w-full p-3 bg-gray-50 rounded-xl font-bold border-none mb-4" required><select name="prioridad" class="w-full p-3 bg-gray-50 rounded-xl font-bold border-none mb-4"><option value="alta">Alta Prioridad</option><option value="media" selected>Media</option><option value="baja">Baja</option></select><button type="submit" class="w-full bg-[#2D1B4B] text-white py-3 rounded-xl font-bold hover:bg-[#A855F7] transition-colors">GUARDAR</button></form></div></div>
+<div id="modal-requisito" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 animate__animated animate__fadeIn"><div class="bg-white p-8 rounded-[2rem] w-full max-w-sm m-4 shadow-2xl relative"><button onclick="cerrarModalRequisito()" class="absolute top-6 right-6 text-gray-400 hover:text-red-500 transition-colors"><i class="fas fa-times text-xl"></i></button><h3 class="text-lg font-black text-[#2D1B4B] mb-2">Subir Documento Requerido</h3><p id="lbl-requisito" class="text-sm font-bold text-[#A855F7] mb-6 uppercase border-b pb-2"></p><form id="form-requisito" method="POST" enctype="multipart/form-data">{% csrf_token %}<input type="hidden" name="nombre_requisito" id="input-req-nombre"><label class="block mb-6 cursor-pointer"><span class="text-xs font-bold text-gray-400 mb-2 block">Selecciona el archivo:</span><input type="file" name="archivo" required class="block w-full text-sm text-gray-500 file:mr-4 file:py-3 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-purple-50 file:text-[#A855F7] hover:file:bg-purple-100 transition-all"/></label><button type="submit" class="w-full bg-[#2D1B4B] text-white py-3 rounded-xl font-bold hover:bg-green-500 transition-colors flex items-center justify-center gap-2 shadow-lg"><i class="fas fa-cloud-upload-alt"></i> CARGAR Y VALIDAR</button></form></div></div>
 
-<div id="modal-requisito" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 animate__animated animate__fadeIn">
+<div id="modal-mover" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 animate__animated animate__fadeIn">
     <div class="bg-white p-8 rounded-[2rem] w-full max-w-sm m-4 shadow-2xl relative">
-        <button onclick="cerrarModalRequisito()" class="absolute top-6 right-6 text-gray-400 hover:text-red-500 transition-colors"><i class="fas fa-times text-xl"></i></button>
+        <button onclick="document.getElementById('modal-mover').classList.add('hidden'); document.getElementById('modal-mover').classList.remove('flex');" class="absolute top-6 right-6 text-gray-400 hover:text-red-500 transition-colors">
+            <i class="fas fa-times text-xl"></i>
+        </button>
         
-        <h3 class="text-lg font-black text-[#2D1B4B] mb-2">Subir Documento Requerido</h3>
-        <p id="lbl-requisito" class="text-sm font-bold text-[#A855F7] mb-6 uppercase border-b pb-2"></p>
+        <h3 class="text-lg font-black text-[#2D1B4B] mb-2">Mover Archivo</h3>
+        <p id="lbl-mover-archivo" class="text-sm font-bold text-gray-400 mb-6 truncate"></p>
         
-        <form id="form-requisito" method="POST" enctype="multipart/form-data">
+        <form id="form-mover" method="POST">
             {% csrf_token %}
-            <input type="hidden" name="nombre_requisito" id="input-req-nombre">
             
-            <label class="block mb-6 cursor-pointer">
-                <span class="text-xs font-bold text-gray-400 mb-2 block">Selecciona el archivo:</span>
-                <input type="file" name="archivo" required
-                    class="block w-full text-sm text-gray-500
-                    file:mr-4 file:py-3 file:px-4
-                    file:rounded-xl file:border-0
-                    file:text-xs file:font-bold
-                    file:bg-purple-50 file:text-[#A855F7]
-                    hover:file:bg-purple-100 transition-all
-                "/>
+            <label class="block mb-6">
+                <span class="text-xs font-bold text-gray-400 mb-2 block">Selecciona la carpeta destino:</span>
+                <select name="carpeta_destino" class="w-full p-3 bg-gray-50 rounded-xl font-bold border-none text-[#2D1B4B] focus:ring-2 focus:ring-[#A855F7] outline-none">
+                    <option value="ROOT">📂 -- Carpeta Raíz --</option>
+                    {% for c in todas_carpetas %}
+                        <option value="{{ c.id }}">📂 {{ c.nombre }}</option>
+                    {% endfor %}
+                </select>
             </label>
 
-            <button type="submit" class="w-full bg-[#2D1B4B] text-white py-3 rounded-xl font-bold hover:bg-green-500 transition-colors flex items-center justify-center gap-2 shadow-lg">
-                <i class="fas fa-cloud-upload-alt"></i> CARGAR Y VALIDAR
+            <button type="submit" class="w-full bg-blue-500 text-white py-3 rounded-xl font-bold hover:bg-blue-600 transition-colors flex items-center justify-center gap-2 shadow-lg">
+                <i class="fas fa-exchange-alt"></i> MOVER AHORA
             </button>
         </form>
     </div>
@@ -326,7 +314,6 @@
         document.getElementById(id + '-tab').classList.remove('text-gray-400', 'border-transparent');
     }
 
-    // Funciones Masivas y Preview
     function toggleTodos(s) { document.querySelectorAll('.doc-check').forEach(c => c.checked = s.checked); verificarSeleccion(); }
     function verificarSeleccion() { 
         const c = document.querySelectorAll('.doc-check:checked').length; 
@@ -354,16 +341,27 @@
     function modalCrearCarpeta() { document.getElementById('modal-carpeta').classList.remove('hidden'); document.getElementById('modal-carpeta').classList.add('flex'); }
     function modalSubirArchivo() { document.getElementById('modal-archivo').classList.remove('hidden'); document.getElementById('modal-archivo').classList.add('flex'); }
 
-    // --- LÓGICA DE REQUISITOS (CORREGIDA) ---
+    // --- NUEVO: Lógica Mover Archivo ---
+    function abrirModalMover(archivoId, nombreArchivo) {
+        const modal = document.getElementById('modal-mover');
+        const form = document.getElementById('form-mover');
+        const label = document.getElementById('lbl-mover-archivo');
+
+        form.action = `/archivo/mover/${archivoId}/`;
+        label.innerText = nombreArchivo;
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    // --- Lógica de Requisitos ---
     function abrirModalRequisito(carpetaId, nombreRequisito) {
         const modal = document.getElementById('modal-requisito');
         const form = document.getElementById('form-requisito');
         const label = document.getElementById('lbl-requisito');
         const input = document.getElementById('input-req-nombre');
 
-        // URL corregida: Sin prefijos extraños
         form.action = `/drive/subir-requisito/${carpetaId}/`;
-        
         label.innerText = nombreRequisito;
         input.value = nombreRequisito;
 

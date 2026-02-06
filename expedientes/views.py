@@ -30,7 +30,11 @@ from docx import Document as DocumentoWord
 import weasyprint 
 from django.core.mail import send_mail
 
-
+import qrcode
+from io import BytesIO
+import base64
+from qrcode.image.styledpil import StyledPilImage
+from qrcode.image.styles.moduledrawers import RoundedModuleDrawer
 
 # Importación de Modelos
 from .models import (
@@ -261,6 +265,7 @@ def detalle_cliente(request, cliente_id, carpeta_id=None):
     }
     
     historial = Bitacora.objects.filter(cliente=cliente).select_related('usuario').order_by('-fecha')
+    todas_carpetas = cliente.carpetas_drive.all()
 
     return render(request, 'detalle_cliente.html', {
         'cliente': cliente,
@@ -269,7 +274,8 @@ def detalle_cliente(request, cliente_id, carpeta_id=None):
         'carpetas': carpetas,
         'documentos': documentos,
         'stats_cliente': stats_cliente,
-        'historial': historial
+        'historial': historial,
+        'todas_carpetas': todas_carpetas,
     })
 
 @login_required
@@ -1047,3 +1053,71 @@ Gestiones Cordpad
         messages.error(request, f"❌ Error al enviar el correo: {str(e)}")
 
     return redirect('detalle_cliente', cliente_id=cliente.id)
+@login_required
+def mover_archivo_drive(request, archivo_id):
+    doc = get_object_or_404(Documento, id=archivo_id)
+    
+    # Verificamos permisos
+    if not (request.user.can_edit_client or request.user.can_upload_files or request.user.rol == 'admin'):
+        messages.error(request, "No tienes permiso para mover archivos.")
+        return redirect('detalle_cliente', cliente_id=doc.cliente.id)
+
+    if request.method == 'POST':
+        destino_id = request.POST.get('carpeta_destino')
+        
+        if destino_id == 'ROOT':
+            doc.carpeta = None # Mover a Raíz
+            nombre_destino = "Carpeta Raíz"
+        else:
+            carpeta_destino = get_object_or_404(Carpeta, id=destino_id)
+            doc.carpeta = carpeta_destino
+            nombre_destino = carpeta_destino.nombre
+            
+        doc.save()
+        messages.success(request, f"Archivo movido a: {nombre_destino}")
+        
+    # Redirigir a donde estábamos
+    return redirect(request.META.get('HTTP_REFERER', 'dashboard'))
+@login_required
+def generador_qr(request):
+    qr_url = None
+    
+    # Valores por defecto
+    data = ""
+    color_fill = "#2D1B4B" # Morado oscuro de tu marca
+    color_back = "#FFFFFF" # Blanco
+
+    if request.method == 'POST':
+        data = request.POST.get('data')
+        color_fill = request.POST.get('color_fill', '#2D1B4B')
+        color_back = request.POST.get('color_back', '#FFFFFF')
+
+        if data:
+            # Configuración del QR
+            qr = qrcode.QRCode(
+                version=1,
+                error_correction=qrcode.constants.ERROR_CORRECT_H,
+                box_size=10,
+                border=4,
+            )
+            qr.add_data(data)
+            qr.make(fit=True)
+
+            # Generar imagen con colores personalizados
+            img = qr.make_image(
+                fill_color=color_fill, 
+                back_color=color_back
+            )
+
+            # Convertir a base64 para mostrar en HTML sin guardar archivo
+            buffer = BytesIO()
+            img.save(buffer, format="PNG")
+            img_str = base64.b64encode(buffer.getvalue()).decode()
+            qr_url = f"data:image/png;base64,{img_str}"
+
+    return render(request, 'generador_qr.html', {
+        'qr_url': qr_url,
+        'data_input': data,
+        'color_fill': color_fill,
+        'color_back': color_back
+    })
