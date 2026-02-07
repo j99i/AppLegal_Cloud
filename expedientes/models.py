@@ -85,10 +85,6 @@ class Carpeta(models.Model):
         return f"{self.nombre} - {self.cliente.nombre_empresa}"
 
     def obtener_detalle_cumplimiento(self):
-        """
-        Devuelve una lista de diccionarios con el estado de cada requisito 
-        específico para las carpetas especiales.
-        """
         requisitos = {
             'LICENCIA': [
                 'CONSTANCIA DE SITUACIÓN FISCAL', 'ACTA CONSTITUTIVA', 'PODER NOTARIAL',
@@ -113,31 +109,22 @@ class Carpeta(models.Model):
         }
 
         nombre_key = self.nombre.upper()
-        
-        # Si la carpeta no está en la lista de requisitos, retornamos None
         if nombre_key not in requisitos:
             return None
 
         lista_req = requisitos[nombre_key]
         detalle = []
-        
         for req in lista_req:
-            # Buscamos si existe un documento que empiece con este nombre exacto
             doc = self.documentos.filter(nombre_archivo__iexact=req).first()
-            
             if doc:
                 detalle.append({'nombre': req, 'estado': 'ok', 'doc': doc})
             else:
                 detalle.append({'nombre': req, 'estado': 'missing', 'doc': None})
-                
         return detalle
 
-# MODELO NUEVO PARA GESTIÓN DE ARCHIVOS (PDFs, etc.)
 class Archivo(models.Model):
     nombre = models.CharField(max_length=200)
-    # Relación con la carpeta definida arriba
     carpeta = models.ForeignKey(Carpeta, on_delete=models.CASCADE, related_name='archivos')
-    # 'upload_to' es obligatorio, pero nuestra vista controla la ruta final manualmente
     archivo = models.FileField(upload_to='temp_uploads/') 
     subido_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
     fecha_subida = models.DateTimeField(auto_now_add=True)
@@ -156,7 +143,6 @@ class Expediente(models.Model):
     prioridad = models.IntegerField(choices=((1, 'Baja'), (2, 'Media'), (3, 'Crítica')), default=2)
     creado_el = models.DateTimeField(auto_now_add=True)
 
-# Modelo Legacy (Mantener por compatibilidad si ya tienes datos)
 class Documento(models.Model):
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='documentos_cliente')
     carpeta = models.ForeignKey(Carpeta, on_delete=models.CASCADE, related_name='documentos', null=True, blank=True)
@@ -218,12 +204,13 @@ class Cotizacion(models.Model):
     ESTADOS = (
         ('borrador', 'Borrador'),
         ('enviada', 'Enviada'),
-        ('aprobada', 'Aprobada'),
+        ('aceptada', 'Aceptada'),
         ('rechazada', 'Rechazada'),
     )
 
     folio = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     titulo = models.CharField(max_length=255, verbose_name="Título del Proyecto", blank=True, null=True, help_text="Ej. Renovación de Licencias 2026")
+    
     # Datos del Cliente
     prospecto_empresa = models.CharField(max_length=200, blank=True, null=True, verbose_name="Empresa")
     prospecto_nombre = models.CharField(max_length=200, verbose_name="Nombre del Contacto")
@@ -236,9 +223,15 @@ class Cotizacion(models.Model):
     porcentaje_descuento = models.DecimalField(max_digits=5, decimal_places=2, default=0.00, verbose_name="Descuento (%)")
     descuento = models.DecimalField(max_digits=12, decimal_places=2, default=0.00, verbose_name="Descuento ($)")
 
+    # --- CAMBIOS PARA IVA FLEXIBLE ---
+    aplica_iva = models.BooleanField(default=False, verbose_name="¿Lleva IVA?")
+    porcentaje_iva = models.DecimalField(max_digits=5, decimal_places=2, default=16.00, verbose_name="Tasa IVA (%)")
+    monto_iva = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+
     # Totales
     subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
-    total = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    total = models.DecimalField(max_digits=12, decimal_places=2, default=0.00) # Neto sin IVA
+    total_con_iva = models.DecimalField(max_digits=12, decimal_places=2, default=0.00) # Total Final
     
     # Metadatos
     creado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
@@ -247,36 +240,46 @@ class Cotizacion(models.Model):
     estado = models.CharField(max_length=20, choices=ESTADOS, default='borrador')
     
     # Relación con cliente convertido
-    cliente_convertido = models.ForeignKey('Cliente', on_delete=models.SET_NULL, null=True, blank=True)
+    cliente_convertido = models.ForeignKey('Cliente', on_delete=models.SET_NULL, null=True, blank=True, related_name='cotizacion_origen')
     
     def __str__(self):
         return f"Cotización #{self.id} - {self.prospecto_empresa or self.prospecto_nombre}"
 
     def calcular_totales(self):
-        """Calcula el subtotal, el monto del descuento y el total final."""
-        # 1. Sumar todos los items (cantidad * precio_unitario)
+        # 1. Sumar items
         suma_items = sum(item.cantidad * item.precio_unitario for item in self.items.all())
         self.subtotal = Decimal(suma_items)
         
-        # 2. Calcular monto de descuento basado en el porcentaje
+        # 2. Descuento
         if self.porcentaje_descuento > 0:
             self.descuento = self.subtotal * (self.porcentaje_descuento / Decimal('100'))
         else:
             self.descuento = Decimal('0.00')
             
-        # 3. Total final
-        self.total = self.subtotal - self.descuento
+        base_imponible = self.subtotal - self.descuento
+
+        # 3. IVA (Flexible)
+        if self.aplica_iva:
+            self.monto_iva = base_imponible * (self.porcentaje_iva / Decimal('100'))
+        else:
+            self.monto_iva = Decimal('0.00')
+
+        # 4. Totales
+        self.total = base_imponible # Total antes de impuestos (Neto)
+        self.total_con_iva = base_imponible + self.monto_iva # Total Final
         
-        if self.total < 0: 
-            self.total = 0
-            
-        # Actualizamos la base de datos directamente
+        # Guardar en BD
         Cotizacion.objects.filter(id=self.id).update(
             subtotal=self.subtotal,
             descuento=self.descuento,
-            total=self.total
+            aplica_iva=self.aplica_iva,
+            porcentaje_iva=self.porcentaje_iva,
+            monto_iva=self.monto_iva,
+            total=self.total,
+            total_con_iva=self.total_con_iva
         )
 
+# ESTA CLASE FALTABA EN TU ARCHIVO ANTERIOR:
 class ItemCotizacion(models.Model):
     cotizacion = models.ForeignKey(Cotizacion, related_name='items', on_delete=models.CASCADE)
     servicio = models.ForeignKey(Servicio, on_delete=models.CASCADE)
@@ -289,10 +292,8 @@ class ItemCotizacion(models.Model):
         return f"{self.servicio.nombre} x {self.cantidad}"
 
     def save(self, *args, **kwargs):
-        # Calcular el subtotal del item antes de guardar
         self.subtotal = Decimal(self.cantidad) * Decimal(self.precio_unitario)
         super().save(*args, **kwargs)
-        # Al guardar un item, le pedimos a la cotización que recalcule sus totales
         self.cotizacion.calcular_totales()
 
 # ==========================================
@@ -357,7 +358,6 @@ def crear_carpetas_base(sender, instance, created, **kwargs):
     if created:
         carpetas_nombres = ['LICENCIA', 'FUNCIONAMIENTO', 'PROTECCIÓN CIVIL', 'Cotizaciones']
         for nombre in carpetas_nombres:
-            # Usamos get_or_create para evitar duplicados si se corre varias veces
             Carpeta.objects.get_or_create(
                 nombre=nombre,
                 cliente=instance,

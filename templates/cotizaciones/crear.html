@@ -9,20 +9,17 @@
 
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
             <div class="w-full md:w-2/3">
-                <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Nombre del Proyecto / Cotización</label>
+                <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Nombre del Proyecto</label>
                 <div class="relative group">
                     <i class="fas fa-pen absolute left-0 top-3 text-gray-300 group-hover:text-[#A855F7] transition-colors"></i>
                     <input type="text" name="titulo" 
                            class="w-full bg-transparent border-b-2 border-gray-200 text-2xl md:text-3xl font-black text-[#2D1B4B] placeholder-gray-300 focus:border-[#A855F7] focus:outline-none py-2 pl-8 transition-all"
                            placeholder="Ej. Licencia 2026 - Coca Cola" autofocus>
                 </div>
-                <p class="text-gray-400 text-xs mt-2">Este nombre aparecerá en el listado principal para fácil identificación.</p>
             </div>
 
             <div class="flex gap-3 w-full md:w-auto justify-end">
-                <a href="{% url 'lista_cotizaciones' %}" class="px-6 py-3 bg-gray-100 text-gray-500 rounded-xl font-bold hover:bg-gray-200 transition-colors">
-                    Cancelar
-                </a>
+                <a href="{% url 'lista_cotizaciones' %}" class="px-6 py-3 bg-gray-100 text-gray-500 rounded-xl font-bold hover:bg-gray-200 transition-colors">Cancelar</a>
                 <button type="submit" class="px-8 py-3 bg-[#A855F7] text-white rounded-xl font-bold hover:bg-[#9333EA] shadow-lg transition-transform hover:scale-105 flex items-center gap-2">
                     <i class="fas fa-save"></i> GUARDAR
                 </button>
@@ -32,34 +29,29 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             
             <div class="lg:col-span-1 space-y-6">
-                
                 <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 relative overflow-hidden">
                     <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-[#2D1B4B] to-[#A855F7]"></div>
-                    
                     <h3 class="text-lg font-bold text-[#2D1B4B] mb-6 flex items-center gap-2">
                         <i class="fas fa-user-tie text-[#A855F7]"></i> Datos del Cliente
                     </h3>
                     
                     <div class="space-y-4">
-                        
                         <div class="relative">
-                            <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Empresa / Razón Social</label>
+                            <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Empresa</label>
                             <input type="text" id="input-empresa" name="prospecto_empresa" autocomplete="off"
-                                   class="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-[#A855F7] focus:ring-2 focus:ring-purple-50 outline-none font-bold text-[#2D1B4B] transition-all placeholder-gray-400" 
-                                   placeholder="Buscar o escribir nueva...">
-                            
-                            <ul id="lista-sugerencias" class="hidden absolute z-50 w-full bg-white border border-gray-100 rounded-xl shadow-2xl mt-1 max-h-60 overflow-y-auto animate__animated animate__fadeIn">
-                                </ul>
+                                   class="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-[#A855F7] outline-none font-bold text-[#2D1B4B]" 
+                                   placeholder="Buscar...">
+                            <ul id="lista-sugerencias" class="hidden absolute z-50 w-full bg-white border border-gray-100 rounded-xl shadow-2xl mt-1 max-h-60 overflow-y-auto"></ul>
                         </div>
 
                         <div>
-                            <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Nombre del Contacto *</label>
-                            <input type="text" name="prospecto_nombre" required class="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-[#A855F7] outline-none font-bold text-[#2D1B4B]" placeholder="Nombre del contacto">
+                            <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Contacto *</label>
+                            <input type="text" name="prospecto_nombre" required class="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-[#A855F7] outline-none font-bold text-[#2D1B4B]">
                         </div>
 
                         <div>
-                            <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Cargo / Puesto</label>
-                            <input type="text" name="prospecto_cargo" class="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-[#A855F7] outline-none text-gray-600" placeholder="Ej. Representante Legal">
+                            <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Cargo</label>
+                            <input type="text" name="prospecto_cargo" class="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-[#A855F7] outline-none text-gray-600">
                         </div>
 
                         <div class="grid grid-cols-2 gap-4">
@@ -75,7 +67,7 @@
 
                         <div>
                             <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Dirección Fiscal</label>
-                            <textarea name="prospecto_direccion" rows="3" class="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-[#A855F7] outline-none text-sm resize-none" placeholder="Calle, Número, C.P..."></textarea>
+                            <textarea name="prospecto_direccion" rows="3" class="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-[#A855F7] outline-none text-sm resize-none"></textarea>
                         </div>
                     </div>
                 </div>
@@ -83,7 +75,7 @@
                 <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100">
                      <h3 class="text-sm font-bold text-[#2D1B4B] mb-4">Opciones</h3>
                      <div>
-                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Vigencia de la oferta</label>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Vigencia</label>
                         <input type="date" name="validez_hasta" class="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 text-sm font-bold text-[#2D1B4B]">
                     </div>
                 </div>
@@ -94,17 +86,17 @@
                 <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 min-h-[500px] flex flex-col">
                     <div class="flex justify-between items-center mb-6">
                         <h3 class="text-lg font-bold text-[#2D1B4B] flex items-center gap-2">
-                            <i class="fas fa-list-ul text-[#A855F7]"></i> Conceptos a Cotizar
+                            <i class="fas fa-list-ul text-[#A855F7]"></i> Conceptos
                         </h3>
-                        <button type="button" onclick="agregarServicio()" class="px-4 py-2 bg-[#2D1B4B] text-white rounded-xl text-xs font-bold hover:bg-[#3E2C5E] transition-all shadow-md transform hover:-translate-y-0.5">
-                            + AGREGAR SERVICIO
+                        <button type="button" onclick="agregarServicio()" class="px-4 py-2 bg-[#2D1B4B] text-white rounded-xl text-xs font-bold hover:bg-[#3E2C5E] transition-all shadow-md">
+                            + AGREGAR
                         </button>
                     </div>
 
                     <div id="contenedor-items" class="space-y-4 flex-1">
                         <div class="text-center text-gray-300 py-10" id="empty-state">
                             <i class="fas fa-calculator text-4xl mb-2"></i>
-                            <p>Agregue servicios para comenzar el cálculo.</p>
+                            <p>Agregue servicios para calcular.</p>
                         </div>
                     </div>
 
@@ -118,19 +110,47 @@
                             
                             <div class="w-full max-w-xs flex justify-between items-center">
                                 <span class="text-xs font-bold text-[#A855F7] uppercase">Descuento (%):</span>
-                                <div class="relative w-28">
+                                <div class="relative w-24">
                                     <input type="number" name="porcentaje_descuento" id="input-porcentaje" value="0" step="0.1" min="0" max="100" 
-                                           class="w-full p-2 pr-8 text-right bg-white border border-[#A855F7] rounded-xl text-sm font-black text-[#A855F7] focus:ring-2 focus:ring-purple-200 outline-none shadow-sm" 
+                                           class="w-full p-1.5 pr-6 text-right bg-white border border-[#A855F7] rounded-lg text-sm font-black text-[#A855F7] outline-none" 
                                            oninput="calcularTotales()">
-                                    <span class="absolute right-3 top-2 text-[#A855F7] font-bold">%</span>
+                                    <span class="absolute right-2 top-1.5 text-[#A855F7] font-bold">%</span>
                                 </div>
                             </div>
 
+                            <div class="w-full max-w-xs bg-white p-3 rounded-xl border border-gray-200 shadow-sm">
+                                <div class="flex justify-between items-center mb-2">
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" name="aplica_iva" id="check-iva" onchange="toggleIvaInput()" 
+                                               class="w-4 h-4 text-[#A855F7] rounded focus:ring-purple-500 border-gray-300 accent-[#A855F7]">
+                                        <span class="text-xs font-bold text-gray-500 uppercase">¿Aplicar I.V.A.?</span>
+                                    </label>
+                                </div>
+                                
+                                <div id="container-tasa-iva" class="hidden flex items-center justify-end gap-2 border-t border-gray-100 pt-2 animate__animated animate__fadeIn">
+                                    <span class="text-[10px] font-bold text-gray-400 uppercase">Tasa:</span>
+                                    <div class="relative w-20">
+                                        <input type="number" name="porcentaje_iva_personalizado" id="input-tasa-iva" value="16" step="1" 
+                                               class="w-full p-1 pr-6 text-right bg-gray-50 border border-gray-200 rounded text-sm font-bold text-gray-600 outline-none focus:border-[#A855F7]" 
+                                               oninput="calcularTotales()">
+                                        <span class="absolute right-2 top-1 text-gray-400 text-xs">%</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="w-full max-w-xs flex justify-between items-center hidden animate__animated animate__fadeIn" id="row-iva">
+                                <span class="text-xs font-bold text-gray-400 uppercase">I.V.A. (<span id="lbl-tasa-display">16</span>%):</span>
+                                <span class="text-lg font-bold text-gray-500" id="lbl-iva">$0.00</span>
+                            </div>
+
                             <div class="w-full max-w-xs flex justify-between items-center border-t-2 border-[#2D1B4B] pt-4 mt-2">
-                                <span class="text-sm font-black text-[#2D1B4B] uppercase">TOTAL ESTIMADO:</span>
+                                <span class="text-sm font-black text-[#2D1B4B] uppercase">TOTAL FINAL:</span>
                                 <span class="text-3xl font-black text-[#2D1B4B]" id="lbl-total">$0.00</span>
                             </div>
-                            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">* Precios más I.V.A.</p>
+                            
+                            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest" id="texto-impuestos">
+                                * Precios Netos
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -148,26 +168,23 @@
 
         <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
             <div class="md:col-span-6">
-                <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Servicio / Trámite</label>
-                <select name="servicios_seleccionados" class="w-full p-2.5 bg-gray-50 rounded-xl border border-gray-100 text-sm font-bold text-[#2D1B4B] outline-none select-servicio focus:ring-2 focus:ring-purple-50" onchange="cargarDatosServicio(this)">
+                <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Servicio</label>
+                <select name="servicios_seleccionados" class="w-full p-2.5 bg-gray-50 rounded-xl border border-gray-100 text-sm font-bold text-[#2D1B4B] outline-none select-servicio" onchange="cargarDatosServicio(this)">
                     <option value="">-- Seleccionar --</option>
                     {% for s in servicios %}
                     <option value="{{ s.id }}" data-precio="{{ s.precio_base }}" data-desc="{{ s.descripcion }}">{{ s.nombre }}</option>
                     {% endfor %}
                 </select>
-                <textarea name="descripciones_personalizadas" rows="2" class="w-full mt-2 p-2 bg-gray-50 rounded-xl border-none text-xs text-gray-500 txt-desc resize-none focus:ring-2 focus:ring-purple-50" placeholder="Descripción personalizada..."></textarea>
+                <textarea name="descripciones_personalizadas" rows="2" class="w-full mt-2 p-2 bg-gray-50 rounded-xl border-none text-xs text-gray-500 txt-desc resize-none" placeholder="Descripción..."></textarea>
             </div>
-
             <div class="md:col-span-2">
                 <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Cant.</label>
-                <input type="number" name="cantidades" value="1" min="1" class="w-full p-2.5 bg-gray-50 rounded-xl border-none text-sm font-black text-center input-cant focus:ring-2 focus:ring-purple-50" oninput="calcularFila(this)">
+                <input type="number" name="cantidades" value="1" min="1" class="w-full p-2.5 bg-gray-50 rounded-xl border-none text-sm font-black text-center input-cant" oninput="calcularFila(this)">
             </div>
-
             <div class="md:col-span-2">
                 <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Precio Unit.</label>
-                <input type="number" name="precios_personalizados" step="0.01" class="w-full p-2.5 bg-gray-50 rounded-xl border-none text-sm font-black text-right input-precio focus:ring-2 focus:ring-purple-50" oninput="calcularFila(this)">
+                <input type="number" name="precios_personalizados" step="0.01" class="w-full p-2.5 bg-gray-50 rounded-xl border-none text-sm font-black text-right input-precio" oninput="calcularFila(this)">
             </div>
-
             <div class="md:col-span-2 text-right pt-6">
                 <span class="text-[10px] block text-gray-400 font-bold uppercase">Subtotal</span>
                 <span class="text-sm font-black text-[#2D1B4B] lbl-subtotal-fila">$0.00</span>
@@ -177,21 +194,18 @@
 </template>
 
 <script>
-    // --- FUNCIONES DE CÁLCULO Y FILAS ---
+    // --- LÓGICA DE FILAS ---
     function agregarServicio() {
         const emptyState = document.getElementById('empty-state');
         if (emptyState) emptyState.classList.add('hidden');
-        
         const container = document.getElementById('contenedor-items');
-        const template = document.getElementById('template-item');
-        const clone = template.content.cloneNode(true);
+        const clone = document.importNode(document.getElementById('template-item').content, true);
         container.appendChild(clone);
     }
 
     function eliminarItem(btn) {
         btn.closest('.item-fila').remove();
-        const container = document.getElementById('contenedor-items');
-        if(container.querySelectorAll('.item-fila').length === 0) {
+        if(document.getElementById('contenedor-items').querySelectorAll('.item-fila').length === 0) {
             document.getElementById('empty-state').classList.remove('hidden');
         }
         calcularTotales();
@@ -200,13 +214,9 @@
     function cargarDatosServicio(select) {
         const option = select.options[select.selectedIndex];
         const fila = select.closest('.item-fila');
-        
         if (option.value) {
             fila.querySelector('.input-precio').value = option.dataset.precio;
             fila.querySelector('.txt-desc').value = option.dataset.desc;
-        } else {
-            fila.querySelector('.input-precio').value = '';
-            fila.querySelector('.txt-desc').value = '';
         }
         calcularFila(select);
     }
@@ -216,107 +226,103 @@
         const cant = parseFloat(fila.querySelector('.input-cant').value) || 0;
         const precio = parseFloat(fila.querySelector('.input-precio').value) || 0;
         const total = cant * precio;
-        
         fila.querySelector('.lbl-subtotal-fila').textContent = '$' + total.toLocaleString('es-MX', {minimumFractionDigits: 2});
+        calcularTotales();
+    }
+
+    // --- LÓGICA DE IVA FLEXIBLE ---
+    function toggleIvaInput() {
+        const check = document.getElementById('check-iva');
+        const containerTasa = document.getElementById('container-tasa-iva');
+        const rowIva = document.getElementById('row-iva');
+        
+        if (check.checked) {
+            containerTasa.classList.remove('hidden');
+            rowIva.classList.remove('hidden');
+        } else {
+            containerTasa.classList.add('hidden');
+            rowIva.classList.add('hidden');
+        }
         calcularTotales();
     }
 
     function calcularTotales() {
         let subtotalGeneral = 0;
-        
-        // 1. Sumar todas las filas
         document.querySelectorAll('.item-fila').forEach(fila => {
             const cant = parseFloat(fila.querySelector('.input-cant').value) || 0;
             const precio = parseFloat(fila.querySelector('.input-precio').value) || 0;
             subtotalGeneral += (cant * precio);
         });
 
-        // 2. Obtener PORCENTAJE de descuento
-        const porcentaje = parseFloat(document.getElementById('input-porcentaje').value) || 0;
-        
-        // 3. Calcular monto a restar
-        const montoDescuento = subtotalGeneral * (porcentaje / 100);
-        
-        // 4. Total Final
-        let totalFinal = subtotalGeneral - montoDescuento;
-        if(totalFinal < 0) totalFinal = 0;
+        const porcentajeDesc = parseFloat(document.getElementById('input-porcentaje').value) || 0;
+        const montoDescuento = subtotalGeneral * (porcentajeDesc / 100);
+        let baseImponible = subtotalGeneral - montoDescuento;
+        if(baseImponible < 0) baseImponible = 0;
 
-        // 5. Actualizar etiquetas
+        // CÁLCULO DINÁMICO DE IVA
+        const aplicaIva = document.getElementById('check-iva').checked;
+        let montoIva = 0;
+        
+        if (aplicaIva) {
+            // Leemos la tasa del input (puede ser 16, 8, etc)
+            const tasa = parseFloat(document.getElementById('input-tasa-iva').value) || 0;
+            montoIva = baseImponible * (tasa / 100);
+            
+            // Actualizamos textos
+            document.getElementById('lbl-tasa-display').textContent = tasa;
+            document.getElementById('texto-impuestos').textContent = '* IVA INCLUIDO';
+        } else {
+            document.getElementById('texto-impuestos').textContent = '* PRECIOS NETOS';
+        }
+
+        let totalFinal = baseImponible + montoIva;
+
         document.getElementById('lbl-subtotal').textContent = '$' + subtotalGeneral.toLocaleString('es-MX', {minimumFractionDigits: 2});
+        document.getElementById('lbl-iva').textContent = '$' + montoIva.toLocaleString('es-MX', {minimumFractionDigits: 2});
         document.getElementById('lbl-total').textContent = '$' + totalFinal.toLocaleString('es-MX', {minimumFractionDigits: 2});
     }
 
     window.onload = function() {
-        agregarServicio();
+        if(document.querySelectorAll('.item-fila').length === 0) agregarServicio();
     };
 
-
-    // --- BUSCADOR INTELIGENTE (AUTOCOMPLETADO) ---
+    // --- BUSCADOR ---
     const inputEmpresa = document.getElementById('input-empresa');
     const listaSugerencias = document.getElementById('lista-sugerencias');
 
     inputEmpresa.addEventListener('input', async function() {
         const query = this.value;
-        
-        if (query.length < 2) {
-            listaSugerencias.classList.add('hidden');
-            return;
-        }
-
+        if (query.length < 2) { listaSugerencias.classList.add('hidden'); return; }
         try {
-            // Asegúrate de tener la ruta en urls.py: path('api/buscar-cliente/', ...)
+            // CORREGIDO: Ruta absoluta a la API
             const response = await fetch(`/api/buscar-cliente/?q=${query}`);
             const datos = await response.json();
-
             listaSugerencias.innerHTML = '';
-
             if (datos.length > 0) {
                 listaSugerencias.classList.remove('hidden');
-                
                 datos.forEach(cliente => {
                     const li = document.createElement('li');
-                    li.className = "p-3 hover:bg-purple-50 cursor-pointer border-b border-gray-50 last:border-0 transition-colors flex items-center gap-3";
-                    
-                    li.innerHTML = `
-                        <div class="bg-purple-100 text-[#A855F7] w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0">
-                            <i class="fas fa-history"></i>
-                        </div>
-                        <div>
-                            <p class="text-sm font-bold text-gray-700 leading-tight">${cliente.prospecto_empresa || 'Sin Empresa'}</p>
-                            <p class="text-xs text-gray-400">${cliente.prospecto_nombre}</p>
-                        </div>
-                    `;
-
-                    // Al hacer clic, rellenar los datos
+                    li.className = "p-3 hover:bg-purple-50 cursor-pointer border-b border-gray-50 flex items-center gap-3";
+                    li.innerHTML = `<div class="bg-purple-100 text-[#A855F7] w-6 h-6 rounded-full flex items-center justify-center text-xs"><i class="fas fa-history"></i></div><div><p class="text-sm font-bold">${cliente.prospecto_empresa}</p><p class="text-xs text-gray-400">${cliente.prospecto_nombre}</p></div>`;
                     li.onclick = () => {
-                        inputEmpresa.value = cliente.prospecto_empresa;
+                        inputEmpresa.value = cliente.prospecto_empresa || '';
                         document.querySelector('[name="prospecto_nombre"]').value = cliente.prospecto_nombre || '';
                         document.querySelector('[name="prospecto_email"]').value = cliente.prospecto_email || '';
                         document.querySelector('[name="prospecto_telefono"]').value = cliente.prospecto_telefono || '';
                         document.querySelector('[name="prospecto_cargo"]').value = cliente.prospecto_cargo || '';
                         document.querySelector('[name="prospecto_direccion"]').value = cliente.prospecto_direccion || '';
-                        
                         listaSugerencias.classList.add('hidden');
-                        
-                        // Efecto visual
-                        inputEmpresa.classList.add('bg-purple-100');
-                        setTimeout(() => inputEmpresa.classList.remove('bg-purple-100'), 400);
                     };
-
                     listaSugerencias.appendChild(li);
                 });
-            } else {
-                listaSugerencias.classList.add('hidden');
-            }
-        } catch (error) {
-            console.error('Error buscando clientes:', error);
+            } else { listaSugerencias.classList.add('hidden'); }
+        } catch (e) {
+            console.error("Error en buscador:", e);
         }
     });
-
+    
     document.addEventListener('click', function(e) {
-        if (!inputEmpresa.contains(e.target) && !listaSugerencias.contains(e.target)) {
-            listaSugerencias.classList.add('hidden');
-        }
+        if (!inputEmpresa.contains(e.target) && !listaSugerencias.contains(e.target)) listaSugerencias.classList.add('hidden');
     });
 </script>
 {% endblock %}

@@ -91,7 +91,7 @@ urlpatterns = [
     path('expedientes/drive/subir-requisito/<int:carpeta_id>/', views.subir_archivo_requisito),
     path('cliente/<uuid:cliente_id>/enviar-recordatorio/', views.enviar_recordatorio_documentacion, name='enviar_recordatorio'),
     path('herramientas/qr/', views.generador_qr, name='generador_qr'),
-    
+    path('finanzas/cobro/<int:cuenta_id>/<str:tipo_pago>/', views.generar_orden_cobro, name='generar_orden_cobro'),
     # En la sección de DRIVE
     path('archivo/mover/<int:archivo_id>/', views.mover_archivo_drive, name='mover_archivo_drive'),
     path('api/buscar-cliente/', views.buscar_cliente_api, name='buscar_cliente_api'),

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>Cotización Digital - Corpad</title>
     {% load static %}
+    {% load humanize %}
     <style>
         @page {
             size: Letter;
@@ -56,6 +57,7 @@
             font-size: 9pt;
             font-weight: bold;
             display: inline-block;
+            text-transform: uppercase; /* Para que el título salga en mayúsculas */
         }
 
         /* --- BLOQUE DE INFORMACIÓN (TARJETAS) --- */
@@ -106,7 +108,7 @@
         .item-num { color: #A855F7; font-weight: bold; margin-right: 5px; }
         .item-title { font-weight: bold; color: #2D1B4B; font-size: 10pt; }
         .item-desc { font-size: 9pt; color: #6B7280; margin-top: 4px; }
-        .price-col { text-align: right; font-weight: bold; color: #2D1B4B; font-size: 10pt; }
+        .price-col { text-align: right; font-weight: bold; color: #2D1B4B; font-size: 10pt; white-space: nowrap; }
 
         /* --- RESUMEN DE COSTOS --- */
         .summary-card {
@@ -122,6 +124,8 @@
         .total-label { font-size: 9pt; font-weight: bold; opacity: 0.8; }
         .total-amount { font-size: 18pt; font-weight: 900; color: #ffffff; }
         .discount-text { font-size: 8pt; color: #A855F7; font-weight: bold; margin-bottom: 10px; }
+        
+        .sub-row { font-size: 9pt; color: #e5e7eb; margin-bottom: 2px; }
 
         /* --- FIRMA Y PIE --- */
         .footer-section {
@@ -142,6 +146,15 @@
             font-size: 8pt;
             font-weight: bold;
         }
+        
+        .folio-footer {
+            position: absolute;
+            bottom: 20px;
+            right: 30px;
+            font-size: 8pt;
+            color: #d1d5db;
+            font-weight: bold;
+        }
 
     </style>
 </head>
@@ -151,13 +164,19 @@
         
         <div class="header">
             <div class="header-left">
-                <img src="{% static 'img/logo.png' %}" class="logo-img">
+                {% if base_url %}
+                    <img src="{{ base_url }}static/img/logo.png" class="logo-img">
+                {% else %}
+                    <img src="{% static 'img/logo.png' %}" class="logo-img">
+                {% endif %}
                 <h1 class="brand-name">CORPAD</h1>
             </div>
             <div class="header-right">
-                <div class="folio-badge">COTIZACIÓN #{{ c.id|stringformat:"04d" }}</div>
+                <div class="folio-badge">{{ c.titulo|default:"PROYECTO SIN TÍTULO" }}</div>
+                
                 <div style="font-size: 8pt; font-weight: bold; margin-top: 8px; color: #6B7280;">
-                    Cuautitlán, Edo. Méx. | {% now "d/m/Y" %}
+                    Cuautitlán, Edo. Méx. | {% now "d/m/Y" %} <br>
+                    Folio Interno: #{{ c.id|stringformat:"04d" }}
                 </div>
             </div>
         </div>
@@ -169,16 +188,17 @@
                 <div class="client-detail">
                     {{ c.prospecto_direccion|default:"Domicilio no especificado" }}
                 </div>
-                <div class="attn-block">
+                <div class="attn-block" style="margin-top: 10px;">
                     <span style="font-size: 8pt; font-weight: bold; color: #2D1B4B;">AT'N:</span> 
                     <span style="font-size: 9pt; font-weight: bold;">{{ c.prospecto_nombre|upper }}</span>
                     <span style="font-size: 8pt; display: block; color: #6B7280;">{{ c.prospecto_cargo|default:"Representante Legal" }}</span>
                 </div>
             </div>
-            <div style="display: table-cell; width: 5%;"></div> <div class="info-card" style="background-color: white; border-color: #A855F7;">
+            <div style="display: table-cell; width: 5%;"></div> 
+            <div class="info-card" style="background-color: white; border-color: #A855F7;">
                 <span class="card-label">Mensaje</span>
                 <p style="font-size: 8.5pt; margin: 0; color: #4B5563; text-align: justify;">
-                    Me permito poner a sus órdenes los servicios de asesoría y gestoría de trámites administrativos ante el Ayuntamiento de Cuautitlán, para el legal funcionamiento del establecimiento al rubro citado:
+                    Me permito poner a sus órdenes los servicios de asesoría y gestoría de trámites administrativos, asegurando el cumplimiento normativo y el legal funcionamiento de su establecimiento. A continuación detallo nuestra propuesta económica:
                 </p>
             </div>
         </div>
@@ -201,7 +221,7 @@
                             </div>
                         </td>
                         <td class="price-col">
-                            $ {{ item.subtotal }}
+                            $ {{ item.subtotal|floatformat:2|intcomma }}
                         </td>
                     </tr>
                     {% endfor %}
@@ -211,26 +231,43 @@
 
         <div style="margin-top: 20px;">
             <p style="font-size: 8.5pt; color: #6B7280; margin-bottom: 20px;">
-                * Estos documentos serán entregados en original una vez recibidos por las dependencias correspondientes. El pago de derechos corre por cuenta del establecimiento.
+                * Estos documentos serán entregados en original una vez recibidos por las dependencias correspondientes. El pago de derechos (si aplica) corre por cuenta del establecimiento.
             </p>
 
             <div class="summary-card">
+                
                 {% if c.descuento > 0 %}
                 <div class="discount-text">
-                    DESCUENTO POR RELACIÓN COMERCIAL: - $ {{ c.descuento }}
+                    DESCUENTO APLICADO ({{ c.porcentaje_descuento|floatformat:0 }}%): - $ {{ c.descuento|floatformat:2|intcomma }}
                 </div>
                 {% endif %}
                 
-                <div class="summary-row">
-                    <span class="total-label">MONTO FINAL DE HONORARIOS</span>
-                </div>
-                <div class="summary-row">
-                    <span class="total-amount">$ {{ c.total }}</span>
-                    <span style="font-size: 9pt; font-weight: bold;">+ I.V.A.</span>
-                </div>
+                {% if c.aplica_iva %}
+                    <div class="sub-row">
+                        Subtotal: $ {{ c.subtotal|floatformat:2|intcomma }}
+                    </div>
+                    <div class="sub-row">
+                        I.V.A. (16%): $ {{ c.monto_iva|floatformat:2|intcomma }}
+                    </div>
+                    
+                    <div class="summary-row" style="margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 10px;">
+                        <span class="total-label">MONTO TOTAL NETO</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="total-amount">$ {{ c.total_con_iva|floatformat:2|intcomma }}</span>
+                    </div>
+                {% else %}
+                    <div class="summary-row">
+                        <span class="total-label">MONTO FINAL DE HONORARIOS</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="total-amount">$ {{ c.total|floatformat:2|intcomma }}</span>
+                    </div>
+                {% endif %}
                 
                 <p style="font-size: 7.5pt; opacity: 0.7; margin-top: 10px; font-style: italic;">
-                    Condiciones: 50% anticipo y 50% contra entrega. Plazo estimado: 30 días hábiles.
+                    Condiciones Comerciales: 50% de anticipo para iniciar gestión y 50% contra entrega de resultados. 
+                    {% if c.validez_hasta %}Válido hasta: {{ c.validez_hasta|date:"d/m/Y" }}{% endif %}
                 </p>
             </div>
         </div>

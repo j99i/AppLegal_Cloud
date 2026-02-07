@@ -715,14 +715,13 @@ def lista_cotizaciones(request):
     return render(request, 'cotizaciones/lista.html', {'cotizaciones': Cotizacion.objects.all().order_by('-fecha_creacion')})
 
 # En expedientes/views.py
-
 @login_required
 def nueva_cotizacion(request):
     if request.method == 'POST':
-        # 1. Captura del Título del Proyecto (Nuevo)
+        # 1. Datos Generales
         titulo = request.POST.get('titulo')
         
-        # 2. Datos del Cliente
+        # 2. Datos Cliente
         prospecto_empresa = request.POST.get('prospecto_empresa')
         prospecto_nombre = request.POST.get('prospecto_nombre')
         prospecto_email = request.POST.get('prospecto_email')
@@ -731,19 +730,30 @@ def nueva_cotizacion(request):
         prospecto_cargo = request.POST.get('prospecto_cargo')
         validez = request.POST.get('validez_hasta')
         
-        # 3. Lógica del Título Automático (si el usuario no escribió nada)
+        # Título automático si viene vacío
         if not titulo:
             cliente_ref = prospecto_empresa if prospecto_empresa else prospecto_nombre
-            titulo = f"Cotización para {cliente_ref} - {uuid.uuid4().hex[:4].upper()}"
+            titulo = f"Cotización para {cliente_ref}"
 
-        # 4. Captura del Porcentaje (Decimal)
+        # 3. Descuento
         porcentaje_str = request.POST.get('porcentaje_descuento', '0')
         try:
             porcentaje_descuento = Decimal(porcentaje_str)
         except:
             porcentaje_descuento = Decimal('0.00')
 
-        # 5. Crear el objeto Cotización
+        # 4. LÓGICA DE IVA FLEXIBLE
+        aplica_iva = request.POST.get('aplica_iva') == 'on'
+        
+        # Capturamos la tasa personalizada del formulario
+        # Si no viene o hay error, usamos 16 por defecto
+        tasa_str = request.POST.get('porcentaje_iva_personalizado', '16')
+        try:
+            tasa_iva = Decimal(tasa_str)
+        except:
+            tasa_iva = Decimal('16.00')
+
+        # 5. Crear Objeto Cotización
         cotizacion = Cotizacion.objects.create(
             titulo=titulo,
             prospecto_empresa=prospecto_empresa,
@@ -754,10 +764,15 @@ def nueva_cotizacion(request):
             prospecto_cargo=prospecto_cargo,
             porcentaje_descuento=porcentaje_descuento,
             validez_hasta=validez if validez else None,
+            
+            # Guardamos configuración de IVA
+            aplica_iva=aplica_iva,
+            porcentaje_iva=tasa_iva,  # <--- AQUÍ SE GUARDA LA TASA (8, 16, etc)
+            
             creado_por=request.user
         )
 
-        # 6. Procesar los Servicios (Items)
+        # 6. Procesar Servicios (Items)
         servicios_ids = request.POST.getlist('servicios_seleccionados')
         cantidades = request.POST.getlist('cantidades')
         precios = request.POST.getlist('precios_personalizados')
@@ -767,13 +782,11 @@ def nueva_cotizacion(request):
             if s_id:
                 servicio = get_object_or_404(Servicio, id=s_id)
                 cantidad = int(cant)
-                
                 try:
                     precio_u = Decimal(prec)
                 except:
                     precio_u = Decimal('0.00')
                 
-                # Creamos el ítem (el subtotal se calcula solo en el modelo)
                 ItemCotizacion.objects.create(
                     cotizacion=cotizacion,
                     servicio=servicio,
@@ -782,7 +795,7 @@ def nueva_cotizacion(request):
                     descripcion_personalizada=desc
                 )
         
-        # 7. Forzar cálculo final y guardar
+        # 7. Calcular Totales Finales
         cotizacion.calcular_totales()
 
         messages.success(request, 'Cotización creada exitosamente.')
@@ -808,6 +821,10 @@ def generar_pdf_cotizacion(request, cotizacion_id):
 
 @login_required
 def convertir_a_cliente(request, cotizacion_id):
+    # Imports necesarios para esta lógica específica
+    from django.core.files.base import ContentFile
+    import weasyprint
+    
     c = get_object_or_404(Cotizacion, id=cotizacion_id)
     
     # 1. Validación: Si ya es cliente, redirigir
@@ -831,12 +848,9 @@ def convertir_a_cliente(request, cotizacion_id):
         # Asignar permisos si no es admin
         if request.user.rol != 'admin':
             request.user.clientes_asignados.add(cli)
-        
-        # El Signal en models.py YA CREÓ las carpetas (LICENCIA, FUNCIONAMIENTO, Cotizaciones),
-        # así que no necesitamos crearlas manualmente aquí.
 
-    # 3. Buscar la Carpeta "Cotizaciones" en la Base de Datos
-    # Usamos get_or_create por seguridad, por si el signal falló o es un cliente viejo
+    # 3. Buscar la Carpeta "Cotizaciones"
+    # Usamos "Cotizaciones" (Mayúscula) para coincidir con el Signal
     carpeta_db, _ = Carpeta.objects.get_or_create(
         nombre="Cotizaciones",
         cliente=cli,
@@ -848,50 +862,42 @@ def convertir_a_cliente(request, cotizacion_id):
     html = weasyprint.HTML(string=html_string, base_url=request.build_absolute_uri())
     pdf_content = html.write_pdf()
 
-    # 5. PREPARAR RUTA FÍSICA (OneDrive)
-    # Limpiamos el nombre para que no tenga caracteres raros
-    nombre_cliente_safe = slugify(cli.nombre_empresa).replace("-", "_").upper()
-    nombre_archivo = f"Cotizacion_{c.id}_{slugify(c.titulo or 'v1')}.pdf"
+    # 5. Definir nombre del archivo seguro
+    nombre_safe = slugify(c.titulo or f"v1_{c.id}").replace("-", "_")
+    nombre_archivo = f"Cotizacion_{c.id}_{nombre_safe}.pdf"
 
-    # Ruta relativa para la BD: expedientes/CLIENTE/Cotizaciones/archivo.pdf
-    ruta_relativa = os.path.join('expedientes', nombre_cliente_safe, 'Cotizaciones', nombre_archivo)
-    
-    # Ruta absoluta para guardar el archivo: C:/Users/.../media/expedientes/...
-    ruta_absoluta = os.path.join(settings.MEDIA_ROOT, ruta_relativa)
-
-    # Crear directorios físicos si no existen
-    os.makedirs(os.path.dirname(ruta_absoluta), exist_ok=True)
-
-    # 6. GUARDAR EL ARCHIVO FÍSICO
-    with open(ruta_absoluta, 'wb') as f:
-        f.write(pdf_content)
-
-    # 7. CREAR EL REGISTRO EN LA BASE DE DATOS (Para que aparezca en la App)
-    # Verificamos si ya existe para no duplicarlo
-    if not Archivo.objects.filter(carpeta=carpeta_db, nombre=nombre_archivo).exists():
-        Archivo.objects.create(
-            nombre=f"Cotización #{c.id} - {c.titulo or ''}",
+    # 6. GUARDAR EL ARCHIVO (Usando modelo DOCUMENTO)
+    # Esto soluciona que no apareciera en el Dashboard y evita errores de ruta
+    if not Documento.objects.filter(carpeta=carpeta_db, nombre_archivo=nombre_archivo).exists():
+        nuevo_doc = Documento(
+            cliente=cli,
             carpeta=carpeta_db,
-            archivo=ruta_relativa, # Aquí le decimos a Django dónde está el archivo
+            nombre_archivo=nombre_archivo,
             subido_por=request.user
         )
+        # ContentFile guarda los bytes del PDF directamente en el sistema de archivos
+        nuevo_doc.archivo.save(nombre_archivo, ContentFile(pdf_content))
+        nuevo_doc.save()
 
-    # 8. Finanzas
+    # 7. Registrar en Finanzas (Cuentas por Cobrar)
+    # Seleccionamos el monto correcto dependiendo si la cotización llevaba IVA o no
+    monto_final_cobro = c.total_con_iva if c.aplica_iva else c.total
+
     CuentaPorCobrar.objects.create(
         cliente=cli,
         cotizacion=c,
-        concepto=f"Cotización #{c.id}",
-        monto_total=c.total,
-        saldo_pendiente=c.total,
+        concepto=f"Cotización #{c.id} - {c.titulo or 'Proyecto'}",
+        monto_total=monto_final_cobro,     # <--- Total real (con o sin IVA)
+        saldo_pendiente=monto_final_cobro, # Inicialmente se debe todo
         fecha_vencimiento=c.validez_hasta or timezone.now().date()
     )
 
-    # 9. Actualizar Cotización
+    # 8. Actualizar Cotización
     c.estado = 'aceptada'
     c.cliente_convertido = cli
     c.save()
 
-    messages.success(request, "Proceso completado. El PDF se ha guardado en la carpeta 'Cotizaciones'.")
+    messages.success(request, "Cliente creado/asociado, PDF guardado y cuenta por cobrar generada.")
     return redirect('detalle_cliente', cliente_id=cli.id)
 
 # FUNCIÓN DE CORREO ACTUALIZADA (RESEND + NOMBRE INTELIGENTE)
@@ -1259,3 +1265,57 @@ def buscar_cliente_api(request):
     ).distinct()[:5] # Limitamos a 5 sugerencias
 
     return JsonResponse(list(resultados), safe=False)
+# En expedientes/views.py
+
+@login_required
+def generar_orden_cobro(request, cuenta_id, tipo_pago):
+    import weasyprint
+    from django.utils import timezone
+    
+    cuenta = get_object_or_404(CuentaPorCobrar, id=cuenta_id)
+    cotizacion = cuenta.cotizacion
+    
+    # 1. Capturar datos bancarios de la URL (GET request)
+    datos_bancarios = {
+        'banco': request.GET.get('banco', 'BBVA'),
+        'cuenta': request.GET.get('cuenta_num', ''),
+        'clabe': request.GET.get('clabe', ''),
+        'titular': request.GET.get('titular', '')
+    }
+
+    # 2. Cálculos Financieros
+    # Nota: cuenta.monto_total ya incluye IVA si la cotización lo tenía.
+    total_proyecto = cuenta.monto_total 
+    
+    if tipo_pago == 'anticipo':
+        titulo_doc = "ORDEN DE PAGO - ANTICIPO"
+        # El 50% del total (incluyendo impuestos si aplica)
+        monto_a_pagar = total_proyecto / Decimal(2)
+        nota = "Concepto: 50% de anticipo para inicio de gestiones administrativas."
+        porcentaje_pago = 50
+    else: # liquidacion
+        titulo_doc = "ORDEN DE PAGO - LIQUIDACIÓN"
+        # El saldo restante real
+        monto_a_pagar = cuenta.saldo_pendiente 
+        nota = "Concepto: Pago final contra entrega de resultados."
+        porcentaje_pago = 100 if cuenta.monto_pagado == 0 else 50 # Estimado
+
+    context = {
+        'cuenta': cuenta,
+        'c': cotizacion, # Pasamos la cotización para ver items e IVA
+        'titulo_doc': titulo_doc,
+        'monto_a_pagar': monto_a_pagar,
+        'nota': nota,
+        'tipo_pago': tipo_pago,
+        'porcentaje_pago': porcentaje_pago,
+        'banco': datos_bancarios,
+        'fecha_emision': timezone.now(),
+        'base_url': request.build_absolute_uri('/')
+    }
+
+    html = render_to_string('finanzas/orden_cobro_pdf.html', context)
+    response = HttpResponse(content_type='application/pdf')
+    filename = f"Cobro_{tipo_pago}_{cuenta.cliente.nombre_empresa}.pdf"
+    response['Content-Disposition'] = f'inline; filename="{filename}"'
+    weasyprint.HTML(string=html, base_url=request.build_absolute_uri('/')).write_pdf(response)
+    return response
