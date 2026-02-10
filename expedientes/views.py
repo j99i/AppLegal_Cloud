@@ -745,15 +745,14 @@ def nueva_cotizacion(request):
         # 4. LÓGICA DE IVA FLEXIBLE
         aplica_iva = request.POST.get('aplica_iva') == 'on'
         
-        # Capturamos la tasa personalizada del formulario
-        # Si no viene o hay error, usamos 16 por defecto
+        # Capturamos la tasa personalizada
         tasa_str = request.POST.get('porcentaje_iva_personalizado', '16')
         try:
             tasa_iva = Decimal(tasa_str)
         except:
             tasa_iva = Decimal('16.00')
 
-        # 5. Crear Objeto Cotización
+        # 5. Crear Objeto Cotización (AQUÍ AGREGAMOS LOS NUEVOS CAMPOS)
         cotizacion = Cotizacion.objects.create(
             titulo=titulo,
             prospecto_empresa=prospecto_empresa,
@@ -765,10 +764,13 @@ def nueva_cotizacion(request):
             porcentaje_descuento=porcentaje_descuento,
             validez_hasta=validez if validez else None,
             
-            # Guardamos configuración de IVA
+            # --- NUEVOS CAMPOS ---
+            condiciones_pago=request.POST.get('condiciones_pago', '50_50'),
+            tiempo_entrega=request.POST.get('tiempo_entrega', '30_dias'),
+            # ---------------------
+
             aplica_iva=aplica_iva,
-            porcentaje_iva=tasa_iva,  # <--- AQUÍ SE GUARDA LA TASA (8, 16, etc)
-            
+            porcentaje_iva=tasa_iva,
             creado_por=request.user
         )
 
@@ -804,7 +806,6 @@ def nueva_cotizacion(request):
     # GET: Mostrar formulario
     servicios = Servicio.objects.all()
     return render(request, 'cotizaciones/crear.html', {'servicios': servicios})
-
 @login_required
 def detalle_cotizacion(request, cotizacion_id):
     c = get_object_or_404(Cotizacion, id=cotizacion_id)
@@ -821,23 +822,43 @@ def generar_pdf_cotizacion(request, cotizacion_id):
 
 @login_required
 def convertir_a_cliente(request, cotizacion_id):
-    # Imports necesarios para esta lógica específica
+    # Imports necesarios
     from django.core.files.base import ContentFile
     import weasyprint
     
     c = get_object_or_404(Cotizacion, id=cotizacion_id)
+
+    # Si NO es POST, redirigimos (por seguridad)
+    if request.method != 'POST':
+        return redirect('detalle_cotizacion', cotizacion_id=c.id)
     
     # 1. Validación: Si ya es cliente, redirigir
     if c.cliente_convertido:
         messages.warning(request, f"Esta cotización ya pertenece al cliente {c.cliente_convertido}")
         return redirect('detalle_cliente', cliente_id=c.cliente_convertido.id)
 
-    # 2. Buscar o Crear Cliente
+    # =======================================================
+    # PASO A: LIMPIEZA DE SERVICIOS RECHAZADOS
+    # =======================================================
+    items_aceptados_ids = request.POST.getlist('items_seleccionados')
+    
+    # Si desmarcaron algo, lo borramos de la base de datos para que no salga en el PDF ni en el cobro
+    # Excluímos los que SÍ vinieron en la lista, y borramos el resto.
+    items_a_borrar = ItemCotizacion.objects.filter(cotizacion=c).exclude(id__in=items_aceptados_ids)
+    
+    if items_a_borrar.exists():
+        items_a_borrar.delete()
+        # ¡IMPORTANTE! Recalculamos totales porque bajó el precio
+        c.calcular_totales()
+        c.refresh_from_db()
+
+    # =======================================================
+    # PASO B: CREACIÓN DEL CLIENTE (Lógica estándar)
+    # =======================================================
     nombre_busqueda = c.prospecto_empresa if c.prospecto_empresa else c.prospecto_nombre
     cli = Cliente.objects.filter(nombre_empresa__iexact=nombre_busqueda).first()
 
     if not cli:
-        # Crear Cliente Nuevo
         cli = Cliente.objects.create(
             nombre_empresa=nombre_busqueda,
             nombre_contacto=c.prospecto_nombre,
@@ -845,29 +866,44 @@ def convertir_a_cliente(request, cotizacion_id):
             telefono=c.prospecto_telefono,
             datos_extra={'direccion': c.prospecto_direccion, 'cargo': c.prospecto_cargo}
         )
-        # Asignar permisos si no es admin
         if request.user.rol != 'admin':
             request.user.clientes_asignados.add(cli)
 
-    # 3. Buscar la Carpeta "Cotizaciones"
-    # Usamos "Cotizaciones" (Mayúscula) para coincidir con el Signal
+    # =======================================================
+    # PASO C: GESTIÓN DE CARPETAS (Selección de usuario)
+    # =======================================================
+    # El modelo Cliente crea AUTOMÁTICAMENTE todas las carpetas al guardarse (por el Signal).
+    # Así que aquí lo que haremos es BORRAR las que el usuario NO quiso.
+    
+    carpetas_seleccionadas = request.POST.getlist('carpetas_seleccionadas')
+    carpetas_base = ['LICENCIA', 'FUNCIONAMIENTO', 'PROTECCIÓN CIVIL']
+    
+    for nombre_carpeta in carpetas_base:
+        # Si la carpeta base NO está en lo que el usuario seleccionó, la borramos
+        if nombre_carpeta not in carpetas_seleccionadas:
+            Carpeta.objects.filter(cliente=cli, nombre=nombre_carpeta).delete()
+
+    # Aseguramos que exista la carpeta de Cotizaciones (esa siempre va)
     carpeta_db, _ = Carpeta.objects.get_or_create(
         nombre="Cotizaciones",
         cliente=cli,
         defaults={'es_expediente': False}
     )
 
-    # 4. Generar el PDF en memoria
+    # =======================================================
+    # PASO D: GENERACIÓN DE PDF Y COBRO (Con los nuevos totales)
+    # =======================================================
+    
+    # Generar el PDF en memoria
     html_string = render_to_string('cotizaciones/pdf_template.html', {'c': c})
     html = weasyprint.HTML(string=html_string, base_url=request.build_absolute_uri())
     pdf_content = html.write_pdf()
 
-    # 5. Definir nombre del archivo seguro
+    # Nombre del archivo
     nombre_safe = slugify(c.titulo or f"v1_{c.id}").replace("-", "_")
-    nombre_archivo = f"Cotizacion_{c.id}_{nombre_safe}.pdf"
+    nombre_archivo = f"Cotizacion_{c.id}_{nombre_safe}_FINAL.pdf"
 
-    # 6. GUARDAR EL ARCHIVO (Usando modelo DOCUMENTO)
-    # Esto soluciona que no apareciera en el Dashboard y evita errores de ruta
+    # Guardar archivo
     if not Documento.objects.filter(carpeta=carpeta_db, nombre_archivo=nombre_archivo).exists():
         nuevo_doc = Documento(
             cliente=cli,
@@ -875,31 +911,28 @@ def convertir_a_cliente(request, cotizacion_id):
             nombre_archivo=nombre_archivo,
             subido_por=request.user
         )
-        # ContentFile guarda los bytes del PDF directamente en el sistema de archivos
         nuevo_doc.archivo.save(nombre_archivo, ContentFile(pdf_content))
         nuevo_doc.save()
 
-    # 7. Registrar en Finanzas (Cuentas por Cobrar)
-    # Seleccionamos el monto correcto dependiendo si la cotización llevaba IVA o no
+    # Registrar Cuenta por Cobrar
     monto_final_cobro = c.total_con_iva if c.aplica_iva else c.total
 
     CuentaPorCobrar.objects.create(
         cliente=cli,
         cotizacion=c,
         concepto=f"Cotización #{c.id} - {c.titulo or 'Proyecto'}",
-        monto_total=monto_final_cobro,     # <--- Total real (con o sin IVA)
-        saldo_pendiente=monto_final_cobro, # Inicialmente se debe todo
+        monto_total=monto_final_cobro,
+        saldo_pendiente=monto_final_cobro,
         fecha_vencimiento=c.validez_hasta or timezone.now().date()
     )
 
-    # 8. Actualizar Cotización
+    # Actualizar estado Cotización
     c.estado = 'aceptada'
     c.cliente_convertido = cli
     c.save()
 
-    messages.success(request, "Cliente creado/asociado, PDF guardado y cuenta por cobrar generada.")
+    messages.success(request, "¡Trato cerrado! Se ajustaron los servicios, se crearon las carpetas seleccionadas y se generó la cuenta por cobrar.")
     return redirect('detalle_cliente', cliente_id=cli.id)
-
 # FUNCIÓN DE CORREO ACTUALIZADA (RESEND + NOMBRE INTELIGENTE)
 # ----------------------------------------------------
 @login_required
@@ -1250,23 +1283,35 @@ def buscar_cliente_api(request):
     if len(query) < 2:
         return JsonResponse([], safe=False)
     
-    # Buscamos en cotizaciones anteriores empresas que se parezcan
-    # Usamos 'distinct' para no traer repetidos
-    resultados = Cotizacion.objects.filter(
-        Q(prospecto_empresa__icontains=query) | 
-        Q(prospecto_nombre__icontains=query)
-    ).values(
-        'prospecto_empresa', 
-        'prospecto_nombre', 
-        'prospecto_email', 
-        'prospecto_telefono',
-        'prospecto_direccion',
-        'prospecto_cargo'
-    ).distinct()[:5] # Limitamos a 5 sugerencias
+    # Buscamos en la base de datos de Clientes reales
+    # Filtramos por empresa O por nombre de contacto
+    clientes_encontrados = Cliente.objects.filter(
+        Q(nombre_empresa__icontains=query) | 
+        Q(nombre_contacto__icontains=query)
+    )[:5] # Máximo 5 resultados para no saturar
 
-    return JsonResponse(list(resultados), safe=False)
-# En expedientes/views.py
+    resultados = []
+    for c in clientes_encontrados:
+        # Preparamos la dirección y cargo (si existen en datos_extra)
+        direccion = ""
+        cargo = ""
+        
+        # Verificamos si datos_extra es un diccionario válido
+        if c.datos_extra and isinstance(c.datos_extra, dict):
+            direccion = c.datos_extra.get('direccion', '')
+            cargo = c.datos_extra.get('cargo', '')
 
+        # Creamos el objeto con las claves EXACTAS que espera tu HTML
+        resultados.append({
+            'prospecto_empresa': c.nombre_empresa,
+            'prospecto_nombre': c.nombre_contacto,
+            'prospecto_email': c.email,
+            'prospecto_telefono': c.telefono,
+            'prospecto_direccion': direccion,
+            'prospecto_cargo': cargo
+        })
+
+    return JsonResponse(resultados, safe=False)
 @login_required
 def generar_orden_cobro(request, cuenta_id, tipo_pago):
     import weasyprint

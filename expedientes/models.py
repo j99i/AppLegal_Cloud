@@ -242,6 +242,22 @@ class Cotizacion(models.Model):
     # Relación con cliente convertido
     cliente_convertido = models.ForeignKey('Cliente', on_delete=models.SET_NULL, null=True, blank=True, related_name='cotizacion_origen')
     
+    # --- NUEVOS CAMPOS: CONDICIONES COMERCIALES ---
+    OPCIONES_PAGO = (
+        ('50_50', '50% Anticipo - 50% al Finalizar'),
+        ('100_entrega', '100% Contra Entrega de Resultados'),
+        ('contado', 'Pago de Contado (Una sola exhibición)')
+    )
+    condiciones_pago = models.CharField(max_length=20, choices=OPCIONES_PAGO, default='50_50', verbose_name="Forma de Pago")
+
+    OPCIONES_TIEMPO = (
+        ('30_dias', '30 Días Hábiles'),
+        ('60_dias', '60 Días Hábiles'),
+        ('90_dias', '90 Días Hábiles'),
+        ('indefinido', 'Por definir según avance procesal')
+    )
+    tiempo_entrega = models.CharField(max_length=20, choices=OPCIONES_TIEMPO, default='30_dias', verbose_name="Tiempo de Gestión")
+
     def __str__(self):
         return f"Cotización #{self.id} - {self.prospecto_empresa or self.prospecto_nombre}"
 
@@ -278,7 +294,6 @@ class Cotizacion(models.Model):
             total=self.total,
             total_con_iva=self.total_con_iva
         )
-
 # ESTA CLASE FALTABA EN TU ARCHIVO ANTERIOR:
 class ItemCotizacion(models.Model):
     cotizacion = models.ForeignKey(Cotizacion, related_name='items', on_delete=models.CASCADE)
