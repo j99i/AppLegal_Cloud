@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-8 animate__animated animate__fadeIn">
+    
+    <div class="bg-white p-6 rounded-t-2xl border-b border-gray-100 flex justify-between items-center">
+        <h2 class="text-xl font-black text-[#2D1B4B]">
+            <i class="fas fa-envelope-open-text mr-2 text-red-500"></i> Enviar Autorizaciones
+        </h2>
+        <a href="{% url 'detalle_carpeta' cliente.id carpeta.id %}" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></a>
+    </div>
+
+    <form method="POST" class="bg-white p-8 rounded-b-2xl shadow-xl">
+        {% csrf_token %}
+        
+        <div class="mb-4">
+            <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Para:</label>
+            <input type="email" name="destinatario" value="{{ email_destino }}" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-gray-700 border border-gray-200 focus:border-[#A855F7] focus:ring-0 transition-colors" required>
+        </div>
+
+        <div class="mb-6">
+            <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Asunto:</label>
+            <input type="text" name="asunto" value="{{ asunto }}" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-[#2D1B4B] border border-gray-200 focus:border-[#A855F7] focus:ring-0 transition-colors" required>
+        </div>
+
+        <div class="mb-6">
+            <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Mensaje:</label>
+            <textarea name="mensaje" rows="12" class="w-full p-4 bg-white rounded-xl border border-gray-200 focus:border-[#A855F7] focus:ring-0 shadow-inner font-sans text-sm leading-relaxed">{{ mensaje }}</textarea>
+            <p class="text-xs text-gray-400 mt-2 text-right">* Se enviará con formato HTML y firma.</p>
+        </div>
+
+        <div class="bg-red-50 p-4 rounded-xl mb-8 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center text-red-500">
+                    <i class="fas fa-file-archive text-lg"></i>
+                </div>
+                <div>
+                    <p class="text-sm font-bold text-red-800">Se adjuntará un ZIP con {{ carpeta.documentos.count }} documentos.</p>
+                    <p class="text-xs text-red-600">Total aprox: 15 MB</p>
+                </div>
+            </div>
+            <button type="button" class="text-xs font-bold text-red-500 hover:underline">Ver lista</button>
+        </div>
+
+        <div class="flex justify-end gap-3">
+            <a href="{% url 'detalle_carpeta' cliente.id carpeta.id %}" class="px-6 py-3 bg-gray-100 text-gray-500 font-bold rounded-xl hover:bg-gray-200 transition-colors">Cancelar</a>
+            <button type="submit" class="px-8 py-3 bg-[#2D1B4B] text-white font-bold rounded-xl hover:bg-[#A855F7] shadow-lg transition-all transform hover:-translate-y-1 flex items-center gap-2">
+                <i class="fas fa-paper-plane"></i> ENVIAR AHORA
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

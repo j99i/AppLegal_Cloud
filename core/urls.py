@@ -51,20 +51,24 @@ urlpatterns = [
     path('tarea/toggle/<int:tarea_id>/', views.toggle_tarea, name='toggle_tarea'),
     path('tarea/editar/<int:tarea_id>/', views.editar_tarea, name='editar_tarea'),
     path('tarea/eliminar/<int:tarea_id>/', views.eliminar_tarea, name='eliminar_tarea'),
-
+    path('cliente/<uuid:cliente_id>/generar-link/', views.generar_link_externo, name='generar_link_externo'),
+    path('portal-cliente/<uuid:token>/', views.vista_publica_carga, name='vista_publica_carga'),
+    path('aprobar-archivo/<int:temp_id>/', views.aprobar_archivo_temporal, name='aprobar_archivo_temporal'),
     # MÓDULOS
     path('contratos/generar/<uuid:cliente_id>/', views.generador_contratos, name='generador_contratos'),
     path('contratos/visor/<int:documento_id>/', views.visor_docx, name='visor_docx'),
     path('plantillas/subir/', views.subir_plantilla, name='subir_plantilla'),
     path('plantillas/eliminar/<int:plantilla_id>/', views.eliminar_plantilla, name='eliminar_plantilla'),
-    
+    path('rechazar-archivo/<int:temp_id>/', views.rechazar_archivo_temporal, name='rechazar_archivo_temporal'),
+    path('drive/preview/<int:archivo_id>/', views.obtener_preview_archivo, name='obtener_preview_archivo'),
     # HERRAMIENTAS Y API
     path('herramientas/disenador/', views.diseñador_plantillas, name='diseñador_plantillas'),
     path('api/previsualizar-word/', views.previsualizar_word_raw, name='previsualizar_word_raw'),
     path('api/crear-variable/', views.crear_variable_api, name='api_crear_variable'),
     path('api/convertir-html/', views.api_convertir_html, name='api_convertir_html'), 
-
+    path('archivo/descargar/<int:archivo_id>/', views.descargar_archivo_oficial, name='descargar_archivo_oficial'),
     # COTIZACIONES
+    path('carpeta/<int:carpeta_id>/redactar-correo/', views.redactar_correo_autorizaciones, name='redactar_correo_autorizaciones'),
     path('cotizaciones/servicios/', views.gestion_servicios, name='gestion_servicios'),
     path('cotizaciones/servicios/guardar/', views.guardar_servicio, name='guardar_servicio'),
     path('cotizaciones/servicios/eliminar/<int:servicio_id>/', views.eliminar_servicio, name='eliminar_servicio'),

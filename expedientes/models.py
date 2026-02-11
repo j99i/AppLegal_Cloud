@@ -115,13 +115,16 @@ class Carpeta(models.Model):
         lista_req = requisitos[nombre_key]
         detalle = []
         for req in lista_req:
-            doc = self.documentos.filter(nombre_archivo__iexact=req).first()
+            # --- CAMBIO IMPORTANTE AQUÍ ---
+            # Antes decía: nombre_archivo__iexact=req (Busca nombre exacto)
+            # Ahora dice: nombre_archivo__icontains=req (Busca que CONTENGA el texto)
+            doc = self.documentos.filter(nombre_archivo__icontains=req).order_by('-fecha_subida').first()
+            
             if doc:
                 detalle.append({'nombre': req, 'estado': 'ok', 'doc': doc})
             else:
                 detalle.append({'nombre': req, 'estado': 'missing', 'doc': None})
         return detalle
-
 class Archivo(models.Model):
     nombre = models.CharField(max_length=200)
     carpeta = models.ForeignKey(Carpeta, on_delete=models.CASCADE, related_name='archivos')
@@ -144,13 +147,23 @@ class Expediente(models.Model):
     creado_el = models.DateTimeField(auto_now_add=True)
 
 class Documento(models.Model):
-    cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='documentos_cliente')
+    cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='documentos')
     carpeta = models.ForeignKey(Carpeta, on_delete=models.CASCADE, related_name='documentos', null=True, blank=True)
     archivo = models.FileField(upload_to='drive_legal/%Y/%m/%d/')
     nombre_archivo = models.CharField(max_length=255)
+    subido_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
     fecha_subida = models.DateTimeField(auto_now_add=True)
-    subido_por = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True)
+    
+    # --- CAMPO NUEVO PARA ALERTAS ---
+    fecha_vencimiento = models.DateField(null=True, blank=True, verbose_name="Fecha de Vencimiento")
 
+    def __str__(self):
+        return self.nombre_archivo
+
+    class Meta:
+        verbose_name = "Documento"
+        verbose_name_plural = "Documentos"
+        ordering = ['-fecha_subida']
 # ==========================================
 # 4. GESTIÓN
 # ==========================================
@@ -378,3 +391,26 @@ def crear_carpetas_base(sender, instance, created, **kwargs):
                 cliente=instance,
                 defaults={'es_expediente': False}
             )
+
+# ==========================================
+# 9. CARGA EXTERNA (CLIENT PORTAL)
+# ==========================================
+class SolicitudEnlace(models.Model):
+    """Genera un link único para que el cliente suba archivos sin loguearse"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='solicitudes_externas')
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    activa = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"Link para {self.cliente.nombre_empresa} ({self.id})"
+
+class ArchivoTemporal(models.Model):
+    """Archivos en 'Sala de Espera' esperando aprobación del abogado"""
+    solicitud = models.ForeignKey(SolicitudEnlace, on_delete=models.CASCADE, related_name='archivos_temp')
+    archivo = models.FileField(upload_to='uploads_pendientes/')
+    nombre_requisito = models.CharField(max_length=255) # Ej: "ACTA CONSTITUTIVA"
+    fecha_subida = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"{self.nombre_requisito} - Pendiente"

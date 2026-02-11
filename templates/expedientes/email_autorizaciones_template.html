@@ -1,0 +1,31 @@
+<div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
+    
+    <div style="background-color: #2D1B4B; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+        <h2 style="color: white; margin: 0;">Autorizaciones Liberadas</h2>
+    </div>
+
+    <div style="padding: 20px; border: 1px solid #ddd; border-top: none;">
+        
+        <div style="margin-bottom: 20px;">
+            {{ mensaje_usuario|linebreaks }}
+        </div>
+
+        <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+            <p style="font-weight: bold; margin-top: 0; color: #555;">Documentos incluidos en el ZIP:</p>
+            <ul style="margin-bottom: 0;">
+                {% for doc in archivos %}
+                <li style="color: #2D1B4B;">{{ doc.nombre_archivo }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div style="border-top: 1px solid #eee; padding-top: 20px; font-size: 0.9em; color: #666;">
+            <p style="font-weight: bold; color: #2D1B4B; margin: 0;">{{ usuario.first_name }} {{ usuario.last_name }}</p>
+            <p style="margin: 0;">Gestión Legal & Corporativa</p>
+            {% if usuario.email %}
+            <p style="margin: 0;">{{ usuario.email }}</p>
+            {% endif %}
+            <p style="margin: 0; color: #A855F7;">Enviado desde Cordpad Legal App</p>
+        </div>
+    </div>
+</div>

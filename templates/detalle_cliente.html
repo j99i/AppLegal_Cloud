@@ -1,4 +1,6 @@
 {% extends 'base.html' %}
+{% load static %}
+
 {% block content %}
 <div class="max-w-7xl mx-auto animate__animated animate__fadeIn relative">
     
@@ -67,34 +69,102 @@
                 {% else %} <span class="text-[#2D1B4B]">Carpeta Raíz</span> {% endif %}
             </nav>
             <div class="flex gap-2">
+                
+                {% if carpeta_actual and carpeta_actual.nombre == 'Autorizaciones liberadas' %}
+                <a href="{% url 'redactar_correo_autorizaciones' carpeta_actual.id %}" class="bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-2 rounded-xl font-bold text-xs hover:from-red-600 hover:to-red-700 shadow-lg flex items-center gap-2 animate__animated animate__pulse">
+                    <i class="fas fa-paper-plane"></i> ENVIAR AUTORIZACIONES
+                </a>
+                {% endif %}
+
+                {% if user.can_edit_client or user.rol == 'admin' %}
+                <a href="{% url 'generar_link_externo' cliente.id %}" class="bg-indigo-600 text-white px-4 py-2 rounded-xl font-bold text-xs hover:bg-indigo-700 shadow-md flex items-center gap-2 transition-colors">
+                    <i class="fas fa-link"></i> LINK CLIENTE
+                </a>
+                {% endif %}
+
                 {% if user.access_contratos or user.rol == 'admin' %}
                 <a href="{% url 'generador_contratos' cliente.id %}" class="bg-[#A855F7] text-white px-4 py-2 rounded-xl font-bold text-xs hover:bg-[#9333EA] shadow-md flex items-center gap-2">
                     <i class="fas fa-file-signature"></i> CONTRATO
                 </a>
                 {% endif %}
+                
                 {% if carpeta_actual %}
                 <a href="{% url 'descargar_carpeta_zip' carpeta_actual.id %}" class="bg-blue-100 text-blue-700 px-4 py-2 rounded-xl font-bold text-xs hover:bg-blue-200"><i class="fas fa-file-archive"></i> ZIP</a>
                 {% endif %}
+                
                 {% if user.can_create_client or user.rol == 'admin' %}
                 <button onclick="modalCrearCarpeta()" class="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-xl font-bold text-xs hover:bg-gray-50"><i class="fas fa-folder-plus"></i></button>
                 {% endif %}
+                
                 {% if user.can_upload_files or user.rol == 'admin' %}
                 <button onclick="modalSubirArchivo()" class="bg-[#2D1B4B] text-white px-4 py-2 rounded-xl font-bold text-xs hover:bg-[#1E1233] shadow-lg"><i class="fas fa-cloud-upload-alt"></i> SUBIR</button>
                 {% endif %}
             </div>
         </div>
 
+        {% if archivos_pendientes %}
+        <div class="bg-gradient-to-r from-gray-900 to-[#2D1B4B] p-6 rounded-[2rem] shadow-xl mb-8 relative overflow-hidden animate__animated animate__fadeIn">
+            <div class="absolute top-0 right-0 opacity-10 transform translate-x-10 -translate-y-10">
+                <i class="fas fa-search-dollar text-9xl text-white"></i>
+            </div>
+
+            <div class="flex justify-between items-center mb-6 relative z-10">
+                <div>
+                    <h3 class="text-xl font-black text-white flex items-center gap-3">
+                        <span class="bg-yellow-400 text-[#2D1B4B] text-xs px-2 py-1 rounded-md font-bold animate-pulse">ACCIÓN REQUERIDA</span>
+                        Auditoría de Documentos
+                    </h3>
+                    <p class="text-gray-300 text-sm mt-1">El cliente ha enviado <strong>{{ archivos_pendientes.count }}</strong> archivos para revisión.</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 relative z-10">
+                {% for temp in archivos_pendientes %}
+                <div class="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-xl hover:bg-white/20 transition-all group">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center text-white text-lg">
+                            <i class="fas fa-file-pdf"></i>
+                        </div>
+                        <span class="text-[10px] text-gray-300 font-mono">{{ temp.fecha_subida|date:"d M H:i" }}</span>
+                    </div>
+                    
+                    <h4 class="font-bold text-white text-sm mb-1 truncate" title="{{ temp.nombre_requisito }}">
+                        {{ temp.nombre_requisito }}
+                    </h4>
+                    <p class="text-xs text-gray-400 mb-4">Pendiente de validación</p>
+
+                    <button onclick="abrirModalAuditoria('{{ temp.id }}', '{{ temp.nombre_requisito }}', '{{ temp.archivo.url }}')" 
+                       class="w-full bg-white text-[#2D1B4B] hover:bg-yellow-400 font-bold py-2 rounded-lg text-xs transition-colors shadow-lg flex items-center justify-center gap-2">
+                        <i class="fas fa-microscope"></i> AUDITAR AHORA
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
         <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 min-h-[500px]">
             
             {% if carpetas %}
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                 {% for carpeta in carpetas %}
-                <div class="bg-gray-50 rounded-xl p-4 border border-gray-200 shadow-sm relative transition-all hover:shadow-md">
+                <div class="rounded-xl p-4 border shadow-sm relative transition-all hover:shadow-md 
+                    {% if carpeta.nombre == 'Autorizaciones liberadas' %}
+                        bg-red-50 border-red-300 shadow-red-100 group-special
+                    {% else %}
+                        bg-gray-50 border-gray-200 
+                    {% endif %}">
                     
-                    <div class="flex items-center justify-between mb-4 pb-2 border-b border-gray-200">
+                    <div class="flex items-center justify-between mb-4 pb-2 border-b 
+                        {% if carpeta.nombre == 'Autorizaciones liberadas' %}border-red-200{% else %}border-gray-200{% endif %}">
+                        
                         <div class="flex items-center gap-3">
-                            <i class="fas fa-folder text-2xl text-[#2D1B4B]"></i>
-                            <a href="{% url 'detalle_carpeta' cliente.id carpeta.id %}" class="font-black text-[#2D1B4B] uppercase text-sm hover:underline">{{ carpeta.nombre }}</a>
+                            {% if carpeta.nombre == 'Autorizaciones liberadas' %}
+                                <i class="fas fa-shield-alt text-2xl text-red-500 animate-pulse"></i>
+                                <a href="{% url 'detalle_carpeta' cliente.id carpeta.id %}" class="font-black text-red-600 uppercase text-sm hover:underline">{{ carpeta.nombre }}</a>
+                            {% else %}
+                                <i class="fas fa-folder text-2xl text-[#2D1B4B]"></i>
+                                <a href="{% url 'detalle_carpeta' cliente.id carpeta.id %}" class="font-black text-[#2D1B4B] uppercase text-sm hover:underline">{{ carpeta.nombre }}</a>
+                            {% endif %}
                         </div>
                         {% if user.can_delete_client or user.rol == 'admin' %}
                         <a href="{% url 'eliminar_carpeta' carpeta.id %}" onclick="return confirm('¿Borrar carpeta?')" class="text-gray-300 hover:text-red-500"><i class="fas fa-times"></i></a>
@@ -106,7 +176,7 @@
                         <div class="space-y-2 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
                             {% for item in detalle %}
                             <div class="flex justify-between items-center bg-white p-2 rounded-lg border 
-                                        {% if item.estado == 'ok' %}border-green-200 bg-green-50{% else %}border-red-100 bg-red-50{% endif %}">
+                                    {% if item.estado == 'ok' %}border-green-200 bg-green-50{% else %}border-red-100 bg-red-50{% endif %}">
                                 
                                 <div class="flex items-center gap-2 overflow-hidden">
                                     {% if item.estado == 'ok' %}
@@ -165,11 +235,18 @@
                             <td class="py-3 flex items-center gap-3">
                                 <i class="fas fa-file text-gray-400"></i>
                                 <span class="font-bold text-[#2D1B4B] truncate max-w-xs cursor-pointer hover:underline" onclick="abrirPreview('{{ doc.id }}')">{{ doc.nombre_archivo }}</span>
+                                {% if doc.fecha_vencimiento %}
+                                    <span class="text-[9px] bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full font-bold ml-2 shadow-sm border border-orange-200">
+                                        <i class="fas fa-clock mr-1"></i> Vence: {{ doc.fecha_vencimiento|date:"d/m/y" }}
+                                    </span>
+                                {% endif %}
                             </td>
                             <td class="py-3 text-gray-500 text-xs">{{ doc.fecha_subida|date:"d/m/y" }}</td>
                             <td class="py-3 text-right">
                                 <button type="button" onclick="abrirPreview('{{ doc.id }}')" class="text-gray-400 hover:text-[#A855F7] mx-1"><i class="fas fa-eye"></i></button>
-                                <a href="{{ doc.archivo.url }}" download class="text-gray-400 hover:text-[#2D1B4B] mx-1"><i class="fas fa-download"></i></a>
+                                
+                                <a href="{% url 'descargar_archivo_oficial' doc.id %}" class="text-gray-400 hover:text-[#2D1B4B] mx-1" title="Descargar"><i class="fas fa-download"></i></a>
+                                
                                 <button type="button" onclick="abrirModalMover('{{ doc.id }}', '{{ doc.nombre_archivo }}')" class="text-blue-400 hover:text-blue-600 mx-1"><i class="fas fa-exchange-alt"></i></button>
                                 {% if user.can_delete_client or user.rol == 'admin' %}
                                 <a href="{% url 'eliminar_archivo_drive' doc.id %}" onclick="return confirm('¿Estás seguro de eliminar este archivo?')" class="text-red-300 hover:text-red-500 mx-1"><i class="fas fa-trash"></i></a>
@@ -267,24 +344,99 @@
     </div>
 </div>
 
-<div id="modal-preview" class="fixed inset-0 bg-black/90 hidden items-center justify-center z-50"><div class="bg-white w-full max-w-5xl h-[85vh] rounded-xl overflow-hidden relative flex flex-col shadow-2xl"><div class="bg-[#2D1B4B] p-4 flex justify-between items-center shrink-0"><h3 id="preview-title" class="text-white font-bold truncate">Vista Previa</h3><div class="flex gap-4"><a id="preview-download" href="#" download class="text-white hover:text-[#A855F7]"><i class="fas fa-download"></i></a><button onclick="cerrarPreview()" class="text-white hover:text-red-500"><i class="fas fa-times text-xl"></i></button></div></div><div id="preview-body" class="flex-1 bg-gray-100 overflow-auto flex items-center justify-center p-4"></div></div></div>
-<div id="modal-carpeta" class="fixed inset-0 bg-[#2D1B4B]/90 hidden items-center justify-center z-50"><div class="bg-white p-8 rounded-[2rem] w-full max-w-sm m-4 shadow-2xl"><button onclick="document.getElementById('modal-carpeta').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400"><i class="fas fa-times"></i></button><h3 class="text-xl font-black text-[#2D1B4B] mb-4">Nueva Carpeta</h3><form action="{% url 'crear_carpeta' cliente.id %}" method="POST">{% csrf_token %}{% if carpeta_actual %}<input type="hidden" name="padre_id" value="{{ carpeta_actual.id }}">{% endif %}<input type="text" name="nombre" class="w-full p-3 bg-gray-50 rounded-xl font-bold border-none mb-4" placeholder="Nombre..." required><button type="submit" class="w-full bg-[#2D1B4B] text-white py-3 rounded-xl font-bold hover:bg-[#A855F7] transition-colors">CREAR</button></form></div></div>
-<div id="modal-archivo" class="fixed inset-0 bg-[#2D1B4B]/90 hidden items-center justify-center z-50"><div class="bg-white p-8 rounded-[2rem] w-full max-w-sm m-4 shadow-2xl"><button onclick="document.getElementById('modal-archivo').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400"><i class="fas fa-times"></i></button><h3 class="text-xl font-black text-[#2D1B4B] mb-4">Subir Archivos</h3><form action="{% url 'subir_archivo_drive' cliente.id %}" method="POST" enctype="multipart/form-data">{% csrf_token %}{% if carpeta_actual %}<input type="hidden" name="carpeta_id" value="{{ carpeta_actual.id }}">{% endif %}<input type="file" name="archivo" multiple class="w-full p-3 bg-gray-50 rounded-xl mb-4"><button type="submit" class="w-full bg-[#2D1B4B] text-white py-3 rounded-xl font-bold hover:bg-[#A855F7] transition-colors">SUBIR</button></form></div></div>
-<div id="modal-tarea" class="fixed inset-0 bg-[#2D1B4B]/90 hidden items-center justify-center z-50"><div class="bg-white p-8 rounded-[2rem] w-full max-w-sm m-4 shadow-2xl"><button onclick="document.getElementById('modal-tarea').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400"><i class="fas fa-times"></i></button><h3 class="text-xl font-black text-[#2D1B4B] mb-4">Nueva Tarea</h3><form action="{% url 'gestionar_tarea' cliente.id %}" method="POST">{% csrf_token %}<input type="text" name="titulo" class="w-full p-3 bg-gray-50 rounded-xl font-bold border-none mb-4" placeholder="Título de la tarea" required><input type="date" name="fecha_limite" class="w-full p-3 bg-gray-50 rounded-xl font-bold border-none mb-4" required><select name="prioridad" class="w-full p-3 bg-gray-50 rounded-xl font-bold border-none mb-4"><option value="alta">Alta Prioridad</option><option value="media" selected>Media</option><option value="baja">Baja</option></select><button type="submit" class="w-full bg-[#2D1B4B] text-white py-3 rounded-xl font-bold hover:bg-[#A855F7] transition-colors">GUARDAR</button></form></div></div>
-<div id="modal-requisito" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 animate__animated animate__fadeIn"><div class="bg-white p-8 rounded-[2rem] w-full max-w-sm m-4 shadow-2xl relative"><button onclick="cerrarModalRequisito()" class="absolute top-6 right-6 text-gray-400 hover:text-red-500 transition-colors"><i class="fas fa-times text-xl"></i></button><h3 class="text-lg font-black text-[#2D1B4B] mb-2">Subir Documento Requerido</h3><p id="lbl-requisito" class="text-sm font-bold text-[#A855F7] mb-6 uppercase border-b pb-2"></p><form id="form-requisito" method="POST" enctype="multipart/form-data">{% csrf_token %}<input type="hidden" name="nombre_requisito" id="input-req-nombre"><label class="block mb-6 cursor-pointer"><span class="text-xs font-bold text-gray-400 mb-2 block">Selecciona el archivo:</span><input type="file" name="archivo" required class="block w-full text-sm text-gray-500 file:mr-4 file:py-3 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-purple-50 file:text-[#A855F7] hover:file:bg-purple-100 transition-all"/></label><button type="submit" class="w-full bg-[#2D1B4B] text-white py-3 rounded-xl font-bold hover:bg-green-500 transition-colors flex items-center justify-center gap-2 shadow-lg"><i class="fas fa-cloud-upload-alt"></i> CARGAR Y VALIDAR</button></form></div></div>
+<div id="modal-preview" class="fixed inset-0 bg-black/90 hidden items-center justify-center z-50">
+    <div class="bg-white w-full max-w-5xl h-[85vh] rounded-xl overflow-hidden relative flex flex-col shadow-2xl">
+        <div class="bg-[#2D1B4B] p-4 flex justify-between items-center shrink-0">
+            <h3 id="preview-title" class="text-white font-bold truncate">Vista Previa</h3>
+            <div class="flex gap-4">
+                <a id="preview-download" href="#" download class="text-white hover:text-[#A855F7]"><i class="fas fa-download"></i></a>
+                <button onclick="cerrarPreview()" class="text-white hover:text-red-500"><i class="fas fa-times text-xl"></i></button>
+            </div>
+        </div>
+        <div id="preview-body" class="flex-1 bg-gray-100 overflow-hidden relative flex items-center justify-center">
+            </div>
+    </div>
+</div>
+
+<div id="modal-carpeta" class="fixed inset-0 bg-[#2D1B4B]/90 hidden items-center justify-center z-50">
+    <div class="bg-white p-8 rounded-[2rem] w-full max-w-sm m-4 shadow-2xl">
+        <button onclick="document.getElementById('modal-carpeta').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400"><i class="fas fa-times"></i></button>
+        <h3 class="text-xl font-black text-[#2D1B4B] mb-4">Nueva Carpeta</h3>
+        <form action="{% url 'crear_carpeta' cliente.id %}" method="POST">
+            {% csrf_token %}
+            {% if carpeta_actual %}<input type="hidden" name="padre_id" value="{{ carpeta_actual.id }}">{% endif %}
+            <input type="text" name="nombre" class="w-full p-3 bg-gray-50 rounded-xl font-bold border-none mb-4" placeholder="Nombre..." required>
+            <button type="submit" class="w-full bg-[#2D1B4B] text-white py-3 rounded-xl font-bold hover:bg-[#A855F7] transition-colors">CREAR</button>
+        </form>
+    </div>
+</div>
+
+<div id="modal-archivo" class="fixed inset-0 bg-[#2D1B4B]/90 hidden items-center justify-center z-50">
+    <div class="bg-white p-8 rounded-[2rem] w-full max-w-sm m-4 shadow-2xl">
+        <button onclick="document.getElementById('modal-archivo').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400"><i class="fas fa-times"></i></button>
+        <h3 class="text-xl font-black text-[#2D1B4B] mb-4">Subir Archivos</h3>
+        <form action="{% url 'subir_archivo_drive' cliente.id %}" method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            {% if carpeta_actual %}<input type="hidden" name="carpeta_id" value="{{ carpeta_actual.id }}">{% endif %}
+            
+            <label class="block mb-2 text-xs font-bold text-gray-400">Seleccionar Archivo(s):</label>
+            <input type="file" name="archivo" multiple class="w-full p-3 bg-gray-50 rounded-xl mb-4">
+            
+            <label class="block mb-2 text-xs font-bold text-[#A855F7]">¿Tiene Vencimiento? (Opcional):</label>
+            <div class="flex items-center gap-2 mb-6 bg-purple-50 p-2 rounded-xl border border-purple-100">
+                <i class="fas fa-calendar-alt text-[#A855F7] ml-2"></i>
+                <input type="date" name="fecha_vencimiento" class="w-full bg-transparent border-none focus:ring-0 text-sm text-gray-600 font-bold">
+            </div>
+
+            <button type="submit" class="w-full bg-[#2D1B4B] text-white py-3 rounded-xl font-bold hover:bg-[#A855F7] transition-colors">SUBIR</button>
+        </form>
+    </div>
+</div>
+
+<div id="modal-tarea" class="fixed inset-0 bg-[#2D1B4B]/90 hidden items-center justify-center z-50">
+    <div class="bg-white p-8 rounded-[2rem] w-full max-w-sm m-4 shadow-2xl">
+        <button onclick="document.getElementById('modal-tarea').classList.add('hidden')" class="absolute top-6 right-6 text-gray-400"><i class="fas fa-times"></i></button>
+        <h3 class="text-xl font-black text-[#2D1B4B] mb-4">Nueva Tarea</h3>
+        <form action="{% url 'gestionar_tarea' cliente.id %}" method="POST">
+            {% csrf_token %}
+            <input type="text" name="titulo" class="w-full p-3 bg-gray-50 rounded-xl font-bold border-none mb-4" placeholder="Título de la tarea" required>
+            <input type="date" name="fecha_limite" class="w-full p-3 bg-gray-50 rounded-xl font-bold border-none mb-4" required>
+            <select name="prioridad" class="w-full p-3 bg-gray-50 rounded-xl font-bold border-none mb-4">
+                <option value="alta">Alta Prioridad</option>
+                <option value="media" selected>Media</option>
+                <option value="baja">Baja</option>
+            </select>
+            <button type="submit" class="w-full bg-[#2D1B4B] text-white py-3 rounded-xl font-bold hover:bg-[#A855F7] transition-colors">GUARDAR</button>
+        </form>
+    </div>
+</div>
+
+<div id="modal-requisito" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 animate__animated animate__fadeIn">
+    <div class="bg-white p-8 rounded-[2rem] w-full max-w-sm m-4 shadow-2xl relative">
+        <button onclick="cerrarModalRequisito()" class="absolute top-6 right-6 text-gray-400 hover:text-red-500 transition-colors"><i class="fas fa-times text-xl"></i></button>
+        <h3 class="text-lg font-black text-[#2D1B4B] mb-2">Subir Documento Requerido</h3>
+        <p id="lbl-requisito" class="text-sm font-bold text-[#A855F7] mb-6 uppercase border-b pb-2"></p>
+        <form id="form-requisito" method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="hidden" name="nombre_requisito" id="input-req-nombre">
+            <label class="block mb-6 cursor-pointer">
+                <span class="text-xs font-bold text-gray-400 mb-2 block">Selecciona el archivo:</span>
+                <input type="file" name="archivo" required class="block w-full text-sm text-gray-500 file:mr-4 file:py-3 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-purple-50 file:text-[#A855F7] hover:file:bg-purple-100 transition-all"/>
+            </label>
+            <button type="submit" class="w-full bg-[#2D1B4B] text-white py-3 rounded-xl font-bold hover:bg-green-500 transition-colors flex items-center justify-center gap-2 shadow-lg"><i class="fas fa-cloud-upload-alt"></i> CARGAR Y VALIDAR</button>
+        </form>
+    </div>
+</div>
 
 <div id="modal-mover" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 animate__animated animate__fadeIn">
     <div class="bg-white p-8 rounded-[2rem] w-full max-w-sm m-4 shadow-2xl relative">
         <button onclick="document.getElementById('modal-mover').classList.add('hidden'); document.getElementById('modal-mover').classList.remove('flex');" class="absolute top-6 right-6 text-gray-400 hover:text-red-500 transition-colors">
             <i class="fas fa-times text-xl"></i>
         </button>
-        
         <h3 class="text-lg font-black text-[#2D1B4B] mb-2">Mover Archivo</h3>
         <p id="lbl-mover-archivo" class="text-sm font-bold text-gray-400 mb-6 truncate"></p>
-        
         <form id="form-mover" method="POST">
             {% csrf_token %}
-            
             <label class="block mb-6">
                 <span class="text-xs font-bold text-gray-400 mb-2 block">Selecciona la carpeta destino:</span>
                 <select name="carpeta_destino" class="w-full p-3 bg-gray-50 rounded-xl font-bold border-none text-[#2D1B4B] focus:ring-2 focus:ring-[#A855F7] outline-none">
@@ -294,11 +446,53 @@
                     {% endfor %}
                 </select>
             </label>
-
             <button type="submit" class="w-full bg-blue-500 text-white py-3 rounded-xl font-bold hover:bg-blue-600 transition-colors flex items-center justify-center gap-2 shadow-lg">
                 <i class="fas fa-exchange-alt"></i> MOVER AHORA
             </button>
         </form>
+    </div>
+</div>
+
+<div id="modal-auditoria" class="fixed inset-0 bg-[#0f0718]/95 hidden items-center justify-center z-50 animate__animated animate__fadeIn">
+    <div class="w-full max-w-6xl h-[90vh] flex flex-col md:flex-row bg-white rounded-2xl overflow-hidden shadow-2xl relative">
+        <button onclick="cerrarModalAuditoria()" class="absolute top-4 right-4 z-50 bg-black/50 text-white w-10 h-10 rounded-full hover:bg-red-500 transition-colors flex items-center justify-center"><i class="fas fa-times"></i></button>
+
+        <div class="flex-1 bg-gray-100 relative flex items-center justify-center p-4 border-r border-gray-200">
+            <div id="auditoria-loader" class="absolute inset-0 flex items-center justify-center bg-gray-100 z-10">
+                <div class="flex flex-col items-center">
+                    <i class="fas fa-circle-notch fa-spin text-4xl text-[#2D1B4B] mb-2"></i>
+                    <p class="text-xs font-bold text-gray-500">Cargando...</p>
+                </div>
+            </div>
+            <iframe id="auditoria-viewer" src="" class="w-full h-full shadow-lg bg-white rounded-lg border-none"></iframe>
+        </div>
+
+        <div class="w-full md:w-80 bg-white p-8 flex flex-col justify-between shrink-0">
+            <div>
+                <h6 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">AUDITANDO:</h6>
+                <h2 id="auditoria-titulo" class="text-xl font-black text-[#2D1B4B] leading-tight mb-6 border-b pb-4"></h2>
+                <div class="bg-blue-50 p-4 rounded-xl mb-6">
+                    <div class="flex items-start gap-3">
+                        <i class="fas fa-info-circle text-blue-500 mt-1"></i>
+                        <p class="text-xs text-blue-800 leading-relaxed">Al aprobar, se renombrará y distribuirá automáticamente.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="space-y-3">
+                <a id="btn-auditoria-aprobar" href="#" class="block w-full bg-green-500 hover:bg-green-600 text-white p-4 rounded-xl text-center transition-all shadow-lg hover:shadow-green-500/30 group">
+                    <div class="flex items-center justify-center gap-2 mb-1">
+                        <i class="fas fa-check-circle text-2xl group-hover:scale-110 transition-transform"></i>
+                        <span class="font-black text-lg">APROBAR</span>
+                    </div>
+                </a>
+                <a id="btn-auditoria-rechazar" href="#" onclick="return confirm('¿Rechazar y eliminar?')" class="block w-full bg-white border-2 border-red-100 hover:border-red-500 text-gray-500 hover:text-red-500 p-3 rounded-xl text-center transition-colors group">
+                    <div class="flex items-center justify-center gap-2">
+                        <i class="fas fa-times-circle text-lg group-hover:rotate-90 transition-transform"></i>
+                        <span class="font-bold">RECHAZAR</span>
+                    </div>
+                </a>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -314,6 +508,7 @@
         document.getElementById(id + '-tab').classList.remove('text-gray-400', 'border-transparent');
     }
 
+    // Funciones Masivas
     function toggleTodos(s) { document.querySelectorAll('.doc-check').forEach(c => c.checked = s.checked); verificarSeleccion(); }
     function verificarSeleccion() { 
         const c = document.querySelectorAll('.doc-check:checked').length; 
@@ -324,54 +519,94 @@
     function ejecutarMasivo(a) { if(a==='eliminar' && !confirm('¿Seguro?'))return; document.getElementById('input-accion').value=a; document.getElementById('form-masivo').submit(); }
     function cerrarMasivo() { document.querySelectorAll('.doc-check').forEach(c => c.checked=false); verificarSeleccion(); }
     
+    // --- Lógica del Preview Universal (Word, Excel, Video, etc) ---
     function abrirPreview(id) {
-        const m=document.getElementById('modal-preview'), b=document.getElementById('preview-body');
-        m.classList.remove('hidden'); m.classList.add('flex');
-        b.innerHTML = '<div class="animate-spin text-4xl text-[#2D1B4B]"><i class="fas fa-circle-notch"></i></div>';
-        fetch(`/drive/preview/${id}/`).then(r=>r.json()).then(d=>{
-            document.getElementById('preview-title').innerText=d.nombre;
-            document.getElementById('preview-download').href=d.url;
-            if(d.tipo==='imagen') b.innerHTML=`<img src="${d.url}" class="max-w-full max-h-full object-contain">`;
-            else if(d.tipo==='pdf') b.innerHTML=`<iframe src="${d.url}" class="w-full h-full border-none bg-white"></iframe>`;
-            else if(d.tipo==='docx') b.innerHTML=`<div class="bg-white w-full h-full p-10 overflow-auto prose">${d.html}</div>`;
-            else b.innerHTML=`<div class="text-center mt-10"><p>No disponible</p><a href="${d.url}" class="bg-[#2D1B4B] text-white px-4 py-2 rounded">Descargar</a></div>`;
-        });
+        const modal = document.getElementById('modal-preview');
+        const body = document.getElementById('preview-body');
+        const title = document.getElementById('preview-title');
+        const downloadBtn = document.getElementById('preview-download');
+
+        modal.classList.remove('hidden'); 
+        modal.classList.add('flex');
+        body.innerHTML = '<div class="flex flex-col items-center justify-center h-full"><i class="fas fa-circle-notch fa-spin text-5xl text-[#2D1B4B] mb-4"></i><p class="text-gray-500 font-bold">Procesando archivo...</p></div>';
+        
+        fetch(`/drive/preview/${id}/`)
+            .then(response => response.json())
+            .then(data => {
+                title.innerText = data.nombre;
+                
+                // CAMBIO CLAVE: El botón del visor ahora descarga el nombre oficial
+                downloadBtn.href = `/archivo/descargar/${id}/`; 
+                
+                let contenidoHTML = '';
+
+                if (data.tipo === 'imagen') {
+                    contenidoHTML = `<div class="flex items-center justify-center h-full bg-black/5"><img src="${data.url}" class="max-w-full max-h-full object-contain shadow-lg rounded"></div>`;
+                } else if (data.tipo === 'pdf') {
+                    contenidoHTML = `<iframe src="${data.url}" class="w-full h-full border-none rounded bg-white"></iframe>`;
+                } else if (data.tipo === 'docx') {
+                    contenidoHTML = `<div class="bg-white w-full h-full p-10 overflow-auto prose max-w-none shadow-inner">${data.html}</div>`;
+                } else if (data.tipo === 'excel') {
+                    contenidoHTML = `<div class="bg-white w-full h-full p-6 overflow-auto shadow-inner"><h4 class="text-sm font-bold text-gray-400 mb-4 uppercase">Vista previa (Primeras 50 filas)</h4><div class="overflow-x-auto border rounded-lg"><table class="w-full text-sm text-left text-gray-500">${data.html}</table></div></div>`;
+                } else if (data.tipo === 'video') {
+                    contenidoHTML = `<div class="flex items-center justify-center h-full bg-black"><video controls class="max-w-full max-h-full outline-none"><source src="${data.url}" type="video/mp4"></video></div>`;
+                } else if (data.tipo === 'audio') {
+                    contenidoHTML = `<div class="flex flex-col items-center justify-center h-full bg-gray-50"><div class="w-32 h-32 bg-gray-200 rounded-full flex items-center justify-center mb-6 animate-pulse"><i class="fas fa-music text-4xl text-gray-400"></i></div><audio controls class="w-1/2"><source src="${data.url}" type="audio/mpeg"></audio></div>`;
+                } else if (data.tipo === 'texto') {
+                    contenidoHTML = `<div class="bg-gray-900 w-full h-full p-6 overflow-auto"><pre class="text-green-400 font-mono text-sm whitespace-pre-wrap">${data.html}</pre></div>`;
+                } else {
+                    contenidoHTML = `<div class="flex flex-col items-center justify-center h-full text-center"><div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4"><i class="fas fa-file-download text-4xl text-gray-400"></i></div><h3 class="text-xl font-bold text-gray-700 mb-2">Vista previa no disponible</h3><a href="/archivo/descargar/${id}/" download class="bg-[#2D1B4B] text-white px-6 py-3 rounded-xl font-bold hover:bg-[#A855F7] transition-colors shadow-lg">Descargar Archivo</a></div>`;
+                }
+                body.innerHTML = contenidoHTML;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                body.innerHTML = '<div class="flex items-center justify-center h-full text-red-500 font-bold">Error al cargar el archivo.</div>';
+            });
     }
     function cerrarPreview() { document.getElementById('modal-preview').classList.add('hidden'); }
+
+    // Helpers Modales
     function modalCrearCarpeta() { document.getElementById('modal-carpeta').classList.remove('hidden'); document.getElementById('modal-carpeta').classList.add('flex'); }
     function modalSubirArchivo() { document.getElementById('modal-archivo').classList.remove('hidden'); document.getElementById('modal-archivo').classList.add('flex'); }
 
-    // --- NUEVO: Lógica Mover Archivo ---
     function abrirModalMover(archivoId, nombreArchivo) {
         const modal = document.getElementById('modal-mover');
         const form = document.getElementById('form-mover');
         const label = document.getElementById('lbl-mover-archivo');
-
         form.action = `/archivo/mover/${archivoId}/`;
         label.innerText = nombreArchivo;
-
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
+        modal.classList.remove('hidden'); modal.classList.add('flex');
     }
 
-    // --- Lógica de Requisitos ---
     function abrirModalRequisito(carpetaId, nombreRequisito) {
         const modal = document.getElementById('modal-requisito');
         const form = document.getElementById('form-requisito');
         const label = document.getElementById('lbl-requisito');
         const input = document.getElementById('input-req-nombre');
-
         form.action = `/drive/subir-requisito/${carpetaId}/`;
         label.innerText = nombreRequisito;
         input.value = nombreRequisito;
-
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
+        modal.classList.remove('hidden'); modal.classList.add('flex');
     }
+    function cerrarModalRequisito() { document.getElementById('modal-requisito').classList.add('hidden'); document.getElementById('modal-requisito').classList.remove('flex'); }
 
-    function cerrarModalRequisito() {
-        document.getElementById('modal-requisito').classList.add('hidden');
-        document.getElementById('modal-requisito').classList.remove('flex');
+    // Auditoría
+    function abrirModalAuditoria(id, nombre, url) {
+        const modal = document.getElementById('modal-auditoria');
+        const viewer = document.getElementById('auditoria-viewer');
+        const loader = document.getElementById('auditoria-loader');
+        const titulo = document.getElementById('auditoria-titulo');
+        const btnAprobar = document.getElementById('btn-auditoria-aprobar');
+        const btnRechazar = document.getElementById('btn-auditoria-rechazar');
+
+        viewer.classList.add('hidden'); loader.classList.remove('hidden');
+        titulo.innerText = nombre; viewer.src = url;
+        btnAprobar.href = `/aprobar-archivo/${id}/`;
+        btnRechazar.href = `/rechazar-archivo/${id}/`;
+        modal.classList.remove('hidden'); modal.classList.add('flex');
+        viewer.onload = function() { loader.classList.add('hidden'); viewer.classList.remove('hidden'); };
     }
+    function cerrarModalAuditoria() { document.getElementById('modal-auditoria').classList.add('hidden'); document.getElementById('modal-auditoria').classList.remove('flex'); document.getElementById('auditoria-viewer').src = ""; }
 </script>
 {% endblock %}

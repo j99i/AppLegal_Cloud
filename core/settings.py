@@ -211,4 +211,5 @@ if not DEBUG:
     # 4. Cabeceras extra contra ataques
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
-    X_FRAME_OPTIONS = 'DENY'
+    X_FRAME_OPTIONS = 'SAMEORIGIN'
+    

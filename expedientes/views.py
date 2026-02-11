@@ -1,9 +1,12 @@
+from email.message import EmailMessage
+import io
 import os
 import json
+from turtle import pd
 import uuid
 import zipfile
 from io import BytesIO
-from datetime import timedelta
+from datetime import datetime, timedelta
 from decimal import Decimal 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import logout
@@ -17,12 +20,14 @@ from django.utils import timezone
 from django.utils.text import slugify 
 from django.template.loader import render_to_string
 from django.core.mail import EmailMultiAlternatives
+from django.core.mail import EmailMessage
 from django.conf import settings 
 from django.utils.html import strip_tags
 from email.mime.image import MIMEImage
+from django.http import FileResponse
 # Importante para serializar los servicios en la nueva cotización
 from django.core.serializers import serialize 
-from .models import Cliente
+from .models import ArchivoTemporal, Cliente, SolicitudEnlace
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib import messages
 from .models import Carpeta, Documento, Cliente
@@ -244,46 +249,62 @@ def eliminar_cliente(request, cliente_id):
 def detalle_cliente(request, cliente_id, carpeta_id=None):
     cliente = get_object_or_404(Cliente, id=cliente_id)
     
-    if request.user.rol != 'admin' and cliente not in request.user.clientes_asignados.all():
-        messages.error(request, "⛔ Acceso Denegado.")
-        return redirect('dashboard')
-
+    # 1. Configuración de Carpeta Actual y Navegación
     carpeta_actual = None
+    carpetas = []
+    documentos = []
     breadcrumbs = []
-    
+
     if carpeta_id:
+        # Estamos dentro de una subcarpeta
         carpeta_actual = get_object_or_404(Carpeta, id=carpeta_id, cliente=cliente)
-        crumb = carpeta_actual
-        while crumb:
-            breadcrumbs.insert(0, crumb)
-            crumb = crumb.padre
-
-    if carpeta_actual:
-        carpetas = cliente.carpetas_drive.filter(padre=carpeta_actual)
-        documentos = cliente.documentos_cliente.filter(carpeta=carpeta_actual)
+        carpetas = carpeta_actual.subcarpetas.all()
+        documentos = carpeta_actual.documentos.all().order_by('-fecha_subida')
+        
+        # Generar migas de pan (Breadcrumbs)
+        padre = carpeta_actual.padre
+        while padre:
+            breadcrumbs.insert(0, padre)
+            padre = padre.padre
     else:
+        # Estamos en la raíz del cliente
         carpetas = cliente.carpetas_drive.filter(padre__isnull=True)
-        documentos = cliente.documentos_cliente.filter(carpeta__isnull=True)
+        # Si guardas archivos sueltos en raíz, descomenta la siguiente línea:
+        # documentos = Documento.objects.filter(cliente=cliente, carpeta__isnull=True)
 
+    # 2. Estadísticas (Ajusta según tu lógica real)
     stats_cliente = {
-        'total_docs': cliente.documentos_cliente.count(),
-        'expedientes_activos': cliente.expedientes.filter(estado='abierto').count(),
+        'total_docs': Documento.objects.filter(cliente=cliente).count(),
+        'expedientes_activos': cliente.carpetas_drive.count() 
     }
-    
-    historial = Bitacora.objects.filter(cliente=cliente).select_related('usuario').order_by('-fecha')
-    todas_carpetas = cliente.carpetas_drive.all()
 
-    return render(request, 'detalle_cliente.html', {
+    # 3. Datos para Modales
+    todas_carpetas = cliente.carpetas_drive.all()
+    
+    # 4. Historial / Bitácora
+    # (Si tienes un modelo Bitacora relacionado, úsalo aquí)
+    historial = [] 
+    if hasattr(cliente, 'bitacora'):
+        historial = cliente.bitacora.all().order_by('-fecha')[:10]
+
+    # --- CORRECCIÓN IMPORTANTE PARA EL BUZÓN ---
+    # Buscamos TODOS los archivos que estén en "Sala de Espera" para este cliente
+    # sin importar de qué link (SolicitudEnlace) provengan.
+    archivos_pendientes = ArchivoTemporal.objects.filter(solicitud__cliente=cliente)
+
+    context = {
         'cliente': cliente,
         'carpeta_actual': carpeta_actual,
-        'breadcrumbs': breadcrumbs,
         'carpetas': carpetas,
         'documentos': documentos,
+        'breadcrumbs': breadcrumbs,
         'stats_cliente': stats_cliente,
-        'historial': historial,
         'todas_carpetas': todas_carpetas,
-    })
+        'historial': historial,
+        'archivos_pendientes': archivos_pendientes, # <--- ESTO HACE QUE APAREZCA EL BUZÓN
+    }
 
+    return render(request, 'detalle_cliente.html', context)
 @login_required
 def editar_cliente(request, cliente_id):
     cliente = get_object_or_404(Cliente, id=cliente_id)
@@ -369,23 +390,63 @@ def crear_expediente(request, cliente_id):
 
 @login_required
 def subir_archivo_drive(request, cliente_id):
-    if not (request.user.can_upload_files or request.user.rol == 'admin'): return redirect('detalle_cliente', cliente_id=cliente_id)
+    cliente = get_object_or_404(Cliente, id=cliente_id)
+    
     if request.method == 'POST':
-        cliente = get_object_or_404(Cliente, id=cliente_id)
         archivos = request.FILES.getlist('archivo')
-        carpeta_raiz_id = request.POST.get('carpeta_id')
-        carpeta_raiz = get_object_or_404(Carpeta, id=carpeta_raiz_id) if carpeta_raiz_id else None
+        carpeta_id = request.POST.get('carpeta_id')
+        fecha_vencimiento = request.POST.get('fecha_vencimiento') # <--- NUEVO INPUT
         
-        count = 0
-        for f in archivos:
-            Documento.objects.create(cliente_id=cliente_id, archivo=f, nombre_archivo=f.name, carpeta=carpeta_raiz, subido_por=request.user)
-            count += 1
-        
-        ubicacion = carpeta_raiz.nombre if carpeta_raiz else "Raíz"
-        Bitacora.objects.create(usuario=request.user, cliente=cliente, accion='subida', descripcion=f"Subió {count} archivos en '{ubicacion}'.")
-        if carpeta_raiz: return redirect('detalle_carpeta', cliente_id=cliente_id, carpeta_id=carpeta_raiz.id)
-    return redirect('detalle_cliente', cliente_id=cliente_id)
+        carpeta = None
+        if carpeta_id:
+            carpeta = get_object_or_404(Carpeta, id=carpeta_id)
 
+        for f in archivos:
+            nuevo_doc = Documento(
+                cliente=cliente,
+                carpeta=carpeta,
+                archivo=f,
+                nombre_archivo=f.name,
+                subido_por=request.user
+            )
+            
+            # --- LÓGICA DE VENCIMIENTOS Y AGENDA ---
+            if fecha_vencimiento:
+                nuevo_doc.fecha_vencimiento = fecha_vencimiento
+                
+                # Convertir texto a objeto fecha
+                fecha_fin = datetime.strptime(fecha_vencimiento, '%Y-%m-%d').date()
+                
+                # Definir alertas (Días antes: Mensaje)
+                alertas = [
+                    (20, '⚠️ Vence en 20 días'),
+                    (10, '🟠 Vence en 10 días'),
+                    (5,  '🔴 URGENTE: Vence en 5 días')
+                ]
+                
+                for dias_antes, prefijo in alertas:
+                    fecha_alerta = fecha_fin - timedelta(days=dias_antes)
+                    
+                    # Evitar crear eventos en el pasado
+                    if fecha_alerta >= timezone.now().date():
+                        Evento.objects.create(
+                            cliente=cliente,
+                            usuario=request.user,
+                            titulo=f"{prefijo}: {f.name}",
+                            inicio=datetime.combine(fecha_alerta, datetime.min.time()), # A primera hora
+                            fin=datetime.combine(fecha_alerta, datetime.min.time()) + timedelta(hours=1),
+                            descripcion=f"Recordatorio automático de vencimiento para el documento: {f.name}"
+                        )
+            
+            nuevo_doc.save()
+
+        messages.success(request, f"{len(archivos)} archivo(s) subido(s) correctamente.")
+        
+        if carpeta:
+            return redirect('detalle_carpeta', cliente_id=cliente.id, carpeta_id=carpeta.id)
+        return redirect('detalle_cliente', cliente_id=cliente.id)
+        
+    return redirect('detalle_cliente', cliente_id=cliente.id)
 @login_required
 def eliminar_archivo_drive(request, archivo_id):
     doc = get_object_or_404(Documento, id=archivo_id)
@@ -822,13 +883,15 @@ def generar_pdf_cotizacion(request, cotizacion_id):
     return response
 
 # En expedientes/views.py
-
 @login_required
 def convertir_a_cliente(request, cotizacion_id):
+    # Importaciones locales necesarias para esta función
+    from django.template.loader import render_to_string
     from django.core.files.base import ContentFile
     import weasyprint
     from django.utils.text import slugify
-    from datetime import timedelta  # Lo importamos aquí por si acaso
+    from datetime import timedelta
+    from decimal import Decimal
     
     c = get_object_or_404(Cotizacion, id=cotizacion_id)
 
@@ -840,6 +903,7 @@ def convertir_a_cliente(request, cotizacion_id):
         return redirect('detalle_cliente', cliente_id=c.cliente_convertido.id)
 
     # 1. LIMPIEZA DE SERVICIOS
+    # Borramos los items que el usuario desmarcó en el formulario
     items_aceptados_ids = request.POST.getlist('items_seleccionados')
     items_a_borrar = ItemCotizacion.objects.filter(cotizacion=c).exclude(id__in=items_aceptados_ids)
     if items_a_borrar.exists():
@@ -859,19 +923,40 @@ def convertir_a_cliente(request, cotizacion_id):
             telefono=c.prospecto_telefono,
             datos_extra={'direccion': c.prospecto_direccion, 'cargo': c.prospecto_cargo}
         )
+        # Asignar al usuario actual si no es admin (para que pueda verlo)
         if request.user.rol != 'admin':
             request.user.clientes_asignados.add(cli)
 
-    # 3. GESTIÓN DE CARPETAS
+    # =======================================================
+    # 3. GESTIÓN DE CARPETAS (LÓGICA ACTUALIZADA)
+    # =======================================================
     carpetas_seleccionadas = request.POST.getlist('carpetas_seleccionadas')
     carpetas_base = ['LICENCIA', 'FUNCIONAMIENTO', 'PROTECCIÓN CIVIL']
+    
     for nombre_carpeta in carpetas_base:
         if nombre_carpeta not in carpetas_seleccionadas:
+            # Si se desmarcó, borrar carpeta si existe (limpieza)
             Carpeta.objects.filter(cliente=cli, nombre=nombre_carpeta).delete()
+        else:
+            # A. Crear/Obtener la Carpeta Principal (ej. FUNCIONAMIENTO)
+            carpeta_padre, created = Carpeta.objects.get_or_create(
+                nombre=nombre_carpeta, 
+                cliente=cli, 
+                defaults={'es_expediente': False}
+            )
+            
+            # B. Crear AUTOMÁTICAMENTE la subcarpeta "Autorizaciones liberadas" dentro de ella
+            Carpeta.objects.get_or_create(
+                nombre="Autorizaciones liberadas",
+                cliente=cli,
+                padre=carpeta_padre, # <--- Esto la pone adentro
+                defaults={'es_expediente': False}
+            )
     
-    carpeta_db, _ = Carpeta.objects.get_or_create(nombre="Cotizaciones", cliente=cli, defaults={'es_expediente': False})
+    # Carpeta adicional para guardar el PDF de la cotización
+    carpeta_cotizaciones, _ = Carpeta.objects.get_or_create(nombre="Cotizaciones", cliente=cli, defaults={'es_expediente': False})
 
-    # 4. GENERAR PDF FINAL
+    # 4. GENERAR PDF FINAL Y GUARDARLO
     html_string = render_to_string('cotizaciones/pdf_template.html', {'c': c})
     html = weasyprint.HTML(string=html_string, base_url=request.build_absolute_uri())
     pdf_content = html.write_pdf()
@@ -879,88 +964,63 @@ def convertir_a_cliente(request, cotizacion_id):
     nombre_safe = slugify(c.titulo or f"v1_{c.id}").replace("-", "_")
     nombre_archivo = f"Cotizacion_{c.id}_{nombre_safe}_FINAL.pdf"
     
-    if not Documento.objects.filter(carpeta=carpeta_db, nombre_archivo=nombre_archivo).exists():
-        nuevo_doc = Documento(cliente=cli, carpeta=carpeta_db, nombre_archivo=nombre_archivo, subido_por=request.user)
+    if not Documento.objects.filter(carpeta=carpeta_cotizaciones, nombre_archivo=nombre_archivo).exists():
+        nuevo_doc = Documento(cliente=cli, carpeta=carpeta_cotizaciones, nombre_archivo=nombre_archivo, subido_por=request.user)
         nuevo_doc.archivo.save(nombre_archivo, ContentFile(pdf_content))
         nuevo_doc.save()
 
-    # =======================================================
-    # 5. FINANZAS INTELIGENTE (FECHAS AUTOMÁTICAS)
-    # =======================================================
+    # 5. FINANZAS: GENERAR CUENTAS POR COBRAR
     monto_final = c.total_con_iva if c.aplica_iva else c.total
     hoy = timezone.now().date()
     
-    # Calcular días de plazo según la cotización
+    # Calcular fecha estimada de entrega
     dias_plazo = 0
-    if c.tiempo_entrega == '30_dias':
-        dias_plazo = 30
-    elif c.tiempo_entrega == '60_dias':
-        dias_plazo = 60
-    elif c.tiempo_entrega == '90_dias':
-        dias_plazo = 90
-    else:
-        dias_plazo = 15 # Default si es indefinido
+    if c.tiempo_entrega == '30_dias': dias_plazo = 30
+    elif c.tiempo_entrega == '60_dias': dias_plazo = 60
+    elif c.tiempo_entrega == '90_dias': dias_plazo = 90
+    else: dias_plazo = 15 # inmediato o por definir
         
     fecha_final_proyecto = hoy + timedelta(days=dias_plazo)
 
-    # Lógica según condiciones de pago
+    # Crear cobros según condición de pago
     if c.condiciones_pago == '50_50':
-        mitad = monto_final / 2
-        
-        # 1. Anticipo (Vence HOY)
+        mitad = monto_final / Decimal(2)
+        # Cobro 1: Anticipo
         CuentaPorCobrar.objects.create(
-            cliente=cli,
-            cotizacion=c,
-            concepto=f"50% Anticipo - {c.titulo or 'Proyecto'}",
-            monto_total=mitad,
-            saldo_pendiente=mitad,
-            fecha_vencimiento=hoy, # Cobrar ya
-            estado='pendiente'
+            cliente=cli, cotizacion=c, 
+            concepto=f"50% Anticipo - {c.titulo}", 
+            monto_total=mitad, saldo_pendiente=mitad, 
+            fecha_vencimiento=hoy, estado='pendiente'
         )
-        
-        # 2. Liquidación (Vence al FINAL del plazo)
+        # Cobro 2: Liquidación
         CuentaPorCobrar.objects.create(
-            cliente=cli,
-            cotizacion=c,
-            concepto=f"50% Liquidación - {c.titulo or 'Proyecto'}",
-            monto_total=mitad,
-            saldo_pendiente=mitad,
-            fecha_vencimiento=fecha_final_proyecto, # Cobrar en 30/60/90 días
-            estado='pendiente'
+            cliente=cli, cotizacion=c, 
+            concepto=f"50% Liquidación - {c.titulo}", 
+            monto_total=mitad, saldo_pendiente=mitad, 
+            fecha_vencimiento=fecha_final_proyecto, estado='pendiente'
         )
-    
     elif c.condiciones_pago == '100_entrega':
-        # 100% Contra Entrega (Vence al FINAL del plazo)
         CuentaPorCobrar.objects.create(
-            cliente=cli,
-            cotizacion=c,
-            concepto=f"Pago Contra Entrega - {c.titulo or 'Proyecto'}",
-            monto_total=monto_final,
-            saldo_pendiente=monto_final,
-            fecha_vencimiento=fecha_final_proyecto, # Cobrar al entregar
-            estado='pendiente'
+            cliente=cli, cotizacion=c, 
+            concepto=f"Pago Contra Entrega - {c.titulo}", 
+            monto_total=monto_final, saldo_pendiente=monto_final, 
+            fecha_vencimiento=fecha_final_proyecto, estado='pendiente'
+        )
+    else: # Contado
+        CuentaPorCobrar.objects.create(
+            cliente=cli, cotizacion=c, 
+            concepto=f"Pago de Contado - {c.titulo}", 
+            monto_total=monto_final, saldo_pendiente=monto_final, 
+            fecha_vencimiento=hoy, estado='pendiente'
         )
 
-    else:
-        # Pago de Contado (Vence HOY)
-        CuentaPorCobrar.objects.create(
-            cliente=cli,
-            cotizacion=c,
-            concepto=f"Pago de Contado - {c.titulo or 'Proyecto'}",
-            monto_total=monto_final,
-            saldo_pendiente=monto_final,
-            fecha_vencimiento=hoy, # Cobrar ya
-            estado='pendiente'
-        )
-
-    # Actualizar estado Cotización
+    # Actualizar estado de la cotización
     c.estado = 'aceptada'
     c.cliente_convertido = cli
     c.save()
 
-    messages.success(request, f"¡Trato cerrado! Se generó el calendario de pagos (Plazo: {dias_plazo} días).")
+    messages.success(request, f"¡Trato cerrado! Se han generado las carpetas con sus subcarpetas de autorizaciones.")
     return redirect('detalle_cliente', cliente_id=cli.id)
-# FUNCIÓN DE CORREO ACTUALIZADA (RESEND + NOMBRE INTELIGENTE)
 # ----------------------------------------------------
 @login_required
 def enviar_cotizacion_email(request, cotizacion_id):
@@ -1168,31 +1228,82 @@ def eliminar_plantilla(request, plantilla_id):
     
     # Intentar volver a la página anterior
     return redirect(request.META.get('HTTP_REFERER', 'dashboard'))
+
+# ==========================================
+# FUNCIÓN MEJORADA DE SUBIDA DE REQUISITOS
+# ==========================================
+@login_required
 def subir_archivo_requisito(request, carpeta_id):
     if request.method == 'POST':
-        carpeta = get_object_or_404(Carpeta, id=carpeta_id)
+        # 1. Obtener datos básicos
+        carpeta_origen = get_object_or_404(Carpeta, id=carpeta_id)
+        cliente = carpeta_origen.cliente
         archivo = request.FILES.get('archivo')
-        nombre_requisito = request.POST.get('nombre_requisito') # Aquí recibimos "ACTA CONSTITUTIVA", etc.
+        nombre_requisito = request.POST.get('nombre_requisito') # Ej: "ACTA CONSTITUTIVA"
 
         if archivo and nombre_requisito:
-            # 1. Borrar si ya existía uno anterior con ese nombre (para reemplazar)
-            Documento.objects.filter(carpeta=carpeta, nombre_archivo=nombre_requisito).delete()
+            try:
+                # --- A. GENERAR NOMBRE INTELIGENTE ---
+                # Ejemplo resultado: "ACTA CONSTITUTIVA 7 ELEVEN 2026.pdf"
+                anio_actual = timezone.now().year
+                
+                # Obtener extensión de forma segura
+                ext = archivo.name.split('.')[-1] if '.' in archivo.name else 'pdf'
+                
+                nuevo_nombre_formal = f"{nombre_requisito} {cliente.nombre_empresa} {anio_actual}.{ext}"
 
-            # 2. Crear el nuevo documento renombrado
-            nuevo_doc = Documento(
-                cliente=carpeta.cliente,
-                carpeta=carpeta,
-                archivo=archivo,
-                nombre_archivo=nombre_requisito, # ¡Aquí ocurre la magia del renombrado!
-                subido_por=request.user
-            )
-            nuevo_doc.save()
-            messages.success(request, f'Se cargó correctamente: {nombre_requisito}')
+                # --- B. DETECTAR DÓNDE MÁS SE NECESITA ---
+                # Escaneamos TODAS las carpetas de este cliente para ver quién más pide este documento
+                carpetas_destino = []
+                todas_carpetas = cliente.carpetas_drive.all()
+
+                for carpeta in todas_carpetas:
+                    # Usamos el método del modelo para ver qué documentos pide esta carpeta
+                    requisitos_carpeta = carpeta.obtener_detalle_cumplimiento()
+                    
+                    if requisitos_carpeta:
+                        # Buscamos coincidencia exacta del nombre del requisito (Ej. "PODER NOTARIAL")
+                        for req in requisitos_carpeta:
+                            if req['nombre'] == nombre_requisito:
+                                carpetas_destino.append(carpeta)
+                                break
+                
+                # Si no detectó ninguna (caso raro), al menos guardar en la carpeta actual donde se hizo clic
+                if not carpetas_destino:
+                    carpetas_destino.append(carpeta_origen)
+
+                # --- C. GUARDAR (REPLICAR) EN LAS CARPETAS DETECTADAS ---
+                count = 0
+                for carpeta_target in carpetas_destino:
+                    # 1. Borramos versiones viejas de este requisito en esta carpeta específica
+                    #    Usamos startswith para borrar "ACTA CONSTITUTIVA..." y evitar duplicados
+                    Documento.objects.filter(
+                        carpeta=carpeta_target, 
+                        nombre_archivo__istartswith=nombre_requisito
+                    ).delete()
+
+                    # 2. Guardamos el nuevo documento
+                    nuevo_doc = Documento(
+                        cliente=cliente,
+                        carpeta=carpeta_target,
+                        archivo=archivo, # Django maneja la copia del archivo físico automáticamente
+                        nombre_archivo=nuevo_nombre_formal,
+                        subido_por=request.user
+                    )
+                    nuevo_doc.save()
+                    count += 1
+
+                messages.success(request, f'✅ Archivo actualizado exitosamente en {count} carpeta(s) con el nombre: "{nuevo_nombre_formal}".')
+
+            except Exception as e:
+                messages.error(request, f"Error al procesar el archivo: {e}")
         else:
-            messages.error(request, 'Error al subir el archivo.')
+            messages.error(request, 'Error: Faltan datos (archivo o nombre del requisito).')
             
-        return redirect('detalle_cliente', cliente_id=carpeta.cliente.id)
+        return redirect('detalle_cliente', cliente_id=cliente.id)
+    
     return redirect('dashboard')
+
 def enviar_recordatorio_documentacion(request, cliente_id):
     cliente = get_object_or_404(Cliente, id=cliente_id)
     
@@ -1466,4 +1577,310 @@ def finanzas_cliente(request, cliente_id):
     return render(request, 'finanzas/detalle_cliente.html', {
         'cliente': cliente,
         'proyectos': proyectos
+    })
+# ==========================================
+# GESTIÓN DE CARGA EXTERNA
+# ==========================================
+
+@login_required
+def generar_link_externo(request, cliente_id):
+    """Crea un link nuevo para el cliente y lo muestra"""
+    cliente = get_object_or_404(Cliente, id=cliente_id)
+    # Creamos una solicitud nueva
+    solicitud = SolicitudEnlace.objects.create(cliente=cliente)
+    
+    # Construimos la URL completa
+    link = request.build_absolute_uri(f'/portal-cliente/{solicitud.id}/')
+    
+    messages.success(request, f"¡Link generado! Copia y envía esto al cliente: {link}")
+    return redirect('detalle_cliente', cliente_id=cliente.id)
+
+# En expedientes/views.py
+def vista_publica_carga(request, token):
+    solicitud = get_object_or_404(SolicitudEnlace, id=token, activa=True)
+    cliente = solicitud.cliente
+
+    # 1. Obtener nombres de lo que YA subió (Sala de Espera) para no contarlos como pendientes
+    archivos_en_revision = set(ArchivoTemporal.objects.filter(solicitud=solicitud).values_list('nombre_requisito', flat=True))
+
+    # 2. Calcular UNIVERSO de requisitos (Únicos)
+    total_requisitos_unicos = set()
+    requisitos_cumplidos_unicos = set()
+    faltantes_reales = [] # Lista ordenada para el flujo "paso a paso"
+    faltantes_set = set() # Set auxiliar para evitar duplicados en la lista
+
+    for carpeta in cliente.carpetas_drive.all():
+        detalle = carpeta.obtener_detalle_cumplimiento()
+        if detalle:
+            for item in detalle:
+                nombre = item['nombre']
+                total_requisitos_unicos.add(nombre)
+                
+                if item['estado'] == 'ok':
+                    requisitos_cumplidos_unicos.add(nombre)
+                else:
+                    # Si falta, verifiquemos si NO está ya en revisión
+                    if nombre not in archivos_en_revision:
+                         # Solo lo agregamos a la lista de tareas si es nuevo
+                        if nombre not in faltantes_set:
+                            faltantes_reales.append(nombre)
+                            faltantes_set.add(nombre)
+    
+    # 3. Calcular Porcentaje Real (Basado en Tareas Únicas)
+    # Tareas completadas = (Ya en verde) + (En sala de espera)
+    # Nota: Usamos union para asegurar que no sumamos doble si algo raro pasa
+    tareas_completadas = len(requisitos_cumplidos_unicos | archivos_en_revision)
+    total_tareas = len(total_requisitos_unicos)
+    
+    porcentaje = 0
+    if total_tareas > 0:
+        porcentaje = int((tareas_completadas / total_tareas) * 100)
+    
+    # CORRECCIÓN FINAL: Si no hay faltantes reales, forzar 100% visualmente
+    if not faltantes_reales and total_tareas > 0:
+        porcentaje = 100
+
+    # 4. Determinar el "Documento Activo" (El primero de la lista)
+    documento_actual = faltantes_reales[0] if faltantes_reales else None
+
+    # Procesar la subida
+    if request.method == 'POST' and request.FILES.get('archivo'):
+        requisito_a_subir = request.POST.get('requisito_objetivo')
+        archivo_subido = request.FILES['archivo']
+        
+        if requisito_a_subir:
+            ArchivoTemporal.objects.create(
+                solicitud=solicitud,
+                archivo=archivo_subido,
+                nombre_requisito=requisito_a_subir
+            )
+            # Recargar para actualizar barra y pedir el siguiente
+            return redirect('vista_publica_carga', token=token)
+    
+    return render(request, 'externo/portal_carga.html', {
+        'cliente': cliente, 
+        'documento_actual': documento_actual, 
+        'faltantes_count': len(faltantes_reales),
+        'porcentaje': porcentaje,
+        'archivos_en_revision': archivos_en_revision
+    })
+
+@login_required
+def aprobar_archivo_temporal(request, temp_id):
+    """Mueve el archivo de la sala de espera a las carpetas oficiales"""
+    temp = get_object_or_404(ArchivoTemporal, id=temp_id)
+    cliente = temp.solicitud.cliente
+    
+    # --- REUTILIZAMOS TU LÓGICA INTELIGENTE DE SUBIDA ---
+    try:
+        # 1. Preparamos el nombre oficial
+        anio_actual = timezone.now().year
+        ext = temp.archivo.name.split('.')[-1]
+        nuevo_nombre_formal = f"{temp.nombre_requisito} {cliente.nombre_empresa} {anio_actual}.{ext}"
+        
+        # 2. Buscamos carpetas destino
+        carpetas_destino = []
+        for carpeta in cliente.carpetas_drive.all():
+            requisitos = carpeta.obtener_detalle_cumplimiento()
+            if requisitos:
+                # Si la carpeta pide este requisito (buscando coincidencia de texto)
+                for req in requisitos:
+                    if req['nombre'] == temp.nombre_requisito:
+                        carpetas_destino.append(carpeta)
+                        break
+        
+        if not carpetas_destino:
+            # Si no encuentra destino automático, lo manda a la carpeta raíz o la primera
+            carpetas_destino.append(cliente.carpetas_drive.first())
+
+        # 3. Guardamos en todas las carpetas detectadas
+        for carpeta_target in carpetas_destino:
+            # Borrar viejos
+            Documento.objects.filter(carpeta=carpeta_target, nombre_archivo__icontains=temp.nombre_requisito).delete()
+            
+            # Crear nuevo (Django duplicará el archivo físico automáticamente al guardarlo de nuevo)
+            Documento.objects.create(
+                cliente=cliente,
+                carpeta=carpeta_target,
+                archivo=temp.archivo, # Tomamos el archivo del modelo temporal
+                nombre_archivo=nuevo_nombre_formal,
+                subido_por=request.user 
+            )
+            
+        # 4. ¡IMPORTANTE! Borramos el temporal porque ya está procesado
+        temp.delete()
+        messages.success(request, f"Aprobado y distribuido: {nuevo_nombre_formal}")
+        
+    except Exception as e:
+        messages.error(request, f"Error al aprobar: {e}")
+
+    return redirect('detalle_cliente', cliente_id=cliente.id)
+
+# --- Agregar junto a aprobar_archivo_temporal ---
+
+@login_required
+def rechazar_archivo_temporal(request, temp_id):
+    """Elimina el archivo de la sala de espera sin guardarlo en carpetas"""
+    temp = get_object_or_404(ArchivoTemporal, id=temp_id)
+    nombre = temp.nombre_requisito
+    cliente_id = temp.solicitud.cliente.id
+    
+    # Borramos el archivo físico y el registro temporal
+    temp.archivo.delete()
+    temp.delete()
+    
+    messages.warning(request, f"❌ Documento rechazado y eliminado: {nombre}")
+    return redirect('detalle_cliente', cliente_id=cliente_id)
+@login_required
+def obtener_preview_archivo(request, archivo_id):
+    doc = get_object_or_404(Documento, id=archivo_id)
+    ext = doc.nombre_archivo.split('.')[-1].lower()
+    url = doc.archivo.url
+    
+    data = {
+        'nombre': doc.nombre_archivo,
+        'url': url,
+        'tipo': 'desconocido',
+        'html': ''
+    }
+
+    try:
+        # 1. IMÁGENES
+        if ext in ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg']:
+            data['tipo'] = 'imagen'
+
+        # 2. PDF
+        elif ext == 'pdf':
+            data['tipo'] = 'pdf'
+
+        # 3. WORD (.docx)
+        elif ext == 'docx':
+            data['tipo'] = 'docx'
+            with doc.archivo.open() as docx_file:
+                result = mammoth.convert_to_html(docx_file)
+                data['html'] = result.value
+
+        # 4. EXCEL / CSV (.xlsx, .xls, .csv)
+        elif ext in ['xlsx', 'xls', 'csv']:
+            data['tipo'] = 'excel'
+            # Leemos el archivo con Pandas
+            path = doc.archivo.path
+            if ext == 'csv':
+                df = pd.read_csv(path)
+            else:
+                df = pd.read_excel(path)
+            
+            # Convertimos a HTML (Solo las primeras 50 filas para no saturar)
+            # Agregamos clases de Tailwind para que se vea bonito
+            tabla_html = df.head(50).to_html(classes='w-full text-sm text-left text-gray-500', border=0, index=False)
+            # Un poco de limpieza al HTML de pandas
+            tabla_html = tabla_html.replace('<thead>', '<thead class="text-xs text-gray-700 uppercase bg-gray-50">')
+            tabla_html = tabla_html.replace('<th>', '<th class="px-6 py-3">')
+            tabla_html = tabla_html.replace('<td>', '<td class="px-6 py-4 border-b">')
+            data['html'] = tabla_html
+
+        # 5. VIDEO (.mp4, .webm)
+        elif ext in ['mp4', 'webm', 'ogg']:
+            data['tipo'] = 'video'
+
+        # 6. AUDIO (.mp3, .wav)
+        elif ext in ['mp3', 'wav']:
+            data['tipo'] = 'audio'
+
+        # 7. TEXTO / CÓDIGO (.txt, .py, .js, .html, .css, .json)
+        elif ext in ['txt', 'py', 'js', 'html', 'css', 'json', 'md']:
+            data['tipo'] = 'texto'
+            with open(doc.archivo.path, 'r', encoding='utf-8', errors='ignore') as f:
+                contenido = f.read()
+                data['html'] = contenido
+
+        else:
+            # Si es .zip, .rar, .pptx u otros que no se pueden previsualizar fácil
+            data['tipo'] = 'descarga'
+
+    except Exception as e:
+        print(f"Error generando preview: {e}")
+        data['tipo'] = 'error'
+
+    return JsonResponse(data)
+@login_required
+def descargar_archivo_oficial(request, archivo_id):
+    doc = get_object_or_404(Documento, id=archivo_id)
+    
+    # Abrimos el archivo
+    try:
+        response = FileResponse(doc.archivo.open('rb'), as_attachment=True, filename=doc.nombre_archivo)
+        return response
+    except FileNotFoundError:
+        messages.error(request, "El archivo físico no se encuentra en el servidor.")
+        return redirect('detalle_cliente', cliente_id=doc.cliente.id)
+    
+# En expedientes/views.py
+
+# En expedientes/views.py
+
+@login_required
+def redactar_correo_autorizaciones(request, carpeta_id):
+    carpeta = get_object_or_404(Carpeta, id=carpeta_id)
+    cliente = carpeta.cliente
+    
+    if request.method == 'POST':
+        asunto = request.POST.get('asunto')
+        mensaje_usuario = request.POST.get('mensaje') # Texto plano del usuario
+        destinatario = request.POST.get('destinatario')
+        
+        # 1. GENERAR ZIP EN MEMORIA
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, 'w') as zip_file:
+            for doc in carpeta.documentos.all():
+                try:
+                    zip_file.write(doc.archivo.path, arcname=doc.nombre_archivo)
+                except FileNotFoundError:
+                    pass
+        buffer.seek(0)
+
+        # 2. CONSTRUIR EL HTML FINAL (Aquí ocurre la magia)
+        # Combinamos el texto del usuario con el diseño corporativo
+        cuerpo_html = render_to_string('expedientes/email_autorizaciones_template.html', {
+            'cliente': cliente,
+            'usuario': request.user,
+            'mensaje_usuario': mensaje_usuario, # Pasamos lo que escribió el usuario
+            'archivos': carpeta.documentos.all()
+        })
+        
+        # 3. ENVIAR CORREO
+        email = EmailMessage(
+            subject=asunto,
+            body=cuerpo_html, # Usamos el HTML combinado
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[destinatario],
+            cc=[request.user.email]
+        )
+        email.content_subtype = "html"
+        
+        nombre_zip = f"Autorizaciones_{cliente.nombre_empresa}_{timezone.now().date()}.zip"
+        email.attach(nombre_zip, buffer.getvalue(), 'application/zip')
+        
+        try:
+            email.send()
+            messages.success(request, f"✅ Correo enviado a {destinatario}.")
+            return redirect('detalle_carpeta', cliente_id=cliente.id, carpeta_id=carpeta.id)
+        except Exception as e:
+            messages.error(request, f"❌ Error: {e}")
+    
+    # DATOS PARA EL FORMULARIO (Texto plano sugerido)
+    # Fíjate que aquí usamos \n para saltos de línea, NO <br>
+    mensaje_plano = (
+        f"Estimado(a) {cliente.nombre_contacto},\n\n"
+        f"Por medio del presente le hago entrega de las autorizaciones liberadas para {cliente.nombre_empresa}.\n\n"
+        "Adjunto encontrará un archivo ZIP con todos los documentos digitales para su resguardo.\n\n"
+        "Quedo a sus órdenes."
+    )
+    
+    return render(request, 'expedientes/redactar_correo.html', {
+        'carpeta': carpeta,
+        'cliente': cliente,
+        'asunto': f"Entrega de Autorizaciones - {cliente.nombre_empresa}",
+        'mensaje': mensaje_plano, # <--- Texto plano limpio
+        'email_destino': cliente.email
     })
