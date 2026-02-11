@@ -30,11 +30,11 @@ urlpatterns = [
     path('cliente/<uuid:cliente_id>/', views.detalle_cliente, name='detalle_cliente'),
     path('cliente/<uuid:cliente_id>/carpeta/<int:carpeta_id>/', views.detalle_cliente, name='detalle_carpeta'),
     path('cliente/editar/<uuid:cliente_id>/', views.editar_cliente, name='editar_cliente'),
-
+    path('finanzas/eliminar/<int:id>/', views.eliminar_finanza, name='eliminar_finanza'),
     # CONFIGURACIÓN
     path('configuracion/campos/', views.configurar_campos, name='configurar_campos'),
     path('configuracion/campos/eliminar/<int:campo_id>/', views.eliminar_campo_dinamico, name='eliminar_campo_dinamico'),
-
+    path('finanzas/cliente/<uuid:cliente_id>/', views.finanzas_cliente, name='finanzas_cliente'),
     # DRIVE
     path('carpeta/crear/<uuid:cliente_id>/', views.crear_carpeta, name='crear_carpeta'),
     path('carpeta/eliminar/<int:carpeta_id>/', views.eliminar_carpeta, name='eliminar_carpeta'),

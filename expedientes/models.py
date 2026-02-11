@@ -317,7 +317,7 @@ class ItemCotizacion(models.Model):
 class CuentaPorCobrar(models.Model):
     ESTADOS = (('pendiente', 'Pendiente'), ('parcial', 'Parcial'), ('pagado', 'Pagado'))
     cliente = models.ForeignKey(Cliente, related_name='cuentas', on_delete=models.CASCADE)
-    cotizacion = models.OneToOneField(Cotizacion, on_delete=models.SET_NULL, null=True, blank=True)
+    cotizacion = models.ForeignKey(Cotizacion, on_delete=models.CASCADE, related_name='pagos_programados', null=True, blank=True)
     concepto = models.CharField(max_length=200)
     monto_total = models.DecimalField(max_digits=12, decimal_places=2)
     monto_pagado = models.DecimalField(max_digits=12, decimal_places=2, default=0)

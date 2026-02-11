@@ -1,0 +1,220 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block titulo_pagina %}Finanzas: {{ cliente.nombre_empresa }}{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto animate__animated animate__fadeIn space-y-8">
+
+    <div class="flex items-center gap-4 mb-6">
+        <a href="{% url 'panel_finanzas' %}" class="w-10 h-10 rounded-xl bg-white text-gray-400 flex items-center justify-center hover:bg-gray-100 transition-colors shadow-sm">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+        <div>
+            <h1 class="text-2xl font-black text-[#2D1B4B]">{{ cliente.nombre_empresa }}</h1>
+            <p class="text-sm text-gray-500 font-bold">Historial de proyectos y cobranza</p>
+        </div>
+    </div>
+
+    {% for cotizacion, info in proyectos.items %}
+    <div class="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden mb-8">
+        
+        <div class="p-8 border-b border-gray-50 bg-gray-50/30 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+                <div class="flex items-center gap-3 mb-1">
+                    <span class="w-8 h-8 rounded-full bg-[#A855F7] text-white flex items-center justify-center text-xs font-bold shadow-sm">
+                        <i class="fas fa-folder"></i>
+                    </span>
+                    <h3 class="text-lg font-black text-[#2D1B4B]">{{ info.titulo }}</h3>
+                </div>
+                <p class="text-xs text-gray-400 font-bold ml-11">
+                    {% if info.folio %}Ref: Cotización #{{ info.folio }}{% else %}Cargos Varios{% endif %}
+                </p>
+            </div>
+
+            <div class="flex gap-6 bg-white px-6 py-3 rounded-2xl shadow-sm border border-gray-100">
+                <div>
+                    <p class="text-[9px] text-gray-400 uppercase font-bold">Total Proyecto</p>
+                    <p class="text-sm font-black text-[#2D1B4B]">${{ info.total_proyecto|floatformat:2|intcomma }}</p>
+                </div>
+                <div class="border-l border-gray-100 pl-6">
+                    <p class="text-[9px] text-gray-400 uppercase font-bold">Pendiente</p>
+                    <p class="text-lg font-black {% if info.pendiente_proyecto > 0 %}text-red-500{% else %}text-green-500{% endif %}">
+                        ${{ info.pendiente_proyecto|floatformat:2|intcomma }}
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-4">
+            <table class="w-full text-left border-collapse">
+                <thead class="text-[10px] text-gray-400 uppercase">
+                    <tr>
+                        <th class="p-4 pl-6">Concepto de Cobro</th>
+                        <th class="p-4 text-center">Vencimiento</th>
+                        <th class="p-4 text-center">Estado</th>
+                        <th class="p-4 text-right">Monto</th>
+                        <th class="p-4 text-right pr-6">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="text-sm">
+                    {% for cx in info.pagos %}
+                    <tr class="border-b border-gray-50 last:border-0 hover:bg-purple-50/20 transition-colors group">
+                        
+                        <td class="p-4 pl-6">
+                            <p class="font-bold text-[#2D1B4B]">{{ cx.concepto }}</p>
+                            <div class="w-24 h-1 bg-gray-100 rounded-full mt-2 overflow-hidden">
+                                {% if cx.estado == 'pagado' %}
+                                    <div class="h-full bg-green-400 w-full"></div>
+                                {% else %}
+                                    <div class="h-full bg-yellow-400" style="width: 15%"></div>
+                                {% endif %}
+                            </div>
+                        </td>
+
+                        <td class="p-4 text-center text-xs font-bold text-gray-500">
+                            {{ cx.fecha_vencimiento|date:"d M, Y" }}
+                        </td>
+
+                        <td class="p-4 text-center">
+                            <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase 
+                                {% if cx.estado == 'pagado' %}bg-green-50 text-green-600
+                                {% elif cx.estado == 'vencido' %}bg-red-50 text-red-500
+                                {% else %}bg-yellow-50 text-yellow-600{% endif %}">
+                                {{ cx.get_estado_display }}
+                            </span>
+                        </td>
+
+                        <td class="p-4 text-right">
+                            <p class="font-bold text-gray-600">${{ cx.monto_total|floatformat:2|intcomma }}</p>
+                            {% if cx.saldo_pendiente > 0 %}
+                            <p class="text-[10px] text-red-400 font-bold">Restan: ${{ cx.saldo_pendiente|floatformat:2|intcomma }}</p>
+                            {% endif %}
+                        </td>
+
+                        <td class="p-4 text-right pr-6">
+                            <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                
+                                <button onclick="abrirModalCobro('{{ cx.id }}', 'anticipo')" class="w-8 h-8 rounded-lg border border-gray-200 text-gray-400 hover:text-[#2D1B4B] hover:border-[#2D1B4B] flex items-center justify-center transition-all" title="Orden de Pago">
+                                    <i class="fas fa-file-invoice-dollar"></i>
+                                </button>
+
+                                {% if cx.estado != 'pagado' %}
+                                <button onclick="abrirPago('{{ cx.id }}', '{{ cx.concepto }}', '{{ cx.saldo_pendiente }}')" class="w-8 h-8 rounded-lg bg-[#2D1B4B] text-white hover:bg-[#A855F7] flex items-center justify-center transition-all shadow-md" title="Registrar Pago">
+                                    <i class="fas fa-dollar-sign"></i>
+                                </button>
+                                {% else %}
+                                {% if cx.pagos.last %}
+                                <a href="{% url 'recibo_pago_pdf' cx.pagos.last.id %}" target="_blank" class="w-8 h-8 rounded-lg bg-blue-50 text-blue-500 hover:bg-blue-100 flex items-center justify-center transition-all" title="Descargar Recibo">
+                                    <i class="fas fa-receipt"></i>
+                                </a>
+                                {% endif %}
+                                {% endif %}
+
+                                {% if request.user.rol == 'admin' %}
+                                <a href="{% url 'eliminar_finanza' cx.id %}" onclick="return confirm('¿Borrar este cobro permanentemente?')" class="w-8 h-8 rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all" title="Eliminar">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% empty %}
+    <div class="text-center py-20 text-gray-400">
+        <p>Este cliente no tiene proyectos con actividad financiera.</p>
+    </div>
+    {% endfor %}
+
+</div>
+
+<div id="modal-orden-cobro" class="fixed inset-0 bg-[#2D1B4B]/90 hidden items-center justify-center z-50 backdrop-blur-sm animate__animated animate__fadeIn p-4">
+    <div class="bg-white p-8 rounded-[2rem] w-full max-w-lg shadow-2xl relative animate__animated animate__zoomIn">
+        <button onclick="cerrarModalCobro()" class="absolute top-6 right-6 text-gray-400 hover:text-red-500 transition-colors"><i class="fas fa-times text-xl"></i></button>
+        <div class="text-center mb-6">
+            <h3 class="text-xl font-black text-[#2D1B4B]">Generar Orden de Pago</h3>
+            <p class="text-sm text-gray-400">Datos Bancarios para el PDF</p>
+        </div>
+        <div class="space-y-4">
+            <input type="text" id="cobro-banco" value="BBVA" class="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 font-bold text-[#2D1B4B] outline-none">
+            <input type="text" id="cobro-titular" value="Jovani Ortega Soriano" class="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 font-bold text-[#2D1B4B] outline-none">
+            <input type="text" id="cobro-cuenta" value="1234567890" class="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 font-bold text-[#2D1B4B] outline-none">
+            <input type="text" id="cobro-clabe" value="012345678901234567" class="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 font-bold text-[#2D1B4B] outline-none">
+            <input type="hidden" id="cobro-cuenta-id">
+            <input type="hidden" id="cobro-tipo">
+            <button onclick="descargarPDFCobro()" class="w-full bg-[#A855F7] text-white font-bold py-4 rounded-xl shadow-lg hover:bg-[#9333EA] transition-all"><i class="fas fa-download mr-2"></i> DESCARGAR PDF</button>
+        </div>
+    </div>
+</div>
+
+<div id="modal-pago" class="fixed inset-0 bg-[#2D1B4B]/90 hidden items-center justify-center z-50 backdrop-blur-sm animate__animated animate__fadeIn p-4">
+    <div class="bg-white p-8 rounded-[2rem] w-full max-w-md shadow-2xl relative animate__animated animate__zoomIn">
+        <button onclick="cerrarModalPago()" class="absolute top-6 right-6 text-gray-400 hover:text-red-500 transition-colors"><i class="fas fa-times text-xl"></i></button>
+        <div class="mb-6">
+            <h3 class="text-xl font-black text-[#2D1B4B]">Registrar Pago</h3>
+            <p class="text-sm text-gray-400">Concepto: <span id="pago-concepto" class="font-bold text-[#A855F7]"></span></p>
+        </div>
+        <form action="{% url 'registrar_pago' %}" method="POST" class="space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="cuenta_id" id="input-cuenta-id">
+            <div>
+                <label class="block text-xs font-bold text-gray-500 mb-1 ml-1">Monto ($)</label>
+                <input type="number" name="monto" id="input-monto" step="0.01" class="w-full p-3 bg-gray-50 rounded-xl font-black text-[#2D1B4B] text-lg border-2 border-transparent focus:border-[#A855F7] outline-none" required>
+                <p class="text-[10px] text-gray-400 text-right mt-1">Máximo a pagar: $<span id="max-saldo"></span></p>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <select name="metodo" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-gray-600 outline-none">
+                    <option value="transferencia">Transferencia</option>
+                    <option value="efectivo">Efectivo</option>
+                    <option value="cheque">Cheque</option>
+                </select>
+                <input type="text" name="referencia" placeholder="Ref/Folio" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-[#2D1B4B] outline-none">
+            </div>
+            <button type="submit" class="w-full bg-[#2D1B4B] text-white py-4 rounded-xl font-black shadow-lg hover:bg-[#A855F7] transition-all"><i class="fas fa-check-circle mr-2"></i> CONFIRMAR</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    // --- SCRIPTS MODALES (Igual que antes) ---
+    function abrirModalCobro(id, tipo) {
+        document.getElementById('cobro-cuenta-id').value = id;
+        document.getElementById('cobro-tipo').value = tipo;
+        document.getElementById('modal-orden-cobro').classList.remove('hidden');
+        document.getElementById('modal-orden-cobro').classList.add('flex');
+    }
+    function cerrarModalCobro() {
+        document.getElementById('modal-orden-cobro').classList.add('hidden');
+        document.getElementById('modal-orden-cobro').classList.remove('flex');
+    }
+    function descargarPDFCobro() {
+        const id = document.getElementById('cobro-cuenta-id').value;
+        const tipo = document.getElementById('cobro-tipo').value;
+        const banco = document.getElementById('cobro-banco').value;
+        const titular = document.getElementById('cobro-titular').value;
+        const cuenta = document.getElementById('cobro-cuenta').value;
+        const clabe = document.getElementById('cobro-clabe').value;
+        const url = `/finanzas/cobro/${id}/${tipo}/?banco=${encodeURIComponent(banco)}&titular=${encodeURIComponent(titular)}&cuenta_num=${encodeURIComponent(cuenta)}&clabe=${encodeURIComponent(clabe)}`;
+        window.open(url, '_blank');
+        cerrarModalCobro();
+    }
+
+    function abrirPago(id, concepto, saldo) {
+        let saldoLimpio = saldo.toString().replace(/,/g, '');
+        document.getElementById('input-cuenta-id').value = id;
+        document.getElementById('pago-concepto').innerText = concepto;
+        document.getElementById('max-saldo').innerText = saldo;
+        document.getElementById('input-monto').value = saldoLimpio;
+        document.getElementById('input-monto').max = saldoLimpio;
+        document.getElementById('modal-pago').classList.remove('hidden');
+        document.getElementById('modal-pago').classList.add('flex');
+    }
+    function cerrarModalPago() {
+        document.getElementById('modal-pago').classList.add('hidden');
+        document.getElementById('modal-pago').classList.remove('flex');
+    }
+</script>
+{% endblock %}

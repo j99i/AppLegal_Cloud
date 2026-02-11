@@ -1,53 +1,243 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
     <meta charset="UTF-8">
+    <title>Recibo de Pago #{{ p.id }}</title>
+    {% load static %}
+    {% load humanize %}
     <style>
-        @page { size: A5 landscape; margin: 1cm; } /* Formato media carta horizontal */
-        body { font-family: Helvetica, sans-serif; color: #2D1B4B; }
-        .box { border: 2px solid #A855F7; padding: 20px; border-radius: 10px; }
-        .header { display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 20px; }
-        .title { font-size: 18pt; font-weight: bold; text-transform: uppercase; }
-        .amount { font-size: 24pt; font-weight: bold; color: #A855F7; text-align: right; }
-        .label { font-size: 8pt; color: #888; text-transform: uppercase; margin-bottom: 2px; }
-        .value { font-size: 12pt; font-weight: bold; margin-bottom: 15px; }
+        @page {
+            size: A5 landscape; /* Media carta horizontal */
+            margin: 0;
+        }
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            color: #2D1B4B;
+            margin: 0;
+            padding: 40px;
+            background-color: #fff;
+        }
+
+        /* --- ESTRUCTURA PRINCIPAL --- */
+        .container {
+            border: 1px solid #e5e7eb;
+            border-top: 6px solid #2D1B4B; /* Barra superior morada */
+            border-radius: 4px;
+            padding: 30px;
+            height: 100%;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        /* --- ENCABEZADO --- */
+        .header {
+            width: 100%;
+            margin-bottom: 30px;
+        }
+        .logo-section img {
+            height: 45px;
+            margin-bottom: 5px;
+        }
+        .company-name {
+            font-size: 14pt;
+            font-weight: 900;
+            color: #2D1B4B;
+            text-transform: uppercase;
+        }
+        .receipt-title {
+            text-align: right;
+        }
+        .doc-name {
+            font-size: 18pt;
+            font-weight: 900;
+            color: #A855F7; /* Morado brillante */
+            text-transform: uppercase;
+            margin: 0;
+        }
+        .folio-box {
+            font-size: 10pt;
+            font-weight: bold;
+            color: #6B7280;
+            margin-top: 5px;
+        }
+
+        /* --- INFO DEL CLIENTE (CAJA GRIS) --- */
+        .client-box {
+            background-color: #F9FAFB;
+            border-left: 4px solid #A855F7;
+            padding: 15px;
+            margin-bottom: 25px;
+        }
+        .label {
+            font-size: 7pt;
+            font-weight: bold;
+            color: #9CA3AF;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 2px;
+        }
+        .value {
+            font-size: 11pt;
+            font-weight: bold;
+            color: #2D1B4B;
+        }
+
+        /* --- TABLA DE DETALLES --- */
+        .details-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        .details-table th {
+            text-align: left;
+            font-size: 8pt;
+            color: #6B7280;
+            text-transform: uppercase;
+            border-bottom: 1px solid #E5E7EB;
+            padding-bottom: 8px;
+        }
+        .details-table td {
+            padding: 12px 0;
+            font-size: 10pt;
+            font-weight: bold;
+            color: #374151;
+            border-bottom: 1px solid #F3F4F6;
+        }
+
+        /* --- TOTALES --- */
+        .total-section {
+            text-align: right;
+            margin-top: 10px;
+        }
+        .total-label {
+            font-size: 9pt;
+            font-weight: bold;
+            color: #2D1B4B;
+            margin-right: 10px;
+        }
+        .total-amount {
+            font-size: 22pt;
+            font-weight: 900;
+            color: #2D1B4B;
+        }
+
+        /* --- PIE DE PÁGINA --- */
+        .footer {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            right: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .signature-line {
+            width: 200px;
+            border-top: 1px solid #D1D5DB;
+            text-align: center;
+            padding-top: 5px;
+        }
+        .signature-text {
+            font-size: 7pt;
+            font-weight: bold;
+            color: #9CA3AF;
+            text-transform: uppercase;
+        }
+        .system-note {
+            font-size: 7pt;
+            color: #D1D5DB;
+            text-align: right;
+        }
+
+        /* UTILIDADES DE TABLA PARA LAYOUT */
+        table.layout { width: 100%; }
+        td.layout-left { width: 60%; vertical-align: top; }
+        td.layout-right { width: 40%; vertical-align: top; text-align: right; }
+
     </style>
 </head>
 <body>
-    <div class="box">
-        <div class="header">
-            <div>
-                <div class="title">Recibo de Pago</div>
-                <div style="font-size: 10pt; color: #666;">Gestiones Corpad</div>
-            </div>
-            <div style="text-align: right;">
-                <div class="label">FOLIO PAGO</div>
-                <div class="value">#{{ p.id|stringformat:"06d" }}</div>
-            </div>
-        </div>
 
-        <table style="width: 100%;">
+    <div class="container">
+        
+        <table class="layout header">
             <tr>
-                <td width="60%">
-                    <div class="label">RECIBIMOS DE:</div>
-                    <div class="value">{{ p.cuenta.cliente.nombre_empresa }}</div>
-                    
-                    <div class="label">CONCEPTO:</div>
-                    <div class="value">{{ p.cuenta.concepto }}</div>
+                <td class="layout-left logo-section">
+                    {% if base_url %}
+                        <img src="{{ base_url }}static/img/logo.png" alt="Logo">
+                    {% else %}
+                        <img src="{% static 'img/logo.png' %}" alt="Logo">
+                    {% endif %}
+                    <div class="company-name">CORPAD</div>
                 </td>
-                <td width="40%" style="vertical-align: top; text-align: right;">
-                    <div class="label">MONTO PAGADO</div>
-                    <div class="amount">${{ p.monto|floatformat:2 }}</div>
-                    <div class="label">FECHA: {{ p.fecha_pago|date:"d/m/Y" }}</div>
-                    <div class="label">MÉTODO: {{ p.get_metodo_display }}</div>
+                <td class="layout-right receipt-title">
+                    <h1 class="doc-name">Recibo de Pago</h1>
+                    <div class="folio-box">
+                        FOLIO: GC-PAG-{{ p.id|stringformat:"04d" }}-{{ p.fecha_pago|date:"Y" }}
+                    </div>
+                    <div style="font-size: 9pt; color: #6B7280; margin-top: 2px;">
+                        Fecha de Emisión: {{ p.fecha_pago|date:"d/m/Y" }}
+                    </div>
                 </td>
             </tr>
         </table>
 
-        <div style="margin-top: 30px; text-align: center; border-top: 1px dashed #ccc; padding-top: 10px; font-size: 8pt; color: #aaa;">
-            Este comprobante es una representación del pago registrado en sistema.<br>
-            Capturado por: {{ p.registrado_por.username }}
+        <div class="client-box">
+            <div class="label">Recibimos de:</div>
+            <div class="value">{{ p.cuenta.cliente.nombre_empresa|upper }}</div>
+            <div style="margin-top: 5px; font-size: 9pt; color: #6B7280;">
+                {{ p.cuenta.cliente.nombre_contacto }}
+            </div>
         </div>
+
+        <table class="details-table">
+            <thead>
+                <tr>
+                    <th width="50%">Concepto / Proyecto</th>
+                    <th width="20%">Método</th>
+                    <th width="30%">Referencia</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>
+                        {{ p.cuenta.concepto }}
+                        {% if p.cuenta.cotizacion %}
+                        <br><span style="font-size: 8pt; color: #9CA3AF; font-weight: normal;">
+                            Ref: Cotización #{{ p.cuenta.cotizacion.id|stringformat:"03d" }}
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td>{{ p.get_metodo_display|default:"No especificado" }}</td>
+                    <td>{{ p.referencia|default:"--" }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="total-section">
+            <span class="total-label">MONTO RECIBIDO:</span>
+            <span class="total-amount">$ {{ p.monto|floatformat:2|intcomma }}</span>
+            <div style="font-size: 8pt; color: #9CA3AF; font-weight: bold; margin-top: 5px;">
+                (MXN - PESOS MEXICANOS)
+            </div>
+        </div>
+
+        <div class="footer">
+            
+            <div>
+                <div class="signature-line"></div>
+                <div class="signature-text">Firma de Recibido / Sello</div>
+                <div class="signature-text" style="color: #2D1B4B; margin-top: 2px;">Gestiones Corpad</div>
+            </div>
+
+            <div class="system-note">
+                Documento generado digitalmente por AppLegal Cloud.<br>
+                Registrado por: {{ p.registrado_por.username|default:"Sistema" }} <br>
+                ID Transacción: {{ p.id }}
+            </div>
+        </div>
+
     </div>
+
 </body>
 </html>

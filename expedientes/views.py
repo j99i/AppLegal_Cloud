@@ -32,6 +32,7 @@ import mammoth
 from docx import Document as DocumentoWord 
 import weasyprint 
 from django.core.mail import send_mail
+from datetime import timedelta
 
 import qrcode
 from io import BytesIO
@@ -820,41 +821,33 @@ def generar_pdf_cotizacion(request, cotizacion_id):
     weasyprint.HTML(string=html, base_url=request.build_absolute_uri('/')).write_pdf(response)
     return response
 
+# En expedientes/views.py
+
 @login_required
 def convertir_a_cliente(request, cotizacion_id):
-    # Imports necesarios
     from django.core.files.base import ContentFile
     import weasyprint
+    from django.utils.text import slugify
+    from datetime import timedelta  # Lo importamos aquí por si acaso
     
     c = get_object_or_404(Cotizacion, id=cotizacion_id)
 
-    # Si NO es POST, redirigimos (por seguridad)
     if request.method != 'POST':
         return redirect('detalle_cotizacion', cotizacion_id=c.id)
     
-    # 1. Validación: Si ya es cliente, redirigir
     if c.cliente_convertido:
-        messages.warning(request, f"Esta cotización ya pertenece al cliente {c.cliente_convertido}")
+        messages.warning(request, f"Esta cotización ya es un cliente.")
         return redirect('detalle_cliente', cliente_id=c.cliente_convertido.id)
 
-    # =======================================================
-    # PASO A: LIMPIEZA DE SERVICIOS RECHAZADOS
-    # =======================================================
+    # 1. LIMPIEZA DE SERVICIOS
     items_aceptados_ids = request.POST.getlist('items_seleccionados')
-    
-    # Si desmarcaron algo, lo borramos de la base de datos para que no salga en el PDF ni en el cobro
-    # Excluímos los que SÍ vinieron en la lista, y borramos el resto.
     items_a_borrar = ItemCotizacion.objects.filter(cotizacion=c).exclude(id__in=items_aceptados_ids)
-    
     if items_a_borrar.exists():
         items_a_borrar.delete()
-        # ¡IMPORTANTE! Recalculamos totales porque bajó el precio
         c.calcular_totales()
         c.refresh_from_db()
 
-    # =======================================================
-    # PASO B: CREACIÓN DEL CLIENTE (Lógica estándar)
-    # =======================================================
+    # 2. CREAR O BUSCAR CLIENTE
     nombre_busqueda = c.prospecto_empresa if c.prospecto_empresa else c.prospecto_nombre
     cli = Cliente.objects.filter(nombre_empresa__iexact=nombre_busqueda).first()
 
@@ -869,69 +862,103 @@ def convertir_a_cliente(request, cotizacion_id):
         if request.user.rol != 'admin':
             request.user.clientes_asignados.add(cli)
 
-    # =======================================================
-    # PASO C: GESTIÓN DE CARPETAS (Selección de usuario)
-    # =======================================================
-    # El modelo Cliente crea AUTOMÁTICAMENTE todas las carpetas al guardarse (por el Signal).
-    # Así que aquí lo que haremos es BORRAR las que el usuario NO quiso.
-    
+    # 3. GESTIÓN DE CARPETAS
     carpetas_seleccionadas = request.POST.getlist('carpetas_seleccionadas')
     carpetas_base = ['LICENCIA', 'FUNCIONAMIENTO', 'PROTECCIÓN CIVIL']
-    
     for nombre_carpeta in carpetas_base:
-        # Si la carpeta base NO está en lo que el usuario seleccionó, la borramos
         if nombre_carpeta not in carpetas_seleccionadas:
             Carpeta.objects.filter(cliente=cli, nombre=nombre_carpeta).delete()
-
-    # Aseguramos que exista la carpeta de Cotizaciones (esa siempre va)
-    carpeta_db, _ = Carpeta.objects.get_or_create(
-        nombre="Cotizaciones",
-        cliente=cli,
-        defaults={'es_expediente': False}
-    )
-
-    # =======================================================
-    # PASO D: GENERACIÓN DE PDF Y COBRO (Con los nuevos totales)
-    # =======================================================
     
-    # Generar el PDF en memoria
+    carpeta_db, _ = Carpeta.objects.get_or_create(nombre="Cotizaciones", cliente=cli, defaults={'es_expediente': False})
+
+    # 4. GENERAR PDF FINAL
     html_string = render_to_string('cotizaciones/pdf_template.html', {'c': c})
     html = weasyprint.HTML(string=html_string, base_url=request.build_absolute_uri())
     pdf_content = html.write_pdf()
-
-    # Nombre del archivo
+    
     nombre_safe = slugify(c.titulo or f"v1_{c.id}").replace("-", "_")
     nombre_archivo = f"Cotizacion_{c.id}_{nombre_safe}_FINAL.pdf"
-
-    # Guardar archivo
+    
     if not Documento.objects.filter(carpeta=carpeta_db, nombre_archivo=nombre_archivo).exists():
-        nuevo_doc = Documento(
-            cliente=cli,
-            carpeta=carpeta_db,
-            nombre_archivo=nombre_archivo,
-            subido_por=request.user
-        )
+        nuevo_doc = Documento(cliente=cli, carpeta=carpeta_db, nombre_archivo=nombre_archivo, subido_por=request.user)
         nuevo_doc.archivo.save(nombre_archivo, ContentFile(pdf_content))
         nuevo_doc.save()
 
-    # Registrar Cuenta por Cobrar
-    monto_final_cobro = c.total_con_iva if c.aplica_iva else c.total
+    # =======================================================
+    # 5. FINANZAS INTELIGENTE (FECHAS AUTOMÁTICAS)
+    # =======================================================
+    monto_final = c.total_con_iva if c.aplica_iva else c.total
+    hoy = timezone.now().date()
+    
+    # Calcular días de plazo según la cotización
+    dias_plazo = 0
+    if c.tiempo_entrega == '30_dias':
+        dias_plazo = 30
+    elif c.tiempo_entrega == '60_dias':
+        dias_plazo = 60
+    elif c.tiempo_entrega == '90_dias':
+        dias_plazo = 90
+    else:
+        dias_plazo = 15 # Default si es indefinido
+        
+    fecha_final_proyecto = hoy + timedelta(days=dias_plazo)
 
-    CuentaPorCobrar.objects.create(
-        cliente=cli,
-        cotizacion=c,
-        concepto=f"Cotización #{c.id} - {c.titulo or 'Proyecto'}",
-        monto_total=monto_final_cobro,
-        saldo_pendiente=monto_final_cobro,
-        fecha_vencimiento=c.validez_hasta or timezone.now().date()
-    )
+    # Lógica según condiciones de pago
+    if c.condiciones_pago == '50_50':
+        mitad = monto_final / 2
+        
+        # 1. Anticipo (Vence HOY)
+        CuentaPorCobrar.objects.create(
+            cliente=cli,
+            cotizacion=c,
+            concepto=f"50% Anticipo - {c.titulo or 'Proyecto'}",
+            monto_total=mitad,
+            saldo_pendiente=mitad,
+            fecha_vencimiento=hoy, # Cobrar ya
+            estado='pendiente'
+        )
+        
+        # 2. Liquidación (Vence al FINAL del plazo)
+        CuentaPorCobrar.objects.create(
+            cliente=cli,
+            cotizacion=c,
+            concepto=f"50% Liquidación - {c.titulo or 'Proyecto'}",
+            monto_total=mitad,
+            saldo_pendiente=mitad,
+            fecha_vencimiento=fecha_final_proyecto, # Cobrar en 30/60/90 días
+            estado='pendiente'
+        )
+    
+    elif c.condiciones_pago == '100_entrega':
+        # 100% Contra Entrega (Vence al FINAL del plazo)
+        CuentaPorCobrar.objects.create(
+            cliente=cli,
+            cotizacion=c,
+            concepto=f"Pago Contra Entrega - {c.titulo or 'Proyecto'}",
+            monto_total=monto_final,
+            saldo_pendiente=monto_final,
+            fecha_vencimiento=fecha_final_proyecto, # Cobrar al entregar
+            estado='pendiente'
+        )
+
+    else:
+        # Pago de Contado (Vence HOY)
+        CuentaPorCobrar.objects.create(
+            cliente=cli,
+            cotizacion=c,
+            concepto=f"Pago de Contado - {c.titulo or 'Proyecto'}",
+            monto_total=monto_final,
+            saldo_pendiente=monto_final,
+            fecha_vencimiento=hoy, # Cobrar ya
+            estado='pendiente'
+        )
 
     # Actualizar estado Cotización
     c.estado = 'aceptada'
     c.cliente_convertido = cli
     c.save()
 
-    messages.success(request, "¡Trato cerrado! Se ajustaron los servicios, se crearon las carpetas seleccionadas y se generó la cuenta por cobrar.")
+    messages.success(request, f"¡Trato cerrado! Se generó el calendario de pagos (Plazo: {dias_plazo} días).")
     return redirect('detalle_cliente', cliente_id=cli.id)
 # FUNCIÓN DE CORREO ACTUALIZADA (RESEND + NOMBRE INTELIGENTE)
 # ----------------------------------------------------
@@ -1022,10 +1049,36 @@ def eliminar_cotizacion(request, cotizacion_id):
 
 @login_required
 def panel_finanzas(request):
-    if not request.user.access_finanzas: return redirect('dashboard')
-    cuentas = CuentaPorCobrar.objects.all().order_by('-fecha_emision')
-    return render(request, 'finanzas/panel.html', {'cuentas': cuentas, 'total_por_cobrar': sum(c.saldo_pendiente for c in cuentas), 'total_cobrado': sum(c.monto_pagado for c in cuentas)})
+    # 1. Buscamos solo clientes que tengan cuentas registradas
+    clientes_con_actividad = Cliente.objects.filter(cuentas__isnull=False).distinct()
+    
+    lista_clientes = []
+    total_global_pendiente = 0
+    total_global_cobrado = 0
 
+    # --- CORRECCIÓN AQUÍ: Usamos la variable correcta ---
+    for cli in clientes_con_actividad:
+        # Calculamos sus totales
+        cuentas = cli.cuentas.all()
+        deuda = sum(c.saldo_pendiente for c in cuentas)
+        pagado = sum(c.monto_pagado for c in cuentas)
+        pendientes_count = cuentas.exclude(estado='pagado').count()
+        
+        lista_clientes.append({
+            'obj': cli,
+            'deuda': deuda,
+            'pagado': pagado,
+            'pendientes_count': pendientes_count
+        })
+        
+        total_global_pendiente += deuda
+        total_global_cobrado += pagado
+
+    return render(request, 'finanzas/panel.html', {
+        'clientes': lista_clientes,
+        'total_por_cobrar': total_global_pendiente,
+        'total_cobrado': total_global_cobrado
+    })
 @login_required
 def registrar_pago(request):
     if request.method == 'POST':
@@ -1364,3 +1417,53 @@ def generar_orden_cobro(request, cuenta_id, tipo_pago):
     response['Content-Disposition'] = f'inline; filename="{filename}"'
     weasyprint.HTML(string=html, base_url=request.build_absolute_uri('/')).write_pdf(response)
     return response
+# Agregar en expedientes/views.py
+
+@login_required
+def eliminar_finanza(request, id):
+    # Verificación de seguridad estricta
+    if request.user.rol != 'admin':
+        messages.error(request, "Acceso denegado. Solo el Administrador puede eliminar registros financieros.")
+        return redirect('panel_finanzas') # Asegúrate que esta URL exista, o usa 'inicio'
+    
+    cx = get_object_or_404(CuentaPorCobrar, id=id)
+    cx.delete()
+    messages.success(request, "Registro financiero eliminado correctamente.")
+    return redirect('panel_finanzas')
+@login_required
+def finanzas_cliente(request, cliente_id):
+    cliente = get_object_or_404(Cliente, id=cliente_id)
+    
+    # Traemos todos los pagos de este cliente
+    cuentas = cliente.cuentas.all().select_related('cotizacion').order_by('-fecha_vencimiento')
+    
+    # --- AGRUPAR POR PROYECTO (COTIZACIÓN) ---
+    proyectos = {}
+    
+    for cx in cuentas:
+        # Usamos la cotización como clave, o "General" si no tiene
+        clave = cx.cotizacion if cx.cotizacion else "Otros Cargos"
+        
+        if clave not in proyectos:
+            proyectos[clave] = {
+                'titulo': cx.cotizacion.titulo if cx.cotizacion else "Cargos Generales",
+                'folio': cx.cotizacion.id if cx.cotizacion else None,
+                'pagos': [],
+                'total_proyecto': 0,
+                'pendiente_proyecto': 0,
+                'estado_general': 'completado' # Asumimos completado y si hallamos deuda cambiamos
+            }
+        
+        # Agregamos el pago a la lista de este proyecto
+        proyectos[clave]['pagos'].append(cx)
+        proyectos[clave]['total_proyecto'] += cx.monto_total
+        proyectos[clave]['pendiente_proyecto'] += cx.saldo_pendiente
+        
+        # Si hay algun pago pendiente, el proyecto no está liquidado
+        if cx.saldo_pendiente > 0:
+            proyectos[clave]['estado_general'] = 'pendiente'
+
+    return render(request, 'finanzas/detalle_cliente.html', {
+        'cliente': cliente,
+        'proyectos': proyectos
+    })
