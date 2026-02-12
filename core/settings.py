@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 import environ
 import dj_database_url
+from django.core.exceptions import ImproperlyConfigured
 
 # ==========================================
 # 1. CONFIGURACIÓN DEL ENTORNO
@@ -12,18 +13,28 @@ env = environ.Env()
 # Lee el archivo .env si existe (para desarrollo local)
 environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
-# SEGURIDAD CRÍTICA
-# En producción, usa la variable de entorno. En local, usa la clave por defecto.
-SECRET_KEY = env('SECRET_KEY', default='django-insecure-tu-clave-secreta-local-super-segura')
+# --- CORRECCIÓN DE SEGURIDAD 1: DEBUG ---
+# Por defecto FALSE. Solo será True si el .env lo dice explícitamente.
+DEBUG = env.bool('DEBUG', default=False)
 
-# DEBUG debe ser False en producción. 
-# Si la variable no existe en el entorno, asume True (modo desarrollo).
-DEBUG = env.bool('DEBUG', default=True)
+# --- CORRECCIÓN DE SEGURIDAD 2: SECRET_KEY ---
+# En producción (DEBUG=False), fallará si no hay clave. En local usa la insegura.
+if DEBUG:
+    SECRET_KEY = env('SECRET_KEY', default='django-insecure-clave-desarrollo-temporal')
+else:
+    try:
+        SECRET_KEY = env('SECRET_KEY')
+    except ImproperlyConfigured:
+        raise ImproperlyConfigured("Falta la variable SECRET_KEY en entorno de producción.")
 
-# Hosts permitidos (El '*' es útil para Railway/Render al inicio)
-ALLOWED_HOSTS = ['*']
+# --- CORRECCIÓN DE SEGURIDAD 3: ALLOWED_HOSTS ---
+# Evita el '*' en producción. Lee una lista separada por comas del entorno.
+# Ejemplo en .env: ALLOWED_HOSTS=mi-app.railway.app,midominio.com
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
+
 
 # Si usas Railway, es bueno agregar esto para evitar errores de CSRF en formularios
+# Nota: Ajusta esto a tus dominios reales cuando tengas la URL final
 CSRF_TRUSTED_ORIGINS = ['https://*.railway.app', 'https://*.up.railway.app']
 
 
@@ -190,7 +201,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # 10. SEGURIDAD PARA PRODUCCIÓN (BLINDAJE)
 # ==========================================
 # Este bloque se activa SOLO si DEBUG=False (en Railway)
-# Arregla la calificación "C" del reporte de seguridad.
 
 if not DEBUG:
     # 1. Forzar HTTPS siempre
@@ -208,8 +218,13 @@ if not DEBUG:
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     
+    # --- CORRECCIÓN DE SEGURIDAD 4: HTTPONLY ---
+    # Evita robo de sesiones por XSS
+    SESSION_COOKIE_HTTPONLY = True
+    
     # 4. Cabeceras extra contra ataques
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = 'SAMEORIGIN'
-    
+
+# --- FIN DEL ARCHIVO (¡Sin llaves extra!) ---

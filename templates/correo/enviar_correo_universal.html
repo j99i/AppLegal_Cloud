@@ -1,0 +1,211 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-3xl mx-auto py-8 animate__animated animate__fadeIn">
+    
+    {# ============================================ #}
+    {# HEADER CON CONTEXTO DINÁMICO                 #}
+    {# ============================================ #}
+    <div class="bg-[#2D1B4B] p-6 rounded-t-[2rem] flex justify-between items-center">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center text-xl
+                {% if tipo_correo == 'cotizacion' %}bg-purple-400/20 text-purple-300
+                {% elif tipo_correo == 'autorizaciones' %}bg-red-400/20 text-red-300
+                {% else %}bg-amber-400/20 text-amber-300{% endif %}">
+                {% if tipo_correo == 'cotizacion' %}
+                    <i class="fas fa-file-invoice-dollar"></i>
+                {% elif tipo_correo == 'autorizaciones' %}
+                    <i class="fas fa-shield-alt"></i>
+                {% else %}
+                    <i class="fas fa-bell"></i>
+                {% endif %}
+            </div>
+            <div>
+                <h2 class="text-lg font-black text-white">
+                    {% if tipo_correo == 'cotizacion' %}Enviar Cotización
+                    {% elif tipo_correo == 'autorizaciones' %}Enviar Autorizaciones
+                    {% else %}Recordatorio de Documentos{% endif %}
+                </h2>
+                <p class="text-xs text-gray-400">{{ cliente.nombre_empresa }}</p>
+            </div>
+        </div>
+        <a href="{{ url_cancelar }}" class="text-gray-400 hover:text-white transition-colors">
+            <i class="fas fa-times text-xl"></i>
+        </a>
+    </div>
+
+    {# ============================================ #}
+    {# FORMULARIO PRINCIPAL                         #}
+    {# ============================================ #}
+    <form method="POST" class="bg-white rounded-b-[2rem] shadow-xl border border-gray-100 border-t-0">
+        {% csrf_token %}
+        <input type="hidden" name="tipo_correo" value="{{ tipo_correo }}">
+        
+        {# --- Campos ocultos según contexto --- #}
+        {% if tipo_correo == 'autorizaciones' %}
+            <input type="hidden" name="carpeta_id" value="{{ carpeta.id }}">
+        {% endif %}
+
+        <div class="p-8 space-y-5">
+
+            {# --- DESTINATARIO --- #}
+            <div>
+                <label class="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Para</label>
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-400 shrink-0">
+                        <i class="fas fa-user text-xs"></i>
+                    </div>
+                    <input type="email" name="destinatario" value="{{ destinatario }}" 
+                        class="w-full p-3 bg-gray-50 rounded-xl font-bold text-sm text-gray-700 border border-gray-200 focus:border-[#A855F7] outline-none transition-colors" 
+                        placeholder="correo@ejemplo.com" required>
+                </div>
+            </div>
+
+            {# --- ASUNTO --- #}
+            <div>
+                <label class="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Asunto</label>
+                <input type="text" name="asunto" value="{{ asunto }}" 
+                    class="w-full p-3 bg-gray-50 rounded-xl font-bold text-sm text-[#2D1B4B] border border-gray-200 focus:border-[#A855F7] outline-none transition-colors" required>
+            </div>
+
+            {# --- MENSAJE --- #}
+            <div>
+                <label class="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Mensaje</label>
+                <textarea name="mensaje" rows="8" 
+                    class="w-full p-4 bg-gray-50 rounded-t-xl text-sm text-gray-700 border border-gray-200 focus:border-[#A855F7] outline-none resize-none leading-relaxed">{{ mensaje }}</textarea>
+                
+                {# --- FIRMA EDITABLE (integrada al textarea visualmente) --- #}
+                <div class="bg-gray-100 p-4 rounded-b-xl border-x border-b border-gray-200">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-[9px] font-bold text-gray-400 uppercase">Firma del correo</span>
+                        <label class="flex items-center gap-2 cursor-pointer bg-white px-2 py-1 rounded border border-gray-200">
+                            <input type="checkbox" name="usar_logo_default" checked class="accent-[#2D1B4B]"> 
+                            <span class="text-[10px] font-bold text-[#2D1B4B]">Incluir Logo</span>
+                        </label>
+                    </div>
+                    
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-[#2D1B4B] rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-sm">
+                            GC
+                        </div>
+                        <div class="w-full space-y-2">
+                            <input type="text" name="firma_nombre" value="{{ firma_nombre|default:'Lic. Maribel Aldana Santos' }}" 
+                                class="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-[11px] font-bold text-[#2D1B4B] focus:border-[#A855F7] outline-none shadow-sm"
+                                placeholder="Nombre Completo">
+                            <input type="text" name="firma_cargo" value="{{ firma_cargo|default:'Gestiones Corpad | Directora General' }}" 
+                                class="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-[10px] text-gray-500 focus:border-[#A855F7] outline-none shadow-sm"
+                                placeholder="Cargo / Puesto">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {# ============================================ #}
+            {# SECCIÓN DE ADJUNTOS (Dinámica por contexto)  #}
+            {# ============================================ #}
+            <div class="rounded-xl border overflow-hidden
+                {% if tipo_correo == 'cotizacion' %}border-purple-200 bg-purple-50
+                {% elif tipo_correo == 'autorizaciones' %}border-red-200 bg-red-50
+                {% else %}border-amber-200 bg-amber-50{% endif %}">
+                
+                <div class="p-4 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg flex items-center justify-center shrink-0
+                            {% if tipo_correo == 'cotizacion' %}bg-purple-100 text-purple-500
+                            {% elif tipo_correo == 'autorizaciones' %}bg-red-100 text-red-500
+                            {% else %}bg-amber-100 text-amber-600{% endif %}">
+                            {% if tipo_correo == 'cotizacion' %}
+                                <i class="fas fa-file-pdf text-lg"></i>
+                            {% elif tipo_correo == 'autorizaciones' %}
+                                <i class="fas fa-file-archive text-lg"></i>
+                            {% else %}
+                                <i class="fas fa-link text-lg"></i>
+                            {% endif %}
+                        </div>
+                        <div>
+                            {% if tipo_correo == 'cotizacion' %}
+                                <p class="text-sm font-bold text-purple-800">Se adjuntará: Cotización en PDF</p>
+                                <p class="text-xs text-purple-600">{{ cotizacion.titulo }}</p>
+                            {% elif tipo_correo == 'autorizaciones' %}
+                                <p class="text-sm font-bold text-red-800">Se adjuntará: ZIP con {{ total_adjuntos }} documento{{ total_adjuntos|pluralize:"s" }}</p>
+                                <p class="text-xs text-red-600">Carpeta: {{ carpeta.nombre }}</p>
+                            {% else %}
+                                <p class="text-sm font-bold text-amber-800">Se incluirá: Link de carga para el cliente</p>
+                                <p class="text-xs text-amber-600">{{ total_faltantes }} documento{{ total_faltantes|pluralize:"s" }} pendiente{{ total_faltantes|pluralize:"s" }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if tipo_correo == 'autorizaciones' or tipo_correo == 'recordatorio' %}
+                    <button type="button" onclick="toggleDetalle()" class="text-xs font-bold hover:underline
+                        {% if tipo_correo == 'autorizaciones' %}text-red-500{% else %}text-amber-600{% endif %}">
+                        Ver detalle <i class="fas fa-chevron-down text-[10px] ml-1" id="icon-detalle"></i>
+                    </button>
+                    {% endif %}
+                </div>
+
+                {# --- Lista expandible de documentos --- #}
+                {% if tipo_correo == 'autorizaciones' %}
+                <div id="detalle-adjuntos" class="hidden border-t border-red-200 p-4 max-h-48 overflow-y-auto">
+                    <div class="space-y-2">
+                        {% for doc in lista_adjuntos %}
+                        <div class="flex items-center gap-2 text-xs">
+                            <i class="fas fa-file text-red-400"></i>
+                            <span class="text-red-700 font-bold">{{ doc.nombre_archivo }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if tipo_correo == 'recordatorio' %}
+                <div id="detalle-adjuntos" class="hidden border-t border-amber-200 p-4 max-h-48 overflow-y-auto">
+                    <div class="space-y-3">
+                        {% for nombre_carpeta, documentos in faltantes_por_carpeta.items %}
+                        <div>
+                            <p class="text-xs font-bold text-amber-700 mb-1"><i class="fas fa-folder mr-1"></i> {{ nombre_carpeta }}</p>
+                            {% for doc_nombre in documentos %}
+                            <div class="flex items-center gap-2 text-xs ml-4 mb-1">
+                                <i class="fas fa-times-circle text-red-400"></i>
+                                <span class="text-gray-600">{{ doc_nombre }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            {# ============================================ #}
+            {# BOTÓN DE ENVÍO                               #}
+            {# ============================================ #}
+            <div class="flex justify-end gap-3 pt-4">
+                <a href="{{ url_cancelar }}" class="px-6 py-3 bg-gray-100 text-gray-500 font-bold rounded-xl hover:bg-gray-200 transition-colors text-sm">
+                    Cancelar
+                </a>
+                <button type="submit" class="px-8 py-3 bg-[#2D1B4B] text-white font-bold rounded-xl shadow-lg hover:bg-[#A855F7] transition-all transform hover:-translate-y-1 flex items-center gap-2 text-sm">
+                    <i class="fas fa-paper-plane"></i> ENVIAR CORREO
+                </button>
+            </div>
+
+        </div>
+    </form>
+</div>
+
+<script>
+function toggleDetalle() {
+    const detalle = document.getElementById('detalle-adjuntos');
+    const icon = document.getElementById('icon-detalle');
+    
+    if (detalle.classList.contains('hidden')) {
+        detalle.classList.remove('hidden');
+        icon.classList.remove('fa-chevron-down');
+        icon.classList.add('fa-chevron-up');
+    } else {
+        detalle.classList.add('hidden');
+        icon.classList.remove('fa-chevron-up');
+        icon.classList.add('fa-chevron-down');
+    }
+}
+</script>
+{% endblock %}

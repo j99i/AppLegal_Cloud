@@ -1,0 +1,89 @@
+<div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6; max-width: 600px; margin: 0 auto;">
+    
+    {# ============================================ #}
+    {# HEADER CON COLOR SEGÚN TIPO                  #}
+    {# ============================================ #}
+    <div style="background-color: #2D1B4B; padding: 24px; text-align: center; border-radius: 8px 8px 0 0;">
+        {% if tipo_correo == 'cotizacion' %}
+            <h2 style="color: white; margin: 0; font-size: 18px;">Propuesta Comercial</h2>
+        {% elif tipo_correo == 'autorizaciones' %}
+            <h2 style="color: white; margin: 0; font-size: 18px;">Autorizaciones Liberadas</h2>
+        {% else %}
+            <h2 style="color: white; margin: 0; font-size: 18px;">Seguimiento de Documentación</h2>
+        {% endif %}
+        <p style="color: #A855F7; margin: 5px 0 0; font-size: 12px;">{{ cliente.nombre_empresa }}</p>
+    </div>
+
+    {# ============================================ #}
+    {# CUERPO DEL MENSAJE                           #}
+    {# ============================================ #}
+    <div style="padding: 24px; border: 1px solid #e5e7eb; border-top: none;">
+        
+        <div style="margin-bottom: 24px; white-space: pre-line; font-size: 14px; color: #374151;">{{ mensaje }}</div>
+
+        {# --- SECCIÓN DE ADJUNTOS (Cotización) --- #}
+        {% if tipo_correo == 'cotizacion' %}
+        <div style="background-color: #faf5ff; padding: 16px; border-radius: 8px; border: 1px solid #e9d5ff; margin-bottom: 24px;">
+            <p style="font-weight: bold; margin: 0 0 4px; color: #7c3aed; font-size: 13px;">
+                📎 Documento adjunto: Cotización en PDF
+            </p>
+            <p style="margin: 0; color: #8b5cf6; font-size: 12px;">Revise el archivo adjunto a este correo.</p>
+        </div>
+        {% endif %}
+
+        {# --- SECCIÓN DE ADJUNTOS (Autorizaciones) --- #}
+        {% if tipo_correo == 'autorizaciones' %}
+        <div style="background-color: #fef2f2; padding: 16px; border-radius: 8px; border: 1px solid #fecaca; margin-bottom: 24px;">
+            <p style="font-weight: bold; margin: 0 0 8px; color: #991b1b; font-size: 13px;">📦 Documentos incluidos en el archivo ZIP:</p>
+            <ul style="margin: 0; padding-left: 20px;">
+                {% for doc in lista_adjuntos %}
+                <li style="color: #2D1B4B; font-size: 13px; margin-bottom: 4px;">{{ doc.nombre_archivo }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {# --- SECCIÓN CON LINK (Recordatorio) --- #}
+        {% if tipo_correo == 'recordatorio' %}
+        <div style="background-color: #fffbeb; padding: 16px; border-radius: 8px; border: 1px solid #fde68a; margin-bottom: 16px;">
+            <p style="font-weight: bold; margin: 0 0 8px; color: #92400e; font-size: 13px;">📋 Documentos pendientes por carpeta:</p>
+            {% for nombre_carpeta, documentos in faltantes_por_carpeta.items %}
+            <p style="font-weight: bold; color: #78350f; margin: 10px 0 4px; font-size: 13px;">📂 {{ nombre_carpeta }}:</p>
+            <ul style="margin: 0 0 8px; padding-left: 20px;">
+                {% for doc_nombre in documentos %}
+                <li style="color: #92400e; font-size: 12px; margin-bottom: 2px;">{{ doc_nombre }}</li>
+                {% endfor %}
+            </ul>
+            {% endfor %}
+        </div>
+
+        {% if link_carga %}
+        <div style="text-align: center; margin: 24px 0;">
+            <a href="{{ link_carga }}" 
+               style="display: inline-block; background-color: #2D1B4B; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 14px;">
+                📤 SUBIR MIS DOCUMENTOS
+            </a>
+            <p style="color: #9ca3af; font-size: 11px; margin-top: 8px;">
+                O copie este enlace: <span style="color: #6b7280;">{{ link_carga }}</span>
+            </p>
+        </div>
+        {% endif %}
+        {% endif %}
+
+        {# ============================================ #}
+        {# FIRMA                                        #}
+        {# ============================================ #}
+        <div style="border-top: 1px solid #e5e7eb; padding-top: 20px; margin-top: 24px;">
+            <div style="display: flex; align-items: center;">
+                {% if usar_logo %}
+                <img src="cid:logo_firma" style="width: 48px; height: 48px; border-radius: 50%; margin-right: 14px;" alt="Logo">
+                {% endif %}
+                <div>
+                    <p style="font-weight: bold; font-size: 14px; color: #2D1B4B; margin: 0;">{{ firma_nombre }}</p>
+                    <p style="font-size: 12px; color: #6b7280; margin: 2px 0 0;">{{ firma_cargo }}</p>
+                </div>
+            </div>
+            <p style="font-size: 10px; color: #A855F7; margin: 12px 0 0;">Enviado desde Cordpad Legal App</p>
+        </div>
+    </div>
+</div>

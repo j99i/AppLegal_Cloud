@@ -14,6 +14,9 @@
     <form method="POST" class="space-y-8">
         {% csrf_token %}
 
+        {# ============================================== #}
+        {# SECCIÓN 1: PERFIL Y ROL                        #}
+        {# ============================================== #}
         <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
             <h3 class="text-lg font-bold text-[#1A2238] mb-4 border-b pb-2">
                 <i class="fas fa-id-card mr-2"></i> Perfil y Rol
@@ -39,6 +42,9 @@
             </div>
         </div>
 
+        {# ============================================== #}
+        {# MENSAJE ADMIN (se muestra solo si rol=admin)   #}
+        {# ============================================== #}
         <div id="mensaje-admin" class="hidden bg-green-50 border-l-4 border-green-500 p-6 rounded-r-xl shadow-sm my-6">
             <div class="flex items-center gap-4">
                 <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-green-600">
@@ -46,73 +52,176 @@
                 </div>
                 <div>
                     <h3 class="text-lg font-bold text-green-800">Acceso Total Habilitado</h3>
-                    <p class="text-sm text-green-700">Este usuario es Administrador. Tiene acceso a todas las herramientas y clientes automáticamente.</p>
+                    <p class="text-sm text-green-700">Este usuario es Administrador. Tiene acceso a todas las herramientas, clientes y datos de contacto automáticamente.</p>
                 </div>
             </div>
         </div>
 
-        <div id="panel-permisos" class="grid grid-cols-1 lg:grid-cols-2 gap-8 transition-all duration-300">
+        {# ============================================== #}
+        {# SECCIÓN 2: PANEL DE PERMISOS (no-admin)        #}
+        {# ============================================== #}
+        <div id="panel-permisos" class="space-y-8 transition-all duration-300">
             
+            {# --- 2A: MÓDULOS DEL SISTEMA --- #}
             <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
-                <h3 class="text-lg font-bold text-[#C0A062] mb-4">
-                    <i class="fas fa-cubes mr-2"></i> Módulos Permitidos
+                <h3 class="text-lg font-bold text-[#C0A062] mb-2">
+                    <i class="fas fa-cubes mr-2"></i> Módulos del Sistema
                 </h3>
-                <p class="text-xs text-gray-400 mb-4">Marca qué herramientas puede usar este usuario:</p>
+                <p class="text-xs text-gray-400 mb-6">Controla a qué secciones principales puede acceder este usuario.</p>
                 
-                <div class="space-y-3">
-                    <label class="check-item">
-                        <input type="checkbox" name="access_finanzas" {% if u.access_finanzas %}checked{% endif %}>
-                        <span>💰 Finanzas y Cobranza</span>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <label class="check-card">
+                        <div class="flex items-start gap-3">
+                            <input type="checkbox" name="access_cotizaciones" {% if u.access_cotizaciones %}checked{% endif %}>
+                            <div>
+                                <span class="check-title">📄 Cotizaciones y Catálogo</span>
+                                <span class="check-desc">Crear, editar y enviar cotizaciones a prospectos. Gestionar el catálogo de servicios y precios.</span>
+                            </div>
+                        </div>
                     </label>
-                    <label class="check-item">
-                        <input type="checkbox" name="access_cotizaciones" {% if u.access_cotizaciones %}checked{% endif %}>
-                        <span>📄 Cotizaciones y Catálogo</span>
+
+                    <label class="check-card">
+                        <div class="flex items-start gap-3">
+                            <input type="checkbox" name="access_finanzas" {% if u.access_finanzas %}checked{% endif %}>
+                            <div>
+                                <span class="check-title">💰 Finanzas y Cobranza</span>
+                                <span class="check-desc">Ver panel financiero, cuentas por cobrar, registrar pagos y generar órdenes de cobro y recibos.</span>
+                            </div>
+                        </div>
                     </label>
-                    <label class="check-item">
-                        <input type="checkbox" name="access_agenda" {% if u.access_agenda %}checked{% endif %}>
-                        <span>📅 Agenda Legal</span>
+
+                    <label class="check-card">
+                        <div class="flex items-start gap-3">
+                            <input type="checkbox" name="access_agenda" {% if u.access_agenda %}checked{% endif %}>
+                            <div>
+                                <span class="check-title">📅 Agenda Legal</span>
+                                <span class="check-desc">Acceder al calendario, crear eventos, audiencias y recordatorios. Mover eventos con drag & drop.</span>
+                            </div>
+                        </div>
                     </label>
-                    <label class="check-item">
-                        <input type="checkbox" name="access_contratos" {% if u.access_contratos %}checked{% endif %}>
-                        <span>⚖️ Generador de Contratos</span>
+
+                    <label class="check-card">
+                        <div class="flex items-start gap-3">
+                            <input type="checkbox" name="access_contratos" {% if u.access_contratos %}checked{% endif %}>
+                            <div>
+                                <span class="check-title">⚖️ Generador de Contratos</span>
+                                <span class="check-desc">Seleccionar plantillas, llenar variables y generar documentos DOCX personalizados por cliente.</span>
+                            </div>
+                        </div>
                     </label>
-                    <label class="check-item">
-                        <input type="checkbox" name="access_disenador" {% if u.access_disenador %}checked{% endif %}>
-                        <span>🎨 Diseñador de Plantillas</span>
+
+                    <label class="check-card">
+                        <div class="flex items-start gap-3">
+                            <input type="checkbox" name="access_disenador" {% if u.access_disenador %}checked{% endif %}>
+                            <div>
+                                <span class="check-title">🎨 Diseñador de Plantillas</span>
+                                <span class="check-desc">Subir documentos base, marcar textos y convertirlos en variables reutilizables para contratos.</span>
+                            </div>
+                        </div>
                     </label>
                 </div>
             </div>
 
+            {# --- 2B: PERMISOS SOBRE CLIENTES Y EXPEDIENTES --- #}
             <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
-                <h3 class="text-lg font-bold text-[#1A2238] mb-4">
-                    <i class="fas fa-key mr-2"></i> Permisos de Acción
+                <h3 class="text-lg font-bold text-[#1A2238] mb-2">
+                    <i class="fas fa-key mr-2"></i> Permisos sobre Clientes y Expedientes
                 </h3>
-                <div class="space-y-3">
-                    <label class="check-item">
-                        <input type="checkbox" name="can_create_client" {% if u.can_create_client %}checked{% endif %}>
-                        <span>Crear nuevos clientes</span>
+                <p class="text-xs text-gray-400 mb-6">Define qué acciones puede realizar este usuario sobre los clientes y sus archivos.</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <label class="check-card">
+                        <div class="flex items-start gap-3">
+                            <input type="checkbox" name="can_create_client" {% if u.can_create_client %}checked{% endif %}>
+                            <div>
+                                <span class="check-title">➕ Crear nuevos clientes</span>
+                                <span class="check-desc">Dar de alta clientes desde el dashboard. También permite crear carpetas dentro de los expedientes.</span>
+                            </div>
+                        </div>
                     </label>
-                    <label class="check-item">
-                        <input type="checkbox" name="can_edit_client" {% if u.can_edit_client %}checked{% endif %}>
-                        <span>Editar datos de clientes</span>
+
+                    <label class="check-card">
+                        <div class="flex items-start gap-3">
+                            <input type="checkbox" name="can_edit_client" {% if u.can_edit_client %}checked{% endif %}>
+                            <div>
+                                <span class="check-title">✏️ Editar datos de clientes</span>
+                                <span class="check-desc">Modificar nombre, contacto, teléfono, email y campos adicionales. También permite mover archivos entre carpetas y generar links de carga externa.</span>
+                            </div>
+                        </div>
                     </label>
-                    <label class="check-item">
-                        <input type="checkbox" name="can_upload_files" {% if u.can_upload_files %}checked{% endif %}>
-                        <span>Subir archivos al Drive</span>
+
+                    <label class="check-card">
+                        <div class="flex items-start gap-3">
+                            <input type="checkbox" name="can_upload_files" {% if u.can_upload_files %}checked{% endif %}>
+                            <div>
+                                <span class="check-title">📤 Subir archivos al Drive</span>
+                                <span class="check-desc">Cargar documentos al expediente del cliente, incluyendo archivos con fecha de vencimiento y alertas automáticas.</span>
+                            </div>
+                        </div>
                     </label>
-                    <div class="border-t pt-2 mt-2">
-                        <label class="check-item text-red-600">
+
+                    <label class="check-card">
+                        <div class="flex items-start gap-3">
+                            <input type="checkbox" name="can_view_documents" {% if u.can_view_documents %}checked{% endif %}>
+                            <div>
+                                <span class="check-title">👁️ Ver documentos</span>
+                                <span class="check-desc">Visualizar archivos en el visor integrado (PDF, Word, Excel, imágenes, video y audio).</span>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+
+                {# Permiso peligroso separado #}
+                <div class="border-t border-gray-200 pt-4">
+                    <p class="text-[10px] font-bold text-red-400 uppercase mb-3"><i class="fas fa-exclamation-triangle mr-1"></i> Zona de Riesgo</p>
+                    <label class="check-card border-red-200 bg-red-50/50 hover:border-red-300">
+                        <div class="flex items-start gap-3">
                             <input type="checkbox" name="can_delete_client" {% if u.can_delete_client %}checked{% endif %}>
-                            <span>⚠️ Eliminar Clientes y Datos</span>
-                        </label>
+                            <div>
+                                <span class="check-title text-red-600">🗑️ Eliminar clientes, carpetas y archivos</span>
+                                <span class="check-desc">Permite borrar clientes completos, eliminar carpetas con todo su contenido, borrar archivos individuales y ejecutar eliminaciones masivas. <strong>Esta acción es irreversible.</strong></span>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            {# --- 2C: INFORMACIÓN VISIBLE --- #}
+            <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
+                <h3 class="text-lg font-bold text-[#1A2238] mb-2">
+                    <i class="fas fa-eye mr-2"></i> Información Visible
+                </h3>
+                <p class="text-xs text-gray-400 mb-4">Nota: Los datos de contacto del cliente (nombre del contacto, teléfono y email) <strong>solo son visibles para el Administrador</strong>. Los demás usuarios únicamente verán el nombre de la empresa.</p>
+                
+                <div class="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                    <div class="flex items-start gap-3">
+                        <i class="fas fa-lock text-amber-500 mt-1"></i>
+                        <div class="text-xs text-amber-800">
+                            <strong>Este usuario verá:</strong>
+                            <ul class="mt-1 space-y-1 list-disc list-inside text-amber-700">
+                                <li>Nombre de la empresa</li>
+                                <li>Logo del cliente</li>
+                                <li>Expediente y archivos (según permisos de arriba)</li>
+                            </ul>
+                            <strong class="block mt-2">NO verá:</strong>
+                            <ul class="mt-1 space-y-1 list-disc list-inside text-amber-700">
+                                <li>Nombre del contacto</li>
+                                <li>Teléfono del contacto</li>
+                                <li>Email del contacto</li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="lg:col-span-2 bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
+            {# --- 2D: CLIENTES ASIGNADOS --- #}
+            <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
                 <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg font-bold text-[#1A2238]"><i class="fas fa-briefcase mr-2"></i> Clientes Visibles</h3>
-                    <button type="button" onclick="seleccionarTodos()" class="text-xs font-bold text-[#C0A062] hover:underline">Seleccionar Todos</button>
+                    <div>
+                        <h3 class="text-lg font-bold text-[#1A2238]"><i class="fas fa-briefcase mr-2"></i> Clientes Visibles</h3>
+                        <p class="text-xs text-gray-400 mt-1">Solo podrá ver los expedientes de los clientes marcados aquí.</p>
+                    </div>
+                    <button type="button" onclick="seleccionarTodos()" class="text-xs font-bold text-[#C0A062] hover:underline">Seleccionar / Deseleccionar Todos</button>
                 </div>
                 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-3 max-h-64 overflow-y-auto custom-scrollbar p-2 border border-gray-100 rounded-xl bg-gray-50">
@@ -122,24 +231,25 @@
                             {% if cliente in u.clientes_asignados.all %}checked{% endif %}>
                         <div>
                             <span class="block text-xs font-bold text-[#1A2238]">{{ cliente.nombre_empresa }}</span>
-                            <span class="block text-[10px] text-gray-400">{{ cliente.nombre_contacto }}</span>
                         </div>
                     </label>
                     {% endfor %}
                 </div>
-                <p class="text-[10px] text-gray-400 mt-2 text-center">* El usuario solo podrá ver los expedientes marcados aquí.</p>
             </div>
 
-        </div>
+        </div> {# Fin panel-permisos #}
 
+        {# ============================================== #}
+        {# BOTONES DE ACCIÓN                              #}
+        {# ============================================== #}
         <div class="flex justify-between items-center pt-6 border-t border-gray-200">
-            
             {% if request.user != u %}
             <button type="button" onclick="confirmarEliminacion()" class="text-red-500 font-bold text-xs hover:text-red-700 hover:underline px-4">
                 <i class="fas fa-trash-alt mr-1"></i> Eliminar Usuario
             </button>
             {% else %}
-            <div></div> {% endif %}
+            <div></div>
+            {% endif %}
 
             <button type="submit" class="bg-[#1A2238] text-white px-10 py-4 rounded-xl font-black shadow-lg hover:bg-[#2C3E50] transition-all hover:-translate-y-1">
                 GUARDAR CAMBIOS
@@ -152,10 +262,47 @@
     .label-form { display: block; font-size: 0.75rem; font-weight: 700; color: #9CA3AF; text-transform: uppercase; margin-bottom: 0.5rem; }
     .input-form { width: 100%; padding: 0.75rem; background-color: #F9FAFB; border-radius: 0.75rem; font-weight: 700; color: #1F2937; border: 1px solid transparent; outline: none; }
     .input-form:focus { border-color: #C0A062; background-color: #fff; }
-    .check-item { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 12px; cursor: pointer; transition: background 0.2s; border: 1px solid #f3f4f6; }
-    .check-item:hover { background-color: #F3F4F6; border-color: #e5e7eb; }
-    .check-item input { width: 18px; height: 18px; accent-color: #C0A062; cursor: pointer; }
-    .check-item span { font-weight: 700; font-size: 0.85rem; color: #374151; }
+
+    /* Card-style checkboxes con descripción */
+    .check-card {
+        display: block;
+        padding: 16px;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: 1px solid #f3f4f6;
+        background: #fafafa;
+    }
+    .check-card:hover {
+        background-color: #F3F4F6;
+        border-color: #e5e7eb;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .check-card:has(input:checked) {
+        background-color: #f0fdf4;
+        border-color: #bbf7d0;
+    }
+    .check-card input {
+        width: 18px;
+        height: 18px;
+        accent-color: #C0A062;
+        cursor: pointer;
+        margin-top: 2px;
+        flex-shrink: 0;
+    }
+    .check-title {
+        display: block;
+        font-weight: 700;
+        font-size: 0.85rem;
+        color: #374151;
+        margin-bottom: 4px;
+    }
+    .check-desc {
+        display: block;
+        font-size: 0.7rem;
+        color: #9CA3AF;
+        line-height: 1.4;
+    }
 </style>
 
 <script>
@@ -165,11 +312,9 @@
         const mensajeAdmin = document.getElementById('mensaje-admin');
 
         if (rol === 'admin') {
-            // Si es admin, ocultamos checkboxes y mostramos mensaje
             panelPermisos.classList.add('hidden');
             mensajeAdmin.classList.remove('hidden');
         } else {
-            // Si no es admin, mostramos checkboxes y ocultamos mensaje
             panelPermisos.classList.remove('hidden');
             mensajeAdmin.classList.add('hidden');
         }
@@ -177,7 +322,6 @@
 
     function seleccionarTodos() {
         const checkboxes = document.querySelectorAll('.cliente-check');
-        // Si el primero está marcado, desmarcamos todos. Si no, marcamos todos.
         const estado = !checkboxes[0].checked;
         checkboxes.forEach(c => c.checked = estado);
     }
@@ -188,7 +332,6 @@
         }
     }
 
-    // Ejecutar al inicio para ver el estado correcto
     document.addEventListener('DOMContentLoaded', actualizarVistaPermisos);
 </script>
 {% endblock %}

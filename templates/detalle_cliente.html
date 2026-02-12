@@ -15,7 +15,11 @@
             </div>
             <div>
                 <h2 class="text-2xl font-black text-[#2D1B4B] leading-none">{{ cliente.nombre_empresa }}</h2>
-                <p class="text-xs text-gray-400 mt-1">{{ cliente.nombre_contacto }} | {{ cliente.telefono }}</p>
+                {% if user.rol == 'admin' %}
+    <p class="text-xs text-gray-400 mt-1">{{ cliente.nombre_contacto }} | {{ cliente.telefono }}</p>
+{% else %}
+    <p class="text-xs text-gray-400 mt-1">Contacto restringido</p>
+{% endif %}
                 
                 {% if not carpeta_actual %}
                     {% if user.can_edit_client or user.rol == 'admin' %}
@@ -23,7 +27,7 @@
                         <a href="{% url 'editar_cliente' cliente.id %}" class="inline-flex items-center gap-1 text-[10px] font-bold text-[#A855F7] hover:underline bg-purple-50 px-2 py-1 rounded-md mr-2">
                             <i class="fas fa-pen"></i> Editar Información
                         </a>
-                        <a href="{% url 'enviar_recordatorio' cliente.id %}" onclick="return confirm('¿Estás seguro de enviar el correo de recordatorio al cliente? Se le notificará sobre los documentos marcados en ROJO.')" class="inline-flex items-center gap-1 text-[10px] font-bold text-white hover:bg-orange-600 bg-orange-500 px-3 py-1 rounded-md shadow-md transition-colors">
+                        <a href="{% url 'enviar_correo_universal' cliente.id 'recordatorio' %}" class="inline-flex items-center gap-1 text-[10px] font-bold text-white hover:bg-orange-600 bg-orange-500 px-3 py-1 rounded-md shadow-md transition-colors">
                             <i class="fas fa-bell"></i> Recordar Faltantes
                         </a>
                     </div>
@@ -71,7 +75,7 @@
             <div class="flex gap-2">
                 
                 {% if carpeta_actual and carpeta_actual.nombre == 'Autorizaciones liberadas' %}
-                <a href="{% url 'redactar_correo_autorizaciones' carpeta_actual.id %}" class="bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-2 rounded-xl font-bold text-xs hover:from-red-600 hover:to-red-700 shadow-lg flex items-center gap-2 animate__animated animate__pulse">
+                <a href="{% url 'enviar_correo_universal' cliente.id 'autorizaciones' %}?carpeta_id={{ carpeta_actual.id }}" class="bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-2 rounded-xl font-bold text-xs hover:from-red-600 hover:to-red-700 shadow-lg flex items-center gap-2 animate__animated animate__pulse">
                     <i class="fas fa-paper-plane"></i> ENVIAR AUTORIZACIONES
                 </a>
                 {% endif %}

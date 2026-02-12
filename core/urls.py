@@ -84,6 +84,7 @@ urlpatterns = [
     path('finanzas/', views.panel_finanzas, name='panel_finanzas'),
     path('finanzas/pagar/', views.registrar_pago, name='registrar_pago'),
     path('finanzas/recibo/<int:pago_id>/', views.recibo_pago_pdf, name='recibo_pago_pdf'),
+    path('correo/<uuid:cliente_id>/<str:tipo_correo>/', views.enviar_correo_universal, name='enviar_correo_universal'),
     
     # AGENDA
     path('agenda/', views.agenda_legal, name='agenda_legal'),
